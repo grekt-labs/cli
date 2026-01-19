@@ -1,16 +1,16 @@
 import { Command } from "commander";
 import { confirm } from "@inquirer/prompts";
-import { isInitialized, getProjectConfig } from "../lib/config.js";
-import { getInstalled } from "../lib/installed.js";
-import { getAdapter } from "../adapters/index.js";
-import { success, error, info, warning, log, newline, colors, spinner } from "../utils/ui.js";
-import type { SyncTarget } from "../schemas/index.js";
+import { isInitialized, getProjectConfig } from "#/lib/config.js";
+import { getInstalled } from "#/lib/installed.js";
+import { getAdapter } from "#/lib/plugins.js";
+import { success, error, info, warning, log, newline, colors, spinner } from "#/utils/ui.js";
+import type { SyncTarget } from "#/schemas/index.js";
 
 export const syncCommand = new Command("sync")
   .description("Sync artifacts to AI tools")
   .option("--dry-run", "Preview changes without applying them")
   .option("-f, --force", "Skip confirmation prompts")
-  .option("-t, --target <targets>", "Comma-separated list of targets (claude,cursor,windsurf)")
+  .option("-t, --target <targets>", "Comma-separated list of targets (claude,cursor)")
   .action(async (options: { dryRun?: boolean; force?: boolean; target?: string }) => {
     const projectRoot = process.cwd();
 

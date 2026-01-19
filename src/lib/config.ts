@@ -8,14 +8,14 @@ import {
   type GlobalConfig,
   type ProjectConfig,
   type Credentials,
-} from "../schemas/index.js";
+} from "#/schemas/index.js";
 import {
   GLOBAL_CONFIG_DIR,
   GLOBAL_CONFIG_FILE,
   GLOBAL_CREDENTIALS_FILE,
   PROJECT_CONFIG_DIR,
   PROJECT_CONFIG_FILE,
-} from "./paths.js";
+} from "#/lib/paths.js";
 
 function ensureDir(filepath: string): void {
   const dir = dirname(filepath);

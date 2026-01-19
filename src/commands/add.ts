@@ -2,11 +2,11 @@ import { Command } from "commander";
 import { checkbox } from "@inquirer/prompts";
 import { existsSync, mkdirSync, writeFileSync } from "fs";
 import { createHash } from "crypto";
-import { isInitialized } from "../lib/config.js";
-import { getInstalled, saveInstalled } from "../lib/installed.js";
-import { getLockfile, saveLockfile } from "../lib/lockfile.js";
-import { AGENTS_DIR, SKILLS_DIR, COMMANDS_DIR } from "../lib/paths.js";
-import { success, error, info, warning, log, newline, colors, spinner, formatArtifact } from "../utils/ui.js";
+import { isInitialized } from "#/lib/config.js";
+import { getInstalled, saveInstalled } from "#/lib/installed.js";
+import { getLockfile, saveLockfile } from "#/lib/lockfile.js";
+import { AGENTS_DIR, SKILLS_DIR, COMMANDS_DIR } from "#/lib/paths.js";
+import { success, error, info, log, newline, colors, spinner, formatArtifact } from "#/utils/ui.js";
 
 // Mock artifacts for testing without registry
 const MOCK_ARTIFACTS: Record<string, MockArtifact> = {

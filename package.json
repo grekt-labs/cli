@@ -6,6 +6,9 @@
   "bin": {
     "grekt": "./src/index.ts"
   },
+  "imports": {
+    "#/*": "./src/*"
+  },
   "scripts": {
     "dev": "bun run src/index.ts",
     "build": "bun build src/index.ts --outdir dist --target node",

@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-// Sync targets
-export const SyncTarget = z.enum(["claude", "cursor", "windsurf"]);
+// Sync targets (extensible via plugins)
+export const SyncTarget = z.enum(["claude", "cursor"]);
 export type SyncTarget = z.infer<typeof SyncTarget>;
 
 // Global config (~/.grekt/config.yaml)

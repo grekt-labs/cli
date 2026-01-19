@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync, copyFileSync } from "fs";
 import { dirname } from "path";
-import type { SyncAdapter, SyncResult, SyncOptions, SyncPreview } from "./interface.js";
-import type { InstalledYaml } from "../schemas/index.js";
+import type { SyncPlugin, SyncResult, SyncOptions, SyncPreview } from "./types.js";
+import type { InstalledYaml } from "#/schemas/index.js";
 import {
   CLAUDE_DIR,
   CLAUDE_AGENTS_DIR,
@@ -9,12 +9,62 @@ import {
   CLAUDE_MD,
   AGENTS_DIR,
   SKILLS_DIR,
-} from "../lib/paths.js";
+} from "#/lib/paths.js";
 
 const GREKT_BLOCK_START = "<!-- GREKT -->";
 const GREKT_BLOCK_END = "<!-- /GREKT -->";
 
-export const claudeAdapter: SyncAdapter = {
+function ensureDir(filepath: string): void {
+  const dir = dirname(filepath);
+  if (!existsSync(dir)) {
+    mkdirSync(dir, { recursive: true });
+  }
+}
+
+function updateClaudeMd(projectRoot: string, installed: InstalledYaml, result: SyncResult): void {
+  const filepath = `${projectRoot}/${CLAUDE_MD}`;
+  const grektBlock = generateGrektBlock(installed);
+
+  if (!existsSync(filepath)) {
+    writeFileSync(filepath, grektBlock, "utf-8");
+    result.created.push(CLAUDE_MD);
+    return;
+  }
+
+  let content = readFileSync(filepath, "utf-8");
+  const startIndex = content.indexOf(GREKT_BLOCK_START);
+  const endIndex = content.indexOf(GREKT_BLOCK_END);
+
+  if (startIndex !== -1 && endIndex !== -1) {
+    content = content.slice(0, startIndex) + grektBlock + content.slice(endIndex + GREKT_BLOCK_END.length);
+  } else {
+    content = content.trimEnd() + "\n\n" + grektBlock;
+  }
+
+  writeFileSync(filepath, content, "utf-8");
+  result.updated.push(CLAUDE_MD);
+}
+
+function generateGrektBlock(installed: InstalledYaml): string {
+  const agents = Object.keys(installed.agents);
+  const skills = Object.keys(installed.skills);
+
+  let content = `${GREKT_BLOCK_START}\n`;
+  content += `Grekts synced. See .claude/agents/ and .claude/skills/\n`;
+
+  if (agents.length > 0) {
+    content += `\nAgents: ${agents.join(", ")}\n`;
+  }
+  if (skills.length > 0) {
+    content += `Skills: ${skills.join(", ")}\n`;
+  }
+
+  content += `${GREKT_BLOCK_END}`;
+  return content;
+}
+
+export const claudePlugin: SyncPlugin = {
+  id: "claude",
   name: "Claude",
   targetFile: CLAUDE_DIR,
 
@@ -51,8 +101,9 @@ export const claudeAdapter: SyncAdapter = {
 
       if (existsSync(source)) {
         ensureDir(target);
+        const existed = existsSync(target);
         copyFileSync(source, target);
-        if (existsSync(target)) {
+        if (existed) {
           result.updated.push(`${CLAUDE_AGENTS_DIR}/${agent.file}`);
         } else {
           result.created.push(`${CLAUDE_AGENTS_DIR}/${agent.file}`);
@@ -69,8 +120,9 @@ export const claudeAdapter: SyncAdapter = {
 
       if (existsSync(source)) {
         ensureDir(target);
+        const existed = existsSync(target);
         copyFileSync(source, target);
-        if (existsSync(target)) {
+        if (existed) {
           result.updated.push(`${CLAUDE_SKILLS_DIR}/${skill.file}`);
         } else {
           result.created.push(`${CLAUDE_SKILLS_DIR}/${skill.file}`);
@@ -89,12 +141,10 @@ export const claudeAdapter: SyncAdapter = {
   preview(installed: InstalledYaml, projectRoot: string): SyncPreview {
     const preview: SyncPreview = { willCreate: [], willUpdate: [], willSkip: [] };
 
-    // Check directories
     if (!existsSync(`${projectRoot}/${CLAUDE_DIR}`)) {
       preview.willCreate.push(CLAUDE_DIR);
     }
 
-    // Check agents
     for (const [name, agent] of Object.entries(installed.agents)) {
       const source = `${projectRoot}/${AGENTS_DIR}/${agent.file}`;
       const target = `${projectRoot}/${CLAUDE_AGENTS_DIR}/${agent.file}`;
@@ -108,7 +158,6 @@ export const claudeAdapter: SyncAdapter = {
       }
     }
 
-    // Check skills
     for (const [name, skill] of Object.entries(installed.skills)) {
       const source = `${projectRoot}/${SKILLS_DIR}/${skill.file}`;
       const target = `${projectRoot}/${CLAUDE_SKILLS_DIR}/${skill.file}`;
@@ -122,7 +171,6 @@ export const claudeAdapter: SyncAdapter = {
       }
     }
 
-    // CLAUDE.md
     if (!existsSync(`${projectRoot}/${CLAUDE_MD}`)) {
       preview.willCreate.push(CLAUDE_MD);
     } else {
@@ -133,55 +181,4 @@ export const claudeAdapter: SyncAdapter = {
   },
 };
 
-function ensureDir(filepath: string): void {
-  const dir = dirname(filepath);
-  if (!existsSync(dir)) {
-    mkdirSync(dir, { recursive: true });
-  }
-}
-
-function updateClaudeMd(projectRoot: string, installed: InstalledYaml, result: SyncResult): void {
-  const filepath = `${projectRoot}/${CLAUDE_MD}`;
-  const grektBlock = generateGrektBlock(installed);
-
-  if (!existsSync(filepath)) {
-    // Create new file
-    writeFileSync(filepath, grektBlock, "utf-8");
-    result.created.push(CLAUDE_MD);
-    return;
-  }
-
-  // Update existing file
-  let content = readFileSync(filepath, "utf-8");
-  const startIndex = content.indexOf(GREKT_BLOCK_START);
-  const endIndex = content.indexOf(GREKT_BLOCK_END);
-
-  if (startIndex !== -1 && endIndex !== -1) {
-    // Replace existing block
-    content = content.slice(0, startIndex) + grektBlock + content.slice(endIndex + GREKT_BLOCK_END.length);
-  } else {
-    // Append block
-    content = content.trimEnd() + "\n\n" + grektBlock;
-  }
-
-  writeFileSync(filepath, content, "utf-8");
-  result.updated.push(CLAUDE_MD);
-}
-
-function generateGrektBlock(installed: InstalledYaml): string {
-  const agents = Object.keys(installed.agents);
-  const skills = Object.keys(installed.skills);
-
-  let content = `${GREKT_BLOCK_START}\n`;
-  content += `Grekts synced. See .claude/agents/ and .claude/skills/\n`;
-
-  if (agents.length > 0) {
-    content += `\nAgents: ${agents.join(", ")}\n`;
-  }
-  if (skills.length > 0) {
-    content += `Skills: ${skills.join(", ")}\n`;
-  }
-
-  content += `${GREKT_BLOCK_END}`;
-  return content;
-}
+export default claudePlugin;

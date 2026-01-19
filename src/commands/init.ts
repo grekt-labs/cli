@@ -1,18 +1,18 @@
 import { Command } from "commander";
 import { existsSync, mkdirSync } from "fs";
 import { checkbox } from "@inquirer/prompts";
-import { isInitialized, setProjectConfig } from "../lib/config.js";
-import { saveInstalled, createEmptyInstalled } from "../lib/installed.js";
-import { saveLockfile, createEmptyLockfile } from "../lib/lockfile.js";
+import { isInitialized, setProjectConfig } from "#/lib/config.js";
+import { saveInstalled, createEmptyInstalled } from "#/lib/installed.js";
+import { saveLockfile, createEmptyLockfile } from "#/lib/lockfile.js";
 import {
   PROJECT_CONFIG_DIR,
   GREKTS_DIR,
   AGENTS_DIR,
   SKILLS_DIR,
   COMMANDS_DIR,
-} from "../lib/paths.js";
-import { success, error, info, warning, newline } from "../utils/ui.js";
-import type { SyncTarget } from "../schemas/index.js";
+} from "#/lib/paths.js";
+import { success, info, warning, newline } from "#/utils/ui.js";
+import type { SyncTarget } from "#/schemas/index.js";
 
 export const initCommand = new Command("init")
   .description("Initialize grekt in the current directory")
@@ -38,7 +38,6 @@ export const initCommand = new Command("init")
         choices: [
           { name: "Claude", value: "claude", checked: true },
           { name: "Cursor", value: "cursor" },
-          { name: "Windsurf", value: "windsurf" },
         ],
       });
 
