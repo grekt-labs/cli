@@ -1,0 +1,30 @@
+{
+  "name": "grekt",
+  "version": "0.1.0",
+  "description": "CLI for managing AI artifacts (agents, skills, commands)",
+  "type": "module",
+  "bin": {
+    "grekt": "./src/index.ts"
+  },
+  "scripts": {
+    "dev": "bun run src/index.ts",
+    "build": "bun build src/index.ts --outdir dist --target node",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "commander": "^12.1.0",
+    "@inquirer/prompts": "^7.2.0",
+    "yaml": "^2.6.1",
+    "zod": "^3.24.1",
+    "chalk": "^5.4.1",
+    "ora": "^8.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "license": "MIT"
+}
