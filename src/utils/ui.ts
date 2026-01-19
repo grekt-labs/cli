@@ -17,7 +17,7 @@ export const symbols = {
   success: chalk.green("✓"),
   error: chalk.red("✗"),
   warning: chalk.yellow("⚠"),
-  info: chalk.blue("ℹ"),
+  info: chalk.blue("i"),
   arrow: chalk.dim("→"),
   bullet: chalk.dim("•"),
 };
