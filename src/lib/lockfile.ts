@@ -26,7 +26,7 @@ export function saveLockfile(data: Lockfile, projectRoot: string = process.cwd()
 export function createEmptyLockfile(): Lockfile {
   return {
     version: 1,
-    artifacts: {},
+    packages: {},
   };
 }
 

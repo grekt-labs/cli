@@ -1,13 +1,14 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync, copyFileSync } from "fs";
-import { dirname, join } from "path";
+import { dirname, join, basename } from "path";
 import type { SyncPlugin, SyncResult, SyncOptions, SyncPreview } from "./types";
 import type { InstalledYaml } from "#/schemas/index";
-import { AGENTS_DIR, SKILLS_DIR } from "#/lib/paths";
+import { GREKTS_DIR } from "#/lib/paths";
 
-// Target paths (where artifacts sync to)
+// Target paths (where packages sync to)
 const TARGET_DIR = ".claude";
 const TARGET_AGENTS_DIR = join(TARGET_DIR, "agents");
 const TARGET_SKILLS_DIR = join(TARGET_DIR, "skills");
+const TARGET_COMMANDS_DIR = join(TARGET_DIR, "commands");
 const TARGET_README = join(TARGET_DIR, "CLAUDE.md");
 
 const GREKT_BLOCK_START = "<!-- GREKT -->";
@@ -25,6 +26,7 @@ function updateReadme(projectRoot: string, installed: InstalledYaml, result: Syn
   const grektBlock = generateGrektBlock(installed);
 
   if (!existsSync(filepath)) {
+    ensureDir(filepath);
     writeFileSync(filepath, grektBlock, "utf-8");
     result.created.push(TARGET_README);
     return;
@@ -45,17 +47,13 @@ function updateReadme(projectRoot: string, installed: InstalledYaml, result: Syn
 }
 
 function generateGrektBlock(installed: InstalledYaml): string {
-  const agents = Object.keys(installed.agents);
-  const skills = Object.keys(installed.skills);
+  const packages = Object.keys(installed.packages);
 
   let content = `${GREKT_BLOCK_START}\n`;
-  content += `Grekts synced. See ${TARGET_AGENTS_DIR}/ and ${TARGET_SKILLS_DIR}/\n`;
+  content += `Grekt packages installed. See \`${GREKTS_DIR}/installed.yaml\` for details.\n`;
 
-  if (agents.length > 0) {
-    content += `\nAgents: ${agents.join(", ")}\n`;
-  }
-  if (skills.length > 0) {
-    content += `Skills: ${skills.join(", ")}\n`;
+  if (packages.length > 0) {
+    content += `\nPackages: ${packages.join(", ")}\n`;
   }
 
   content += `${GREKT_BLOCK_END}`;
@@ -84,50 +82,76 @@ export const claudePlugin: SyncPlugin = {
     }
 
     // Create target directories
-    const dirs = [TARGET_DIR, TARGET_AGENTS_DIR, TARGET_SKILLS_DIR];
+    const dirs = [TARGET_DIR, TARGET_AGENTS_DIR, TARGET_SKILLS_DIR, TARGET_COMMANDS_DIR];
     for (const dir of dirs) {
       const fullPath = `${projectRoot}/${dir}`;
       if (!existsSync(fullPath)) {
         mkdirSync(fullPath, { recursive: true });
-        result.created.push(dir);
       }
     }
 
-    // Copy agents
-    for (const [name, agent] of Object.entries(installed.agents)) {
-      const source = `${projectRoot}/${AGENTS_DIR}/${agent.file}`;
-      const target = `${projectRoot}/${TARGET_AGENTS_DIR}/${agent.file}`;
+    // Sync each package
+    for (const [packageId, pkg] of Object.entries(installed.packages)) {
+      const packageDir = `${projectRoot}/${GREKTS_DIR}/${packageId}`;
 
-      if (existsSync(source)) {
-        ensureDir(target);
-        const existed = existsSync(target);
-        copyFileSync(source, target);
-        if (existed) {
-          result.updated.push(`${TARGET_AGENTS_DIR}/${agent.file}`);
+      // Copy agent
+      if (pkg.agent) {
+        const source = join(packageDir, pkg.agent);
+        const targetName = `${packageId.replace("/", "-")}.md`;
+        const target = `${projectRoot}/${TARGET_AGENTS_DIR}/${targetName}`;
+
+        if (existsSync(source)) {
+          ensureDir(target);
+          const existed = existsSync(target);
+          copyFileSync(source, target);
+          if (existed) {
+            result.updated.push(`${TARGET_AGENTS_DIR}/${targetName}`);
+          } else {
+            result.created.push(`${TARGET_AGENTS_DIR}/${targetName}`);
+          }
         } else {
-          result.created.push(`${TARGET_AGENTS_DIR}/${agent.file}`);
+          result.skipped.push(`${packageId}/agent (source not found)`);
         }
-      } else {
-        result.skipped.push(`${name} (source not found)`);
       }
-    }
 
-    // Copy skills
-    for (const [name, skill] of Object.entries(installed.skills)) {
-      const source = `${projectRoot}/${SKILLS_DIR}/${skill.file}`;
-      const target = `${projectRoot}/${TARGET_SKILLS_DIR}/${skill.file}`;
+      // Copy skills
+      for (const skillPath of pkg.skills) {
+        const source = join(packageDir, skillPath);
+        const skillName = basename(skillPath);
+        const target = `${projectRoot}/${TARGET_SKILLS_DIR}/${skillName}`;
 
-      if (existsSync(source)) {
-        ensureDir(target);
-        const existed = existsSync(target);
-        copyFileSync(source, target);
-        if (existed) {
-          result.updated.push(`${TARGET_SKILLS_DIR}/${skill.file}`);
+        if (existsSync(source)) {
+          ensureDir(target);
+          const existed = existsSync(target);
+          copyFileSync(source, target);
+          if (existed) {
+            result.updated.push(`${TARGET_SKILLS_DIR}/${skillName}`);
+          } else {
+            result.created.push(`${TARGET_SKILLS_DIR}/${skillName}`);
+          }
         } else {
-          result.created.push(`${TARGET_SKILLS_DIR}/${skill.file}`);
+          result.skipped.push(`${packageId}/${skillPath} (source not found)`);
         }
-      } else {
-        result.skipped.push(`${name} (source not found)`);
+      }
+
+      // Copy commands
+      for (const cmdPath of pkg.commands) {
+        const source = join(packageDir, cmdPath);
+        const cmdName = basename(cmdPath);
+        const target = `${projectRoot}/${TARGET_COMMANDS_DIR}/${cmdName}`;
+
+        if (existsSync(source)) {
+          ensureDir(target);
+          const existed = existsSync(target);
+          copyFileSync(source, target);
+          if (existed) {
+            result.updated.push(`${TARGET_COMMANDS_DIR}/${cmdName}`);
+          } else {
+            result.created.push(`${TARGET_COMMANDS_DIR}/${cmdName}`);
+          }
+        } else {
+          result.skipped.push(`${packageId}/${cmdPath} (source not found)`);
+        }
       }
     }
 
@@ -144,29 +168,49 @@ export const claudePlugin: SyncPlugin = {
       preview.willCreate.push(TARGET_DIR);
     }
 
-    for (const [name, agent] of Object.entries(installed.agents)) {
-      const source = `${projectRoot}/${AGENTS_DIR}/${agent.file}`;
-      const target = `${projectRoot}/${TARGET_AGENTS_DIR}/${agent.file}`;
+    for (const [packageId, pkg] of Object.entries(installed.packages)) {
+      const packageDir = `${projectRoot}/${GREKTS_DIR}/${packageId}`;
 
-      if (!existsSync(source)) {
-        preview.willSkip.push(`${name} (source not found)`);
-      } else if (existsSync(target)) {
-        preview.willUpdate.push(`${TARGET_AGENTS_DIR}/${agent.file}`);
-      } else {
-        preview.willCreate.push(`${TARGET_AGENTS_DIR}/${agent.file}`);
+      if (pkg.agent) {
+        const source = join(packageDir, pkg.agent);
+        const targetName = `${packageId.replace("/", "-")}.md`;
+        const target = `${projectRoot}/${TARGET_AGENTS_DIR}/${targetName}`;
+
+        if (!existsSync(source)) {
+          preview.willSkip.push(`${packageId}/agent (source not found)`);
+        } else if (existsSync(target)) {
+          preview.willUpdate.push(`${TARGET_AGENTS_DIR}/${targetName}`);
+        } else {
+          preview.willCreate.push(`${TARGET_AGENTS_DIR}/${targetName}`);
+        }
       }
-    }
 
-    for (const [name, skill] of Object.entries(installed.skills)) {
-      const source = `${projectRoot}/${SKILLS_DIR}/${skill.file}`;
-      const target = `${projectRoot}/${TARGET_SKILLS_DIR}/${skill.file}`;
+      for (const skillPath of pkg.skills) {
+        const source = join(packageDir, skillPath);
+        const skillName = basename(skillPath);
+        const target = `${projectRoot}/${TARGET_SKILLS_DIR}/${skillName}`;
 
-      if (!existsSync(source)) {
-        preview.willSkip.push(`${name} (source not found)`);
-      } else if (existsSync(target)) {
-        preview.willUpdate.push(`${TARGET_SKILLS_DIR}/${skill.file}`);
-      } else {
-        preview.willCreate.push(`${TARGET_SKILLS_DIR}/${skill.file}`);
+        if (!existsSync(source)) {
+          preview.willSkip.push(`${packageId}/${skillPath} (source not found)`);
+        } else if (existsSync(target)) {
+          preview.willUpdate.push(`${TARGET_SKILLS_DIR}/${skillName}`);
+        } else {
+          preview.willCreate.push(`${TARGET_SKILLS_DIR}/${skillName}`);
+        }
+      }
+
+      for (const cmdPath of pkg.commands) {
+        const source = join(packageDir, cmdPath);
+        const cmdName = basename(cmdPath);
+        const target = `${projectRoot}/${TARGET_COMMANDS_DIR}/${cmdName}`;
+
+        if (!existsSync(source)) {
+          preview.willSkip.push(`${packageId}/${cmdPath} (source not found)`);
+        } else if (existsSync(target)) {
+          preview.willUpdate.push(`${TARGET_COMMANDS_DIR}/${cmdName}`);
+        } else {
+          preview.willCreate.push(`${TARGET_COMMANDS_DIR}/${cmdName}`);
+        }
       }
     }
 

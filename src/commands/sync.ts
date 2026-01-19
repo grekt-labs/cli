@@ -43,11 +43,11 @@ export const syncCommand = new Command("sync")
       process.exit(1);
     }
 
-    const hasArtifacts = Object.keys(installed.agents).length > 0 || Object.keys(installed.skills).length > 0;
+    const hasPackages = Object.keys(installed.packages).length > 0;
 
-    if (!hasArtifacts) {
-      info("No artifacts installed yet");
-      info("Run 'grekt add <artifact>' to install artifacts first");
+    if (!hasPackages) {
+      info("No packages installed yet");
+      info("Run 'grekt add <package>' to install packages first");
       return;
     }
 

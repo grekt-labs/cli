@@ -5,13 +5,7 @@ import { isInitialized, setProjectConfig } from "#/lib/config";
 import { saveInstalled, createEmptyInstalled } from "#/lib/installed";
 import { saveLockfile, createEmptyLockfile } from "#/lib/lockfile";
 import { getPluginChoices, getDefaultTarget } from "#/lib/plugins";
-import {
-  PROJECT_CONFIG_DIR,
-  GREKTS_DIR,
-  AGENTS_DIR,
-  SKILLS_DIR,
-  COMMANDS_DIR,
-} from "#/lib/paths";
+import { PROJECT_CONFIG_DIR, GREKTS_DIR } from "#/lib/paths";
 import { success, info, warning, newline } from "#/utils/ui";
 
 export const initCommand = new Command("init")
@@ -54,13 +48,7 @@ export const initCommand = new Command("init")
     }
 
     // Create directories
-    const dirs = [
-      PROJECT_CONFIG_DIR,
-      GREKTS_DIR,
-      AGENTS_DIR,
-      SKILLS_DIR,
-      COMMANDS_DIR,
-    ];
+    const dirs = [PROJECT_CONFIG_DIR, GREKTS_DIR];
 
     for (const dir of dirs) {
       const fullPath = `${projectRoot}/${dir}`;
