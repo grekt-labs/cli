@@ -59,7 +59,7 @@ export const InstalledSkillSchema = z.object({
 
 export const InstalledCommandSchema = z.object({
   description: z.string().optional(),
-  file: z.string(),
+  file: z.string().optional(),
   agent: z.string().optional(),
   alias: z.string().optional(),
 });
