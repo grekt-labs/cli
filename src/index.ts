@@ -3,6 +3,7 @@
 import { Command } from "commander";
 import { initCommand } from "./commands/init.js";
 import { configCommand } from "./commands/config.js";
+import { syncCommand } from "./commands/sync.js";
 
 const program = new Command();
 
@@ -13,5 +14,6 @@ program
 
 program.addCommand(initCommand);
 program.addCommand(configCommand);
+program.addCommand(syncCommand);
 
 program.parse();
