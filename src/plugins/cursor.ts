@@ -1,7 +1,10 @@
 import { existsSync, readFileSync, writeFileSync } from "fs";
-import type { SyncPlugin, SyncResult, SyncOptions, SyncPreview } from "./types.js";
-import type { InstalledYaml } from "#/schemas/index.js";
-import { CURSOR_RULES_FILE, INSTALLED_FILE } from "#/lib/paths.js";
+import type { SyncPlugin, SyncResult, SyncOptions, SyncPreview } from "./types";
+import type { InstalledYaml } from "#/schemas/index";
+import { INSTALLED_FILE } from "#/lib/paths";
+
+// Target paths (where artifacts sync to)
+const TARGET_FILE = ".cursorrules";
 
 const GREKT_BLOCK_START = "<!-- GREKT -->";
 const GREKT_BLOCK_END = "<!-- /GREKT -->";
@@ -17,10 +20,10 @@ ${GREKT_BLOCK_END}`;
 export const cursorPlugin: SyncPlugin = {
   id: "cursor",
   name: "Cursor",
-  targetFile: CURSOR_RULES_FILE,
+  targetFile: TARGET_FILE,
 
   targetExists(projectRoot: string): boolean {
-    return existsSync(`${projectRoot}/${CURSOR_RULES_FILE}`);
+    return existsSync(`${projectRoot}/${TARGET_FILE}`);
   },
 
   async sync(installed: InstalledYaml, projectRoot: string, options: SyncOptions): Promise<SyncResult> {
@@ -35,16 +38,16 @@ export const cursorPlugin: SyncPlugin = {
       };
     }
 
-    const filepath = `${projectRoot}/${CURSOR_RULES_FILE}`;
+    const filepath = `${projectRoot}/${TARGET_FILE}`;
     const grektBlock = generateGrektBlock();
 
     if (!existsSync(filepath)) {
       if (!options.createTarget) {
-        result.skipped.push(`${CURSOR_RULES_FILE} (file doesn't exist)`);
+        result.skipped.push(`${TARGET_FILE} (file doesn't exist)`);
         return result;
       }
       writeFileSync(filepath, grektBlock, "utf-8");
-      result.created.push(CURSOR_RULES_FILE);
+      result.created.push(TARGET_FILE);
       return result;
     }
 
@@ -59,16 +62,16 @@ export const cursorPlugin: SyncPlugin = {
     }
 
     writeFileSync(filepath, content, "utf-8");
-    result.updated.push(CURSOR_RULES_FILE);
+    result.updated.push(TARGET_FILE);
     return result;
   },
 
   preview(installed: InstalledYaml, projectRoot: string): SyncPreview {
-    const filepath = `${projectRoot}/${CURSOR_RULES_FILE}`;
+    const filepath = `${projectRoot}/${TARGET_FILE}`;
 
     if (!existsSync(filepath)) {
       return {
-        willCreate: [CURSOR_RULES_FILE],
+        willCreate: [TARGET_FILE],
         willUpdate: [],
         willSkip: [],
       };
@@ -76,7 +79,7 @@ export const cursorPlugin: SyncPlugin = {
 
     return {
       willCreate: [],
-      willUpdate: [CURSOR_RULES_FILE],
+      willUpdate: [TARGET_FILE],
       willSkip: [],
     };
   },

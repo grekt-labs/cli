@@ -1,4 +1,4 @@
-import type { InstalledYaml } from "#/schemas/index.js";
+import type { InstalledYaml } from "#/schemas/index";
 
 export interface SyncResult {
   created: string[];

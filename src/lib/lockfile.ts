@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import { parse, stringify } from "yaml";
-import { LockfileSchema, type Lockfile } from "#/schemas/index.js";
-import { LOCKFILE } from "#/lib/paths.js";
+import { LockfileSchema, type Lockfile } from "#/schemas/index";
+import { LOCKFILE } from "#/lib/paths";
 
 export function getLockfilePath(projectRoot: string = process.cwd()): string {
   return `${projectRoot}/${LOCKFILE}`;

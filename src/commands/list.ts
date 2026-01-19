@@ -1,8 +1,8 @@
 import { Command } from "commander";
-import { isInitialized } from "#/lib/config.js";
-import { getInstalled } from "#/lib/installed.js";
-import { getLockfile } from "#/lib/lockfile.js";
-import { error, info, log, colors, newline } from "#/utils/ui.js";
+import { isInitialized } from "#/lib/config";
+import { getInstalled } from "#/lib/installed";
+import { getLockfile } from "#/lib/lockfile";
+import { error, info, log, colors, newline } from "#/utils/ui";
 
 export const listCommand = new Command("list")
   .alias("ls")

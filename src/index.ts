@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
 import { Command } from "commander";
-import { initCommand } from "#/commands/init.js";
-import { configCommand } from "#/commands/config.js";
-import { syncCommand } from "#/commands/sync.js";
-import { listCommand } from "#/commands/list.js";
-import { addCommand } from "#/commands/add.js";
+import { initCommand } from "#/commands/init";
+import { configCommand } from "#/commands/config";
+import { syncCommand } from "#/commands/sync";
+import { listCommand } from "#/commands/list";
+import { addCommand } from "#/commands/add";
 
 const program = new Command();
 

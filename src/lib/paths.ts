@@ -18,14 +18,5 @@ export const AGENTS_DIR = join(GREKTS_DIR, "agents");
 export const SKILLS_DIR = join(GREKTS_DIR, "skills");
 export const COMMANDS_DIR = join(GREKTS_DIR, "commands");
 
-// Sync targets
-export const CLAUDE_DIR = ".claude";
-export const CLAUDE_AGENTS_DIR = join(CLAUDE_DIR, "agents");
-export const CLAUDE_SKILLS_DIR = join(CLAUDE_DIR, "skills");
-export const CLAUDE_MD = join(CLAUDE_DIR, "CLAUDE.md");
-
-export const CURSOR_RULES_FILE = ".cursorrules";
-export const WINDSURF_RULES_FILE = ".windsurfrules";
-
 // Default registry
 export const DEFAULT_REGISTRY = "https://registry.grekt.com";

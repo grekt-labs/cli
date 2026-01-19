@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import { parse, stringify } from "yaml";
-import { InstalledYamlSchema, type InstalledYaml } from "#/schemas/index.js";
-import { INSTALLED_FILE, AGENTS_DIR, SKILLS_DIR, COMMANDS_DIR } from "#/lib/paths.js";
+import { InstalledYamlSchema, type InstalledYaml } from "#/schemas/index";
+import { INSTALLED_FILE, AGENTS_DIR, SKILLS_DIR, COMMANDS_DIR } from "#/lib/paths";
 
 export function getInstalledPath(projectRoot: string = process.cwd()): string {
   return `${projectRoot}/${INSTALLED_FILE}`;

@@ -1,16 +1,15 @@
 import { Command } from "commander";
 import { confirm } from "@inquirer/prompts";
-import { isInitialized, getProjectConfig } from "#/lib/config.js";
-import { getInstalled } from "#/lib/installed.js";
-import { getAdapter } from "#/lib/plugins.js";
-import { success, error, info, warning, log, newline, colors, spinner } from "#/utils/ui.js";
-import type { SyncTarget } from "#/schemas/index.js";
+import { isInitialized, getProjectConfig } from "#/lib/config";
+import { getInstalled } from "#/lib/installed";
+import { getPlugin, getAvailableTargets, validateTargets } from "#/lib/plugins";
+import { success, error, info, warning, log, newline, colors, spinner } from "#/utils/ui";
 
 export const syncCommand = new Command("sync")
   .description("Sync artifacts to AI tools")
   .option("--dry-run", "Preview changes without applying them")
   .option("-f, --force", "Skip confirmation prompts")
-  .option("-t, --target <targets>", "Comma-separated list of targets (claude,cursor)")
+  .option("-t, --target <targets>", "Comma-separated list of targets")
   .action(async (options: { dryRun?: boolean; force?: boolean; target?: string }) => {
     const projectRoot = process.cwd();
 
@@ -24,15 +23,24 @@ export const syncCommand = new Command("sync")
     const installed = getInstalled(projectRoot);
 
     // Determine targets
-    let targets: SyncTarget[] = projectConfig.targets;
+    let targets: string[] = projectConfig.targets;
     if (options.target) {
-      targets = options.target.split(",").map((t) => t.trim()) as SyncTarget[];
+      targets = options.target.split(",").map((t) => t.trim());
     }
 
     if (targets.length === 0) {
       warning("No sync targets configured");
-      info("Run 'grekt config set defaultTargets claude,cursor' or use --target flag");
+      info(`Available targets: ${getAvailableTargets().join(", ")}`);
+      info("Run 'grekt init' to configure targets or use --target flag");
       return;
+    }
+
+    // Validate targets
+    try {
+      validateTargets(targets);
+    } catch (err) {
+      error((err as Error).message);
+      process.exit(1);
     }
 
     const hasArtifacts = Object.keys(installed.agents).length > 0 || Object.keys(installed.skills).length > 0;
@@ -48,10 +56,10 @@ export const syncCommand = new Command("sync")
     }
 
     for (const target of targets) {
-      const adapter = getAdapter(target);
-      log(colors.bold(`\nSyncing ${adapter.name}...`));
+      const plugin = getPlugin(target);
+      log(colors.bold(`\nSyncing ${plugin.name}...`));
 
-      const targetExists = adapter.targetExists(projectRoot);
+      const targetExists = plugin.targetExists(projectRoot);
 
       // Ask to create target if it doesn't exist
       let createTarget = false;
@@ -60,20 +68,20 @@ export const syncCommand = new Command("sync")
           createTarget = true;
         } else {
           createTarget = await confirm({
-            message: `${adapter.targetFile} doesn't exist. Create it?`,
+            message: `${plugin.targetFile} doesn't exist. Create it?`,
             default: true,
           });
         }
 
         if (!createTarget) {
-          info(`Skipping ${adapter.name}`);
+          info(`Skipping ${plugin.name}`);
           continue;
         }
       }
 
       // Preview or sync
       if (options.dryRun) {
-        const preview = adapter.preview(installed, projectRoot);
+        const preview = plugin.preview(installed, projectRoot);
 
         if (preview.willCreate.length > 0) {
           log(colors.dim("  Would create:"));
@@ -96,10 +104,10 @@ export const syncCommand = new Command("sync")
           }
         }
       } else {
-        const spin = spinner(`Syncing ${adapter.name}...`);
+        const spin = spinner(`Syncing ${plugin.name}...`);
         spin.start();
 
-        const result = await adapter.sync(installed, projectRoot, {
+        const result = await plugin.sync(installed, projectRoot, {
           createTarget,
           force: options.force,
         });

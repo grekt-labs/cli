@@ -1,18 +1,18 @@
 import { Command } from "commander";
 import { existsSync, mkdirSync } from "fs";
 import { checkbox } from "@inquirer/prompts";
-import { isInitialized, setProjectConfig } from "#/lib/config.js";
-import { saveInstalled, createEmptyInstalled } from "#/lib/installed.js";
-import { saveLockfile, createEmptyLockfile } from "#/lib/lockfile.js";
+import { isInitialized, setProjectConfig } from "#/lib/config";
+import { saveInstalled, createEmptyInstalled } from "#/lib/installed";
+import { saveLockfile, createEmptyLockfile } from "#/lib/lockfile";
+import { getPluginChoices, getDefaultTarget } from "#/lib/plugins";
 import {
   PROJECT_CONFIG_DIR,
   GREKTS_DIR,
   AGENTS_DIR,
   SKILLS_DIR,
   COMMANDS_DIR,
-} from "#/lib/paths.js";
-import { success, info, warning, newline } from "#/utils/ui.js";
-import type { SyncTarget } from "#/schemas/index.js";
+} from "#/lib/paths";
+import { success, info, warning, newline } from "#/utils/ui";
 
 export const initCommand = new Command("init")
   .description("Initialize grekt in the current directory")
@@ -29,21 +29,27 @@ export const initCommand = new Command("init")
     info("Initializing grekt...");
     newline();
 
+    // Get available plugins
+    const pluginChoices = getPluginChoices();
+    const defaultTarget = getDefaultTarget();
+
     // Select targets
-    let targets: SyncTarget[] = ["claude"];
+    let targets: string[] = [defaultTarget];
 
     if (!options.yes) {
-      targets = await checkbox<SyncTarget>({
+      const choices = pluginChoices.map((choice, index) => ({
+        ...choice,
+        checked: index === 0, // First plugin checked by default
+      }));
+
+      targets = await checkbox<string>({
         message: "Select AI tools to sync with:",
-        choices: [
-          { name: "Claude", value: "claude", checked: true },
-          { name: "Cursor", value: "cursor" },
-        ],
+        choices,
       });
 
       if (targets.length === 0) {
-        targets = ["claude"];
-        info("No targets selected, defaulting to Claude");
+        targets = [defaultTarget];
+        info(`No targets selected, defaulting to ${pluginChoices[0]?.name ?? defaultTarget}`);
       }
     }
 

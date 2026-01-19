@@ -5,9 +5,9 @@ import {
   getProjectConfig,
   isInitialized,
   ensureGlobalConfigDir,
-} from "#/lib/config.js";
-import { success, error, info, log, colors, newline } from "#/utils/ui.js";
-import type { GlobalConfig } from "#/schemas/index.js";
+} from "#/lib/config";
+import { success, error, info, log, colors, newline } from "#/utils/ui";
+import type { GlobalConfig } from "#/schemas/index";
 
 const VALID_KEYS: (keyof GlobalConfig)[] = [
   "registry",

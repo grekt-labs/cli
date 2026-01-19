@@ -1,21 +1,20 @@
 import { z } from "zod";
 
-// Sync targets (extensible via plugins)
-export const SyncTarget = z.enum(["claude", "cursor"]);
-export type SyncTarget = z.infer<typeof SyncTarget>;
+// Sync targets (validated at runtime against registered plugins)
+export type SyncTarget = string;
 
 // Global config (~/.grekt/config.yaml)
 export const GlobalConfigSchema = z.object({
   registry: z.string().url().default("https://registry.grekt.com"),
   telemetry: z.boolean().default(true),
-  defaultTargets: z.array(SyncTarget).default(["claude"]),
+  defaultTargets: z.array(z.string()).default([]),
   autoSync: z.boolean().default(false),
 });
 export type GlobalConfig = z.infer<typeof GlobalConfigSchema>;
 
 // Project config (.grekt/config.yaml)
 export const ProjectConfigSchema = z.object({
-  targets: z.array(SyncTarget).default(["claude"]),
+  targets: z.array(z.string()).default([]),
   grektsDir: z.string().default("grekts"),
 });
 export type ProjectConfig = z.infer<typeof ProjectConfigSchema>;
