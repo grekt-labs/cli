@@ -1,0 +1,88 @@
+import { existsSync, readFileSync, writeFileSync } from "fs";
+import type { SyncPlugin, SyncResult, SyncOptions, SyncPreview } from "./types";
+import type { InstalledYaml } from "#/schemas/index";
+import { INSTALLED_FILE } from "#/lib/paths";
+
+// Target paths (where artifacts sync to)
+const TARGET_FILE = ".cursorrules";
+
+const GREKT_BLOCK_START = "<!-- GREKT -->";
+const GREKT_BLOCK_END = "<!-- /GREKT -->";
+
+function generateGrektBlock(): string {
+  return `${GREKT_BLOCK_START}
+This project uses grekt. Configuration in \`${INSTALLED_FILE}\`.
+
+If the user uses a command (e.g., /review), check \`${INSTALLED_FILE}\` to see if it exists and execute the instructions from the corresponding file.
+${GREKT_BLOCK_END}`;
+}
+
+export const cursorPlugin: SyncPlugin = {
+  id: "cursor",
+  name: "Cursor",
+  targetFile: TARGET_FILE,
+
+  targetExists(projectRoot: string): boolean {
+    return existsSync(`${projectRoot}/${TARGET_FILE}`);
+  },
+
+  async sync(installed: InstalledYaml, projectRoot: string, options: SyncOptions): Promise<SyncResult> {
+    const result: SyncResult = { created: [], updated: [], skipped: [] };
+
+    if (options.dryRun) {
+      const preview = this.preview(installed, projectRoot);
+      return {
+        created: preview.willCreate,
+        updated: preview.willUpdate,
+        skipped: preview.willSkip,
+      };
+    }
+
+    const filepath = `${projectRoot}/${TARGET_FILE}`;
+    const grektBlock = generateGrektBlock();
+
+    if (!existsSync(filepath)) {
+      if (!options.createTarget) {
+        result.skipped.push(`${TARGET_FILE} (file doesn't exist)`);
+        return result;
+      }
+      writeFileSync(filepath, grektBlock, "utf-8");
+      result.created.push(TARGET_FILE);
+      return result;
+    }
+
+    let content = readFileSync(filepath, "utf-8");
+    const startIndex = content.indexOf(GREKT_BLOCK_START);
+    const endIndex = content.indexOf(GREKT_BLOCK_END);
+
+    if (startIndex !== -1 && endIndex !== -1) {
+      content = content.slice(0, startIndex) + grektBlock + content.slice(endIndex + GREKT_BLOCK_END.length);
+    } else {
+      content = content.trimEnd() + "\n\n" + grektBlock;
+    }
+
+    writeFileSync(filepath, content, "utf-8");
+    result.updated.push(TARGET_FILE);
+    return result;
+  },
+
+  preview(installed: InstalledYaml, projectRoot: string): SyncPreview {
+    const filepath = `${projectRoot}/${TARGET_FILE}`;
+
+    if (!existsSync(filepath)) {
+      return {
+        willCreate: [TARGET_FILE],
+        willUpdate: [],
+        willSkip: [],
+      };
+    }
+
+    return {
+      willCreate: [],
+      willUpdate: [TARGET_FILE],
+      willSkip: [],
+    };
+  },
+};
+
+export default cursorPlugin;
