@@ -4,7 +4,7 @@ import { isInitialized } from "#/lib/config";
 import { getInstalled, saveInstalled } from "#/lib/installed";
 import { getLockfile, saveLockfile } from "#/lib/lockfile";
 import { GREKTS_DIR } from "#/lib/paths";
-import { isRegistryConfigured, getRegistryUrl, downloadFromRegistry } from "#/lib/registry";
+import { getRegistryUrl, downloadFromRegistry } from "#/lib/registry";
 import { scanArtifact, getArtifactId } from "#/lib/artifact";
 import { hashDirectory, calculateIntegrity, getDirectorySize, formatBytes, estimateTokens } from "#/lib/integrity";
 import { success, error, info, log, warning, newline, colors, spinner } from "#/utils/ui";
@@ -23,14 +23,6 @@ export const addCommand = new Command("add")
       process.exit(1);
     }
 
-    if (!isRegistryConfigured()) {
-      error("Registry not configured");
-      newline();
-      info("Set REGISTRY_URL in your .env file");
-      info("Example: REGISTRY_URL=https://your-registry.example.com");
-      process.exit(1);
-    }
-
     const targetDir = `${projectRoot}/${GREKTS_DIR}/${artifactId}`;
 
     // Check if already installed
@@ -45,7 +37,7 @@ export const addCommand = new Command("add")
 
     // Download artifact from registry
     mkdirSync(targetDir, { recursive: true });
-    const downloaded = await downloadFromRegistry(artifactId, targetDir);
+    const downloaded = await downloadFromRegistry(artifactId, targetDir, projectRoot);
 
     spin.stop();
 
@@ -53,7 +45,7 @@ export const addCommand = new Command("add")
       // Clean up empty directory
       rmSync(targetDir, { recursive: true, force: true });
       error(`Artifact ${colors.highlight(artifactId)} not found in registry`);
-      info(`Registry: ${getRegistryUrl()}`);
+      info(`Registry: ${getRegistryUrl(projectRoot)}`);
       process.exit(1);
     }
 

@@ -1,11 +1,12 @@
 import type { SyncPlugin } from "#/plugins/types";
 import { claudePlugin } from "#/plugins/claude";
 import { cursorPlugin } from "#/plugins/cursor";
+import { opencodePlugin } from "#/plugins/opencode";
 
-// Built-in plugins
 const builtInPlugins: Record<string, SyncPlugin> = {
   claude: claudePlugin,
   cursor: cursorPlugin,
+  opencode: opencodePlugin,
 };
 
 // Registry for all loaded plugins
