@@ -50,12 +50,20 @@ export const GrektYamlSchema = z.object({
 });
 export type GrektYaml = z.infer<typeof GrektYamlSchema>;
 
-// Credentials (~/.grekt/credentials.yaml) - for registry auth
+// Registry credentials (~/.grekt/credentials.yaml) - for publish auth
+export const RegistryCredentialsSchema = z.object({
+  type: z.enum(["s3"]).default("s3"),
+  endpoint: z.string(),
+  accessKeyId: z.string(),
+  secretAccessKey: z.string(),
+  bucket: z.string(),
+  publicUrl: z.string().optional(),
+});
+export type RegistryCredentials = z.infer<typeof RegistryCredentialsSchema>;
+
 export const CredentialsSchema = z.record(
-  z.string(), // registry URL
-  z.object({
-    token: z.string(),
-  })
+  z.string(), // registry URL or name
+  RegistryCredentialsSchema
 );
 export type Credentials = z.infer<typeof CredentialsSchema>;
 
