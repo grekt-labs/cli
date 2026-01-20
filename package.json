@@ -19,20 +19,19 @@
     "build:all": "bun run build:linux && bun run build:mac-arm && bun run build:mac-intel && bun run build:windows",
     "deploy": "bun run scripts/deploy.ts",
     "release": "bun run build:all && bun run deploy",
-    "publish-artifact": "bun run scripts/publish-artifact.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "commander": "^12.1.0",
+    "@aws-sdk/client-s3": "^3.971.0",
     "@inquirer/prompts": "^7.2.0",
-    "gray-matter": "^4.0.3",
-    "yaml": "^2.6.1",
-    "zod": "^3.24.1",
     "chalk": "^5.4.1",
-    "ora": "^8.1.1"
+    "commander": "^12.1.0",
+    "gray-matter": "^4.0.3",
+    "ora": "^8.1.1",
+    "yaml": "^2.6.1",
+    "zod": "^3.24.1"
   },
   "devDependencies": {
-    "@aws-sdk/client-s3": "^3.971.0",
     "@types/node": "^22.10.5",
     "typescript": "^5.7.2"
   },

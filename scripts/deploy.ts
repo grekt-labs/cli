@@ -1,15 +1,8 @@
 #!/usr/bin/env bun
 
-/**
- * Deploy script to upload binaries to object storage
- * Usage:
- *   bun run deploy           # deploys to release/dev/
- *   bun run deploy v0.1.0    # deploys to release/v0.1.0/
- */
-
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { readFileSync, existsSync } from "fs";
-import { basename } from "path";
+import { basename, join } from "path";
 
 const {
   STORAGE_ENDPOINT,
@@ -25,7 +18,9 @@ if (!STORAGE_ENDPOINT || !STORAGE_ACCESS_KEY_ID || !STORAGE_SECRET_ACCESS_KEY ||
   process.exit(1);
 }
 
-const version = process.argv[2] || "dev";
+const isDev = process.argv.includes("--dev");
+const pkg = JSON.parse(readFileSync(join(process.cwd(), "package.json"), "utf-8"));
+const version = isDev ? "dev" : `v${pkg.version}`;
 const releasePrefix = `release/${version}`;
 
 const client = new S3Client({
