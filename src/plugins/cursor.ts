@@ -1,14 +1,6 @@
-import { existsSync, readFileSync, writeFileSync } from "fs";
-import type { SyncPlugin, SyncResult, SyncOptions, SyncPreview } from "./types";
-import type { Lockfile } from "#/schemas/index";
+import { createRulesOnlyPlugin, GREKT_BLOCK_START, GREKT_BLOCK_END } from "./base";
 
-// Target paths (where artifacts sync to)
-const TARGET_FILE = ".cursorrules";
-
-const GREKT_BLOCK_START = "<!-- GREKT -->";
-const GREKT_BLOCK_END = "<!-- /GREKT -->";
-
-function generateGrektBlock(): string {
+function generateRulesContent(): string {
   return `${GREKT_BLOCK_START}
 This project uses grekt. Configuration in \`grekt.yaml\`.
 
@@ -16,72 +8,11 @@ If the user uses a command (e.g., /review), check \`grekt.lock\` to see if it ex
 ${GREKT_BLOCK_END}`;
 }
 
-export const cursorPlugin: SyncPlugin = {
+export const cursorPlugin = createRulesOnlyPlugin({
   id: "cursor",
   name: "Cursor",
-  targetFile: TARGET_FILE,
-
-  targetExists(projectRoot: string): boolean {
-    return existsSync(`${projectRoot}/${TARGET_FILE}`);
-  },
-
-  async sync(lockfile: Lockfile, projectRoot: string, options: SyncOptions): Promise<SyncResult> {
-    const result: SyncResult = { created: [], updated: [], skipped: [] };
-
-    if (options.dryRun) {
-      const preview = this.preview(lockfile, projectRoot);
-      return {
-        created: preview.willCreate,
-        updated: preview.willUpdate,
-        skipped: preview.willSkip,
-      };
-    }
-
-    const filepath = `${projectRoot}/${TARGET_FILE}`;
-    const grektBlock = generateGrektBlock();
-
-    if (!existsSync(filepath)) {
-      if (!options.createTarget) {
-        result.skipped.push(`${TARGET_FILE} (file doesn't exist)`);
-        return result;
-      }
-      writeFileSync(filepath, grektBlock, "utf-8");
-      result.created.push(TARGET_FILE);
-      return result;
-    }
-
-    let content = readFileSync(filepath, "utf-8");
-    const startIndex = content.indexOf(GREKT_BLOCK_START);
-    const endIndex = content.indexOf(GREKT_BLOCK_END);
-
-    if (startIndex !== -1 && endIndex !== -1) {
-      content = content.slice(0, startIndex) + grektBlock + content.slice(endIndex + GREKT_BLOCK_END.length);
-    } else {
-      content = content.trimEnd() + "\n\n" + grektBlock;
-    }
-
-    writeFileSync(filepath, content, "utf-8");
-    result.updated.push(TARGET_FILE);
-    return result;
-  },
-
-  preview(_lockfile: Lockfile, projectRoot: string): SyncPreview {
-    const filepath = `${projectRoot}/${TARGET_FILE}`;
-
-    if (!existsSync(filepath)) {
-      return {
-        willCreate: [TARGET_FILE],
-        willUpdate: [],
-        willSkip: [],
-      };
-    }
-
-    return {
-      willCreate: [],
-      willUpdate: [TARGET_FILE],
-      willSkip: [],
-    };
-  },
-};
+  rulesFile: ".cursorrules",
+  generateRulesContent,
+});
 
 export default cursorPlugin;
