@@ -19,6 +19,7 @@
     "build:all": "bun run build:linux && bun run build:mac-arm && bun run build:mac-intel && bun run build:windows",
     "deploy": "bun run scripts/deploy.ts",
     "release": "bun run build:all && bun run deploy",
+    "publish-artifact": "bun run scripts/publish-artifact.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

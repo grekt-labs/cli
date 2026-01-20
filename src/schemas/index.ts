@@ -25,6 +25,7 @@ export type ArtifactFrontmatter = z.infer<typeof ArtifactFrontmatterSchema>;
 export const ProjectConfigSchema = z.object({
   targets: z.array(z.string()).default([]),
   autoSync: z.boolean().default(false),
+  registry: z.string().optional(),
 });
 export type ProjectConfig = z.infer<typeof ProjectConfigSchema>;
 
@@ -41,7 +42,7 @@ export type Credentials = z.infer<typeof CredentialsSchema>;
 export const LockfileEntrySchema = z.object({
   version: z.string(),
   integrity: z.string(), // SHA256 hash of entire artifact
-  source: z.string().optional(), // e.g., "github:grekt/artifacts"
+  source: z.string().optional(),
   files: z.record(z.string(), z.string()).default({}), // per-file hashes: { "agent.md": "sha256:abc..." }
 });
 
