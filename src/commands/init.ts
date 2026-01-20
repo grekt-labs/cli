@@ -1,11 +1,10 @@
 import { Command } from "commander";
 import { existsSync, mkdirSync } from "fs";
 import { checkbox } from "@inquirer/prompts";
-import { isInitialized, setProjectConfig } from "#/lib/config";
-import { saveInstalled, createEmptyInstalled } from "#/lib/installed";
+import { isInitialized, saveConfig } from "#/lib/config";
 import { saveLockfile, createEmptyLockfile } from "#/lib/lockfile";
 import { getPluginChoices, getDefaultTarget } from "#/lib/plugins";
-import { PROJECT_CONFIG_DIR, GREKTS_DIR } from "#/lib/paths";
+import { GREKT_YAML, GREKT_DIR, ARTIFACTS_DIR } from "#/lib/paths";
 import { success, info, warning, newline } from "#/utils/ui";
 
 export const initCommand = new Command("init")
@@ -47,31 +46,26 @@ export const initCommand = new Command("init")
       }
     }
 
-    // Create directories
-    const dirs = [PROJECT_CONFIG_DIR, GREKTS_DIR];
-
-    for (const dir of dirs) {
-      const fullPath = `${projectRoot}/${dir}`;
-      if (!existsSync(fullPath)) {
-        mkdirSync(fullPath, { recursive: true });
-      }
+    // Create .grekt/artifacts/ directory
+    const artifactsPath = `${projectRoot}/${ARTIFACTS_DIR}`;
+    if (!existsSync(artifactsPath)) {
+      mkdirSync(artifactsPath, { recursive: true });
     }
 
-    // Create project config
-    setProjectConfig({ targets }, projectRoot);
-
-    // Create installed.yaml
-    const installed = createEmptyInstalled();
-    saveInstalled(installed, projectRoot);
+    // Create grekt.yaml
+    saveConfig({
+      targets,
+      autoSync: false,
+      artifacts: {},
+    }, projectRoot);
 
     // Create grekt.lock
     const lockfile = createEmptyLockfile();
     saveLockfile(lockfile, projectRoot);
 
     newline();
-    success(`Created ${PROJECT_CONFIG_DIR}/`);
-    success(`Created ${GREKTS_DIR}/`);
-    success(`Created ${GREKTS_DIR}/installed.yaml`);
+    success(`Created ${GREKT_YAML}`);
+    success(`Created ${GREKT_DIR}/`);
     success("Created grekt.lock");
     newline();
     success("grekt initialized successfully!");

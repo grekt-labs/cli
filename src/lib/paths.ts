@@ -6,13 +6,12 @@ export const GLOBAL_CONFIG_DIR = join(homedir(), ".grekt");
 export const GLOBAL_CREDENTIALS_FILE = join(GLOBAL_CONFIG_DIR, "credentials.yaml");
 
 // Project-level paths (relative to project root)
-export const PROJECT_CONFIG_DIR = ".grekt";
-export const PROJECT_CONFIG_FILE = join(PROJECT_CONFIG_DIR, "config.yaml");
-export const LOCKFILE = "grekt.lock";
+export const GREKT_YAML = "grekt.yaml"; // config + artifact declarations (like package.json)
+export const LOCKFILE = "grekt.lock"; // exact versions + integrity (like package-lock.json)
 
-// Grekts directory (where artifacts are stored as grekts/@scope/name/)
-export const GREKTS_DIR = "grekts";
-export const INSTALLED_FILE = join(GREKTS_DIR, "installed.yaml");
+// Hidden directory for artifacts (gitignored, like node_modules)
+export const GREKT_DIR = ".grekt";
+export const ARTIFACTS_DIR = join(GREKT_DIR, "artifacts");
 
 // Default registry
 export const DEFAULT_REGISTRY = "https://registry.grekt.com";

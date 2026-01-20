@@ -1,7 +1,6 @@
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import type { SyncPlugin, SyncResult, SyncOptions, SyncPreview } from "./types";
-import type { InstalledYaml } from "#/schemas/index";
-import { INSTALLED_FILE } from "#/lib/paths";
+import type { Lockfile } from "#/schemas/index";
 
 // Target paths (where artifacts sync to)
 const TARGET_FILE = ".cursorrules";
@@ -11,9 +10,9 @@ const GREKT_BLOCK_END = "<!-- /GREKT -->";
 
 function generateGrektBlock(): string {
   return `${GREKT_BLOCK_START}
-This project uses grekt. Configuration in \`${INSTALLED_FILE}\`.
+This project uses grekt. Configuration in \`grekt.yaml\`.
 
-If the user uses a command (e.g., /review), check \`${INSTALLED_FILE}\` to see if it exists and execute the instructions from the corresponding file.
+If the user uses a command (e.g., /review), check \`grekt.lock\` to see if it exists and execute the instructions from the corresponding file.
 ${GREKT_BLOCK_END}`;
 }
 
@@ -26,11 +25,11 @@ export const cursorPlugin: SyncPlugin = {
     return existsSync(`${projectRoot}/${TARGET_FILE}`);
   },
 
-  async sync(installed: InstalledYaml, projectRoot: string, options: SyncOptions): Promise<SyncResult> {
+  async sync(lockfile: Lockfile, projectRoot: string, options: SyncOptions): Promise<SyncResult> {
     const result: SyncResult = { created: [], updated: [], skipped: [] };
 
     if (options.dryRun) {
-      const preview = this.preview(installed, projectRoot);
+      const preview = this.preview(lockfile, projectRoot);
       return {
         created: preview.willCreate,
         updated: preview.willUpdate,
@@ -66,7 +65,7 @@ export const cursorPlugin: SyncPlugin = {
     return result;
   },
 
-  preview(installed: InstalledYaml, projectRoot: string): SyncPreview {
+  preview(_lockfile: Lockfile, projectRoot: string): SyncPreview {
     const filepath = `${projectRoot}/${TARGET_FILE}`;
 
     if (!existsSync(filepath)) {

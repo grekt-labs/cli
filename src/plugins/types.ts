@@ -1,4 +1,4 @@
-import type { InstalledYaml } from "#/schemas/index";
+import type { Lockfile } from "#/schemas/index";
 
 export interface SyncResult {
   created: string[];
@@ -32,8 +32,8 @@ export interface SyncPlugin {
   targetExists(projectRoot: string): boolean;
 
   /** Sync artifacts to the target */
-  sync(installed: InstalledYaml, projectRoot: string, options: SyncOptions): Promise<SyncResult>;
+  sync(lockfile: Lockfile, projectRoot: string, options: SyncOptions): Promise<SyncResult>;
 
   /** Preview what would be synced (dry run) */
-  preview(installed: InstalledYaml, projectRoot: string): SyncPreview;
+  preview(lockfile: Lockfile, projectRoot: string): SyncPreview;
 }

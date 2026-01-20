@@ -2,11 +2,10 @@ import { Command } from "commander";
 import { existsSync, rmSync, readdirSync, unlinkSync } from "fs";
 import { basename, join } from "path";
 import { confirm } from "@inquirer/prompts";
-import { isInitialized } from "#/lib/config";
-import { getInstalled, saveInstalled } from "#/lib/installed";
+import { isInitialized, getConfig, saveConfig } from "#/lib/config";
 import { getLockfile, saveLockfile } from "#/lib/lockfile";
-import { GREKTS_DIR } from "#/lib/paths";
-import { success, error, info, log, warning, newline, colors } from "#/utils/ui";
+import { ARTIFACTS_DIR } from "#/lib/paths";
+import { success, error, info, log, newline, colors } from "#/utils/ui";
 
 // Claude target paths
 const CLAUDE_DIR = ".claude";
@@ -37,19 +36,19 @@ export const removeCommand = new Command("remove")
       process.exit(1);
     }
 
-    const installed = getInstalled(projectRoot);
+    const config = getConfig(projectRoot);
     const lockfile = getLockfile(projectRoot);
 
     // Check if artifact is installed
-    if (!installed.artifacts[artifactId]) {
+    if (!lockfile.artifacts[artifactId]) {
       error(`Artifact ${colors.highlight(artifactId)} is not installed`);
       newline();
       info("Run 'grekt list' to see installed artifacts");
       process.exit(1);
     }
 
-    const artifact = installed.artifacts[artifactId];
-    const artifactDir = `${projectRoot}/${GREKTS_DIR}/${artifactId}`;
+    const artifact = lockfile.artifacts[artifactId];
+    const artifactDir = `${projectRoot}/${ARTIFACTS_DIR}/${artifactId}`;
 
     // Show what will be removed
     log(colors.bold("Will remove:"));
@@ -83,10 +82,10 @@ export const removeCommand = new Command("remove")
 
     const removed: string[] = [];
 
-    // Remove from grekts/
+    // Remove from .grekt/artifacts/
     if (existsSync(artifactDir)) {
       rmSync(artifactDir, { recursive: true, force: true });
-      removed.push(`${GREKTS_DIR}/${artifactId}`);
+      removed.push(`${ARTIFACTS_DIR}/${artifactId}`);
     }
 
     // Remove synced files from .claude/
@@ -127,9 +126,9 @@ export const removeCommand = new Command("remove")
       cleanEmptyDir(`${projectRoot}/${CLAUDE_COMMANDS_DIR}`);
     }
 
-    // Update installed.yaml
-    delete installed.artifacts[artifactId];
-    saveInstalled(installed, projectRoot);
+    // Update grekt.yaml
+    delete config.artifacts[artifactId];
+    saveConfig(config, projectRoot);
 
     // Update lockfile
     delete lockfile.artifacts[artifactId];

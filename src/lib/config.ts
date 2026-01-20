@@ -2,16 +2,15 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync, chmodSync } from "f
 import { dirname } from "path";
 import { parse, stringify } from "yaml";
 import {
-  ProjectConfigSchema,
+  GrektYamlSchema,
   CredentialsSchema,
-  type ProjectConfig,
+  type GrektYaml,
   type Credentials,
 } from "#/schemas/index";
 import {
   GLOBAL_CONFIG_DIR,
   GLOBAL_CREDENTIALS_FILE,
-  PROJECT_CONFIG_DIR,
-  PROJECT_CONFIG_FILE,
+  GREKT_YAML,
 } from "#/lib/paths";
 
 function ensureDir(filepath: string): void {
@@ -38,24 +37,22 @@ function writeYaml(filepath: string, data: unknown, secure = false): void {
   }
 }
 
-// Project config
-export function getProjectConfig(projectRoot: string = process.cwd()): ProjectConfig {
-  const filepath = `${projectRoot}/${PROJECT_CONFIG_FILE}`;
+// Project config (grekt.yaml)
+export function getConfig(projectRoot: string = process.cwd()): GrektYaml {
+  const filepath = `${projectRoot}/${GREKT_YAML}`;
   const raw = readYaml(filepath, {});
-  return ProjectConfigSchema.parse(raw);
+  return GrektYamlSchema.parse(raw);
 }
 
-export function setProjectConfig(config: Partial<ProjectConfig>, projectRoot: string = process.cwd()): void {
-  const filepath = `${projectRoot}/${PROJECT_CONFIG_FILE}`;
-  const current = existsSync(filepath) ? getProjectConfig(projectRoot) : {};
-  const merged = { ...current, ...config };
-  writeYaml(filepath, merged);
+export function saveConfig(config: GrektYaml, projectRoot: string = process.cwd()): void {
+  const filepath = `${projectRoot}/${GREKT_YAML}`;
+  writeYaml(filepath, config);
 }
 
-export function setProjectConfigValue(key: keyof ProjectConfig, value: unknown, projectRoot: string = process.cwd()): void {
-  const current = getProjectConfig(projectRoot);
+export function setConfigValue(key: keyof GrektYaml, value: unknown, projectRoot: string = process.cwd()): void {
+  const current = getConfig(projectRoot);
   (current as Record<string, unknown>)[key] = value;
-  setProjectConfig(current, projectRoot);
+  saveConfig(current, projectRoot);
 }
 
 // Credentials (stored globally for registry auth)
@@ -82,9 +79,9 @@ export function removeCredential(registryUrl: string): void {
   writeYaml(GLOBAL_CREDENTIALS_FILE, current, true);
 }
 
-// Check if grekt is initialized in current directory
+// Check if grekt is initialized
 export function isInitialized(projectRoot: string = process.cwd()): boolean {
-  return existsSync(`${projectRoot}/${PROJECT_CONFIG_DIR}`);
+  return existsSync(`${projectRoot}/${GREKT_YAML}`);
 }
 
 // Ensure global config dir exists (for credentials)

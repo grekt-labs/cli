@@ -1,8 +1,8 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync, copyFileSync } from "fs";
+import { existsSync, mkdirSync, copyFileSync } from "fs";
 import { dirname, join, basename } from "path";
 import type { SyncPlugin, SyncResult, SyncOptions, SyncPreview } from "./types";
-import type { InstalledYaml } from "#/schemas/index";
-import { GREKTS_DIR } from "#/lib/paths";
+import type { Lockfile } from "#/schemas/index";
+import { ARTIFACTS_DIR } from "#/lib/paths";
 
 const TARGET_DIR = ".opencode";
 const TARGET_AGENTS_DIR = join(TARGET_DIR, "agents");
@@ -31,11 +31,11 @@ export const opencodePlugin: SyncPlugin = {
     return existsSync(`${projectRoot}/${TARGET_DIR}`);
   },
 
-  async sync(installed: InstalledYaml, projectRoot: string, options: SyncOptions): Promise<SyncResult> {
+  async sync(lockfile: Lockfile, projectRoot: string, options: SyncOptions): Promise<SyncResult> {
     const result: SyncResult = { created: [], updated: [], skipped: [] };
 
     if (options.dryRun) {
-      const preview = this.preview(installed, projectRoot);
+      const preview = this.preview(lockfile, projectRoot);
       return {
         created: preview.willCreate,
         updated: preview.willUpdate,
@@ -51,8 +51,8 @@ export const opencodePlugin: SyncPlugin = {
       }
     }
 
-    for (const [artifactId, artifact] of Object.entries(installed.artifacts)) {
-      const artifactDir = `${projectRoot}/${GREKTS_DIR}/${artifactId}`;
+    for (const [artifactId, artifact] of Object.entries(lockfile.artifacts)) {
+      const artifactDir = `${projectRoot}/${ARTIFACTS_DIR}/${artifactId}`;
 
       if (artifact.agent) {
         const source = join(artifactDir, artifact.agent);
@@ -115,15 +115,15 @@ export const opencodePlugin: SyncPlugin = {
     return result;
   },
 
-  preview(installed: InstalledYaml, projectRoot: string): SyncPreview {
+  preview(lockfile: Lockfile, projectRoot: string): SyncPreview {
     const preview: SyncPreview = { willCreate: [], willUpdate: [], willSkip: [] };
 
     if (!existsSync(`${projectRoot}/${TARGET_DIR}`)) {
       preview.willCreate.push(TARGET_DIR);
     }
 
-    for (const [artifactId, artifact] of Object.entries(installed.artifacts)) {
-      const artifactDir = `${projectRoot}/${GREKTS_DIR}/${artifactId}`;
+    for (const [artifactId, artifact] of Object.entries(lockfile.artifacts)) {
+      const artifactDir = `${projectRoot}/${ARTIFACTS_DIR}/${artifactId}`;
 
       if (artifact.agent) {
         const source = join(artifactDir, artifact.agent);

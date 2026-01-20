@@ -1,8 +1,8 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync, copyFileSync } from "fs";
 import { dirname, join, basename } from "path";
 import type { SyncPlugin, SyncResult, SyncOptions, SyncPreview } from "./types";
-import type { InstalledYaml } from "#/schemas/index";
-import { GREKTS_DIR } from "#/lib/paths";
+import type { Lockfile } from "#/schemas/index";
+import { ARTIFACTS_DIR } from "#/lib/paths";
 
 // Target paths (where artifacts sync to)
 const TARGET_DIR = ".claude";
@@ -32,9 +32,9 @@ function getSafeFilename(artifactId: string, filepath: string): string {
   return `${safeName}_${filename}`;
 }
 
-function updateReadme(projectRoot: string, installed: InstalledYaml, result: SyncResult): void {
+function updateReadme(projectRoot: string, lockfile: Lockfile, result: SyncResult): void {
   const filepath = `${projectRoot}/${TARGET_README}`;
-  const grektBlock = generateGrektBlock(installed);
+  const grektBlock = generateGrektBlock(lockfile);
 
   if (!existsSync(filepath)) {
     ensureDir(filepath);
@@ -57,11 +57,11 @@ function updateReadme(projectRoot: string, installed: InstalledYaml, result: Syn
   result.updated.push(TARGET_README);
 }
 
-function generateGrektBlock(installed: InstalledYaml): string {
-  const artifacts = Object.keys(installed.artifacts);
+function generateGrektBlock(lockfile: Lockfile): string {
+  const artifacts = Object.keys(lockfile.artifacts);
 
   let content = `${GREKT_BLOCK_START}\n`;
-  content += `Grekt artifacts installed. See \`${GREKTS_DIR}/installed.yaml\` for details.\n`;
+  content += `Grekt artifacts installed. See \`grekt.yaml\` for details.\n`;
 
   if (artifacts.length > 0) {
     content += `\nArtifacts: ${artifacts.join(", ")}\n`;
@@ -80,11 +80,11 @@ export const claudePlugin: SyncPlugin = {
     return existsSync(`${projectRoot}/${TARGET_DIR}`);
   },
 
-  async sync(installed: InstalledYaml, projectRoot: string, options: SyncOptions): Promise<SyncResult> {
+  async sync(lockfile: Lockfile, projectRoot: string, options: SyncOptions): Promise<SyncResult> {
     const result: SyncResult = { created: [], updated: [], skipped: [] };
 
     if (options.dryRun) {
-      const preview = this.preview(installed, projectRoot);
+      const preview = this.preview(lockfile, projectRoot);
       return {
         created: preview.willCreate,
         updated: preview.willUpdate,
@@ -102,8 +102,8 @@ export const claudePlugin: SyncPlugin = {
     }
 
     // Sync each artifact
-    for (const [artifactId, artifact] of Object.entries(installed.artifacts)) {
-      const artifactDir = `${projectRoot}/${GREKTS_DIR}/${artifactId}`;
+    for (const [artifactId, artifact] of Object.entries(lockfile.artifacts)) {
+      const artifactDir = `${projectRoot}/${ARTIFACTS_DIR}/${artifactId}`;
 
       // Copy agent
       if (artifact.agent) {
@@ -167,20 +167,20 @@ export const claudePlugin: SyncPlugin = {
     }
 
     // Update readme
-    updateReadme(projectRoot, installed, result);
+    updateReadme(projectRoot, lockfile, result);
 
     return result;
   },
 
-  preview(installed: InstalledYaml, projectRoot: string): SyncPreview {
+  preview(lockfile: Lockfile, projectRoot: string): SyncPreview {
     const preview: SyncPreview = { willCreate: [], willUpdate: [], willSkip: [] };
 
     if (!existsSync(`${projectRoot}/${TARGET_DIR}`)) {
       preview.willCreate.push(TARGET_DIR);
     }
 
-    for (const [artifactId, artifact] of Object.entries(installed.artifacts)) {
-      const artifactDir = `${projectRoot}/${GREKTS_DIR}/${artifactId}`;
+    for (const [artifactId, artifact] of Object.entries(lockfile.artifacts)) {
+      const artifactDir = `${projectRoot}/${ARTIFACTS_DIR}/${artifactId}`;
 
       if (artifact.agent) {
         const source = join(artifactDir, artifact.agent);

@@ -1,11 +1,11 @@
 import { mkdirSync, writeFileSync } from "fs";
 import { execSync } from "child_process";
-import { getProjectConfig } from "#/lib/config";
+import { getConfig } from "#/lib/config";
 
 const DEFAULT_REGISTRY_URL = "https://pub-db2542aa79e24b5f99523d0656d6b343.r2.dev/artifacts";
 
 export function getRegistryUrl(projectRoot: string = process.cwd()): string {
-  const config = getProjectConfig(projectRoot);
+  const config = getConfig(projectRoot);
   return config.registry || DEFAULT_REGISTRY_URL;
 }
 

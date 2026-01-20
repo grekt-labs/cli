@@ -1,9 +1,8 @@
 import { Command } from "commander";
 import { existsSync, mkdirSync, rmSync } from "fs";
-import { isInitialized } from "#/lib/config";
-import { getInstalled, saveInstalled } from "#/lib/installed";
+import { isInitialized, getConfig, saveConfig } from "#/lib/config";
 import { getLockfile, saveLockfile } from "#/lib/lockfile";
-import { GREKTS_DIR } from "#/lib/paths";
+import { ARTIFACTS_DIR } from "#/lib/paths";
 import { getRegistryUrl, downloadFromRegistry } from "#/lib/registry";
 import { scanArtifact, getArtifactId } from "#/lib/artifact";
 import { hashDirectory, calculateIntegrity, getDirectorySize, formatBytes, estimateTokens } from "#/lib/integrity";
@@ -23,7 +22,7 @@ export const addCommand = new Command("add")
       process.exit(1);
     }
 
-    const targetDir = `${projectRoot}/${GREKTS_DIR}/${artifactId}`;
+    const targetDir = `${projectRoot}/${ARTIFACTS_DIR}/${artifactId}`;
 
     // Check if already installed
     if (existsSync(targetDir)) {
@@ -59,27 +58,25 @@ export const addCommand = new Command("add")
 
     const resolvedArtifactId = getArtifactId(artifactInfo.manifest.author, artifactInfo.manifest.name);
 
-    // Update installed.yaml
-    const installed = getInstalled(projectRoot);
-    installed.artifacts[resolvedArtifactId] = {
-      version: artifactInfo.manifest.version,
-      agent: artifactInfo.agent?.path,
-      skills: artifactInfo.skills.map((s) => s.path),
-      commands: artifactInfo.commands.map((c) => c.path),
-    };
-    saveInstalled(installed, projectRoot);
+    // Update grekt.yaml with artifact version
+    const config = getConfig(projectRoot);
+    config.artifacts[resolvedArtifactId] = artifactInfo.manifest.version;
+    saveConfig(config, projectRoot);
 
     // Calculate checksums for all files
     const fileHashes = hashDirectory(targetDir);
     const integrity = calculateIntegrity(fileHashes);
 
-    // Update lockfile with per-file hashes
+    // Update lockfile with version, checksums, and component paths
     const lockfile = getLockfile(projectRoot);
     lockfile.artifacts[resolvedArtifactId] = {
       version: artifactInfo.manifest.version,
       integrity,
       source: `registry:${artifactId}`,
       files: fileHashes,
+      agent: artifactInfo.agent?.path,
+      skills: artifactInfo.skills.map((s) => s.path),
+      commands: artifactInfo.commands.map((c) => c.path),
     };
     saveLockfile(lockfile, projectRoot);
 

@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import { confirm } from "@inquirer/prompts";
-import { isInitialized, getProjectConfig } from "#/lib/config";
-import { getInstalled } from "#/lib/installed";
+import { isInitialized, getConfig } from "#/lib/config";
+import { getLockfile } from "#/lib/lockfile";
 import { getPlugin, getAvailableTargets, validateTargets } from "#/lib/plugins";
 import { success, error, info, warning, log, newline, colors, spinner } from "#/utils/ui";
 
@@ -19,11 +19,11 @@ export const syncCommand = new Command("sync")
       process.exit(1);
     }
 
-    const projectConfig = getProjectConfig(projectRoot);
-    const installed = getInstalled(projectRoot);
+    const config = getConfig(projectRoot);
+    const lockfile = getLockfile(projectRoot);
 
     // Determine targets
-    let targets: string[] = projectConfig.targets;
+    let targets: string[] = config.targets;
     if (options.target) {
       targets = options.target.split(",").map((t) => t.trim());
     }
@@ -43,7 +43,7 @@ export const syncCommand = new Command("sync")
       process.exit(1);
     }
 
-    const hasArtifacts = Object.keys(installed.artifacts).length > 0;
+    const hasArtifacts = Object.keys(lockfile.artifacts).length > 0;
 
     if (!hasArtifacts) {
       info("No artifacts installed yet");
@@ -81,7 +81,7 @@ export const syncCommand = new Command("sync")
 
       // Preview or sync
       if (options.dryRun) {
-        const preview = plugin.preview(installed, projectRoot);
+        const preview = plugin.preview(lockfile, projectRoot);
 
         if (preview.willCreate.length > 0) {
           log(colors.dim("  Would create:"));
@@ -107,7 +107,7 @@ export const syncCommand = new Command("sync")
         const spin = spinner(`Syncing ${plugin.name}...`);
         spin.start();
 
-        const result = await plugin.sync(installed, projectRoot, {
+        const result = await plugin.sync(lockfile, projectRoot, {
           createTarget,
           force: options.force,
         });

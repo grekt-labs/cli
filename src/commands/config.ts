@@ -1,13 +1,13 @@
 import { Command } from "commander";
 import {
-  getProjectConfig,
-  setProjectConfigValue,
+  getConfig,
+  setConfigValue,
   isInitialized,
 } from "#/lib/config";
 import { success, error, info, log, colors } from "#/utils/ui";
-import type { ProjectConfig } from "#/schemas/index";
+import type { GrektYaml } from "#/schemas/index";
 
-const VALID_KEYS: (keyof ProjectConfig)[] = ["targets", "autoSync"];
+const VALID_KEYS: (keyof GrektYaml)[] = ["targets", "autoSync", "registry"];
 
 export const configCommand = new Command("config")
   .description("Manage project configuration");
@@ -22,10 +22,12 @@ configCommand
       process.exit(1);
     }
 
-    const projectConfig = getProjectConfig();
-    log(colors.bold("Configuration (.grekt/config.yaml):"));
-    for (const [key, value] of Object.entries(projectConfig)) {
-      log(`  ${colors.highlight(key)}: ${formatValue(value)}`);
+    const config = getConfig();
+    log(colors.bold("Configuration (grekt.yaml):"));
+    for (const [key, value] of Object.entries(config)) {
+      if (key !== "artifacts") {
+        log(`  ${colors.highlight(key)}: ${formatValue(value)}`);
+      }
     }
   });
 
@@ -39,14 +41,14 @@ configCommand
       process.exit(1);
     }
 
-    if (!VALID_KEYS.includes(key as keyof ProjectConfig)) {
+    if (!VALID_KEYS.includes(key as keyof GrektYaml)) {
       error(`Invalid key: ${key}`);
       info(`Valid keys: ${VALID_KEYS.join(", ")}`);
       process.exit(1);
     }
 
     const parsed = parseValue(key, value);
-    setProjectConfigValue(key as keyof ProjectConfig, parsed);
+    setConfigValue(key as keyof GrektYaml, parsed);
     success(`Set ${key} = ${formatValue(parsed)}`);
   });
 
@@ -60,10 +62,10 @@ configCommand
       process.exit(1);
     }
 
-    const projectConfig = getProjectConfig();
+    const config = getConfig();
 
-    if (key in projectConfig) {
-      log(formatValue(projectConfig[key as keyof ProjectConfig]));
+    if (key in config) {
+      log(formatValue(config[key as keyof GrektYaml]));
     } else {
       error(`Unknown key: ${key}`);
       process.exit(1);

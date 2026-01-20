@@ -1,8 +1,8 @@
 import { Command } from "commander";
 import { existsSync } from "fs";
 import { isInitialized } from "#/lib/config";
-import { getInstalled } from "#/lib/installed";
-import { GREKTS_DIR } from "#/lib/paths";
+import { getLockfile } from "#/lib/lockfile";
+import { ARTIFACTS_DIR } from "#/lib/paths";
 import { getDirectorySize, formatBytes, estimateTokens } from "#/lib/integrity";
 import { error, info, log, warning, colors, newline, symbols } from "#/utils/ui";
 
@@ -21,11 +21,11 @@ export const listCommand = new Command("list")
       process.exit(1);
     }
 
-    const installed = getInstalled(projectRoot);
-    const artifacts = Object.entries(installed.artifacts);
+    const lockfile = getLockfile(projectRoot);
+    const artifacts = Object.entries(lockfile.artifacts);
 
     if (options.json) {
-      console.log(JSON.stringify(installed, null, 2));
+      console.log(JSON.stringify(lockfile, null, 2));
       return;
     }
 
@@ -41,7 +41,7 @@ export const listCommand = new Command("list")
     let totalSize = 0;
 
     for (const [name, artifact] of artifacts) {
-      const artifactDir = `${projectRoot}/${GREKTS_DIR}/${name}`;
+      const artifactDir = `${projectRoot}/${ARTIFACTS_DIR}/${name}`;
       let size = 0;
       let sizeStr = "";
 

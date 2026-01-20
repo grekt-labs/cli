@@ -2,17 +2,17 @@ import { Command } from "commander";
 import { existsSync } from "fs";
 import { basename } from "path";
 import { isInitialized } from "#/lib/config";
-import { getInstalled } from "#/lib/installed";
 import { getLockfile } from "#/lib/lockfile";
-import { GREKTS_DIR } from "#/lib/paths";
+import { ARTIFACTS_DIR } from "#/lib/paths";
 import { verifyIntegrity, getDirectorySize, formatBytes, estimateTokens } from "#/lib/integrity";
 import { success, error, info, log, warning, newline, colors, symbols } from "#/utils/ui";
+import type { Lockfile } from "#/schemas/index";
 
 const CONTEXT_WARNING_THRESHOLD = 10 * 1024; // 10 KB
 
 interface CheckResult {
   artifactId: string;
-  status: "ok" | "drift" | "missing" | "not_in_lockfile";
+  status: "ok" | "drift" | "missing";
   issues: string[];
 }
 
@@ -33,10 +33,8 @@ export const checkCommand = new Command("check")
       process.exit(1);
     }
 
-    const installed = getInstalled(projectRoot);
     const lockfile = getLockfile(projectRoot);
-
-    const artifactIds = Object.keys(installed.artifacts);
+    const artifactIds = Object.keys(lockfile.artifacts);
 
     if (artifactIds.length === 0) {
       info("No artifacts installed");
@@ -50,7 +48,7 @@ export const checkCommand = new Command("check")
 
     // Check each artifact
     for (const artifactId of artifactIds) {
-      const artifactDir = `${projectRoot}/${GREKTS_DIR}/${artifactId}`;
+      const artifactDir = `${projectRoot}/${ARTIFACTS_DIR}/${artifactId}`;
       const lockEntry = lockfile.artifacts[artifactId];
 
       const result: CheckResult = {
@@ -67,16 +65,8 @@ export const checkCommand = new Command("check")
         continue;
       }
 
-      // Check if in lockfile
-      if (!lockEntry) {
-        result.status = "not_in_lockfile";
-        result.issues.push("Not tracked in grekt.lock");
-        results.push(result);
-        continue;
-      }
-
       // Verify file integrity
-      if (lockEntry.files && Object.keys(lockEntry.files).length > 0) {
+      if (lockEntry?.files && Object.keys(lockEntry.files).length > 0) {
         const integrity = verifyIntegrity(artifactDir, lockEntry.files);
 
         if (!integrity.valid) {
@@ -100,7 +90,7 @@ export const checkCommand = new Command("check")
 
     // Display results
     for (const result of results) {
-      const version = installed.artifacts[result.artifactId]?.version || "?";
+      const version = lockfile.artifacts[result.artifactId]?.version || "?";
 
       if (result.status === "ok") {
         log(`${symbols.success} ${colors.highlight(result.artifactId)} ${colors.dim(`v${version}`)} - OK`);
@@ -114,11 +104,6 @@ export const checkCommand = new Command("check")
         for (const issue of result.issues) {
           log(`  ${colors.dim("•")} ${issue}`);
         }
-      } else if (result.status === "not_in_lockfile") {
-        log(`${symbols.warning} ${colors.highlight(result.artifactId)} - ${colors.warning("NOT IN LOCKFILE")}`);
-        for (const issue of result.issues) {
-          log(`  ${colors.dim("•")} ${issue}`);
-        }
       }
     }
 
@@ -126,7 +111,7 @@ export const checkCommand = new Command("check")
     newline();
     log(colors.bold("Checking for name overlaps...\n"));
 
-    const overlaps = detectCollisions(installed);
+    const overlaps = detectCollisions(lockfile);
 
     if (overlaps.length > 0) {
       info(`${overlaps.length} filename overlap(s) found ${colors.dim("(resolved by namespacing)")}`);
@@ -163,11 +148,11 @@ export const checkCommand = new Command("check")
     }
   });
 
-function detectCollisions(installed: ReturnType<typeof getInstalled>): CollisionInfo[] {
+function detectCollisions(lockfile: Lockfile): CollisionInfo[] {
   const skillFiles = new Map<string, string[]>();
   const commandFiles = new Map<string, string[]>();
 
-  for (const [artifactId, artifact] of Object.entries(installed.artifacts)) {
+  for (const [artifactId, artifact] of Object.entries(lockfile.artifacts)) {
     // Track skill filenames
     for (const skillPath of artifact.skills) {
       const filename = basename(skillPath);
