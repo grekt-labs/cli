@@ -12,6 +12,13 @@
   "scripts": {
     "dev": "bun run src/index.ts",
     "build": "bun build src/index.ts --outdir dist --target node",
+    "build:linux": "bun build src/index.ts --compile --outfile dist/grekt-linux-x64",
+    "build:mac-arm": "bun build src/index.ts --compile --target=bun-darwin-arm64 --outfile dist/grekt-macos-arm64",
+    "build:mac-intel": "bun build src/index.ts --compile --target=bun-darwin-x64 --outfile dist/grekt-macos-x64",
+    "build:windows": "bun build src/index.ts --compile --target=bun-windows-x64 --outfile dist/grekt-windows.exe",
+    "build:all": "bun run build:linux && bun run build:mac-arm && bun run build:mac-intel && bun run build:windows",
+    "deploy": "bun run scripts/deploy.ts",
+    "release": "bun run build:all && bun run deploy",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -24,6 +31,7 @@
     "ora": "^8.1.1"
   },
   "devDependencies": {
+    "@aws-sdk/client-s3": "^3.971.0",
     "@types/node": "^22.10.5",
     "typescript": "^5.7.2"
   },
