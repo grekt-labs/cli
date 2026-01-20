@@ -8,6 +8,7 @@ import { listCommand } from "#/commands/list";
 import { addCommand } from "#/commands/add";
 import { checkCommand } from "#/commands/check";
 import { removeCommand } from "#/commands/remove";
+import { publishCommand } from "#/commands/publish";
 
 const program = new Command();
 
@@ -23,5 +24,6 @@ program.addCommand(listCommand);
 program.addCommand(addCommand);
 program.addCommand(checkCommand);
 program.addCommand(removeCommand);
+program.addCommand(publishCommand);
 
 program.parse();
