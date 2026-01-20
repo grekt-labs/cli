@@ -21,12 +21,32 @@ export const ArtifactFrontmatterSchema = z.object({
 });
 export type ArtifactFrontmatter = z.infer<typeof ArtifactFrontmatterSchema>;
 
+// Custom target configuration (for "Other" option in init)
+export const CustomTargetSchema = z.object({
+  name: z.string(),
+  rulesFile: z.string(),
+});
+export type CustomTarget = z.infer<typeof CustomTargetSchema>;
+
+// Artifact entry in grekt.yaml - either version string (all) or object (selected components)
+export const ArtifactEntrySchema = z.union([
+  z.string(), // "1.0.0" = all components
+  z.object({
+    version: z.string(),
+    agent: z.boolean().optional(), // true = include, false/omitted = exclude
+    skills: z.array(z.string()).optional(), // paths to include
+    commands: z.array(z.string()).optional(), // paths to include
+  }),
+]);
+export type ArtifactEntry = z.infer<typeof ArtifactEntrySchema>;
+
 // Project grekt.yaml (like package.json: config + artifact declarations)
 export const GrektYamlSchema = z.object({
   targets: z.array(z.string()).default([]),
   autoSync: z.boolean().default(false),
   registry: z.string().optional(),
-  artifacts: z.record(z.string(), z.string()).default({}), // { "@grekt/code-reviewer": "1.0.0" }
+  artifacts: z.record(z.string(), ArtifactEntrySchema).default({}),
+  customTargets: z.record(z.string(), CustomTargetSchema).default({}),
 });
 export type GrektYaml = z.infer<typeof GrektYamlSchema>;
 

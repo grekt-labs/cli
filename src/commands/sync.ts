@@ -2,7 +2,7 @@ import { Command } from "commander";
 import { confirm } from "@inquirer/prompts";
 import { isInitialized, getConfig } from "#/lib/config";
 import { getLockfile } from "#/lib/lockfile";
-import { getPlugin, getAvailableTargets, validateTargets } from "#/lib/plugins";
+import { getPlugin, getAvailableTargets } from "#/lib/plugins";
 import { success, error, info, warning, log, newline, colors, spinner } from "#/utils/ui";
 
 export const syncCommand = new Command("sync")
@@ -35,11 +35,14 @@ export const syncCommand = new Command("sync")
       return;
     }
 
-    // Validate targets
-    try {
-      validateTargets(targets);
-    } catch (err) {
-      error((err as Error).message);
+    // Validate targets (built-in + custom)
+    const customTargetIds = Object.keys(config.customTargets || {});
+    const invalidTargets = targets.filter(
+      (t) => !getAvailableTargets().includes(t) && !customTargetIds.includes(t)
+    );
+    if (invalidTargets.length > 0) {
+      error(`Unknown targets: ${invalidTargets.join(", ")}`);
+      info(`Available: ${[...getAvailableTargets(), ...customTargetIds].join(", ")}`);
       process.exit(1);
     }
 
@@ -56,7 +59,7 @@ export const syncCommand = new Command("sync")
     }
 
     for (const target of targets) {
-      const plugin = getPlugin(target);
+      const plugin = getPlugin(target, config.customTargets);
       log(colors.bold(`\nSyncing ${plugin.name}...`));
 
       const targetExists = plugin.targetExists(projectRoot);

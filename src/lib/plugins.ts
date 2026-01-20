@@ -1,7 +1,9 @@
 import type { SyncPlugin } from "#/plugins/types";
+import type { CustomTarget } from "#/schemas/index";
 import { claudePlugin } from "#/plugins/claude";
 import { cursorPlugin } from "#/plugins/cursor";
 import { opencodePlugin } from "#/plugins/opencode";
+import { createRulesOnlyPlugin, GREKT_BLOCK_START, GREKT_BLOCK_END } from "#/plugins/base";
 
 const builtInPlugins: Record<string, SyncPlugin> = {
   claude: claudePlugin,
@@ -13,21 +15,46 @@ const builtInPlugins: Record<string, SyncPlugin> = {
 const plugins: Map<string, SyncPlugin> = new Map(Object.entries(builtInPlugins));
 
 /**
- * Get a plugin by target name
+ * Create a plugin for a custom target
  */
-export function getPlugin(target: string): SyncPlugin {
+function createCustomPlugin(id: string, config: CustomTarget): SyncPlugin {
+  return createRulesOnlyPlugin({
+    id,
+    name: config.name,
+    rulesFile: config.rulesFile,
+    generateRulesContent: () => {
+      return `${GREKT_BLOCK_START}
+Grekt artifacts installed. See \`grekt.yaml\` for details.
+Run \`grekt list\` to see installed artifacts.
+${GREKT_BLOCK_END}`;
+    },
+  });
+}
+
+/**
+ * Get a plugin by target name
+ * For custom targets, pass the customTargets config to create the plugin dynamically
+ */
+export function getPlugin(target: string, customTargets?: Record<string, CustomTarget>): SyncPlugin {
+  // Check built-in plugins first
   const plugin = plugins.get(target);
-  if (!plugin) {
-    throw new Error(`Unknown sync target: ${target}. Available: ${getAvailableTargets().join(", ")}`);
+  if (plugin) {
+    return plugin;
   }
-  return plugin;
+
+  // Check custom targets
+  if (customTargets && customTargets[target]) {
+    return createCustomPlugin(target, customTargets[target]);
+  }
+
+  throw new Error(`Unknown sync target: ${target}. Available: ${getAvailableTargets().join(", ")}`);
 }
 
 /**
  * Get multiple plugins
  */
-export function getPlugins(targets: string[]): SyncPlugin[] {
-  return targets.map(getPlugin);
+export function getPlugins(targets: string[], customTargets?: Record<string, CustomTarget>): SyncPlugin[] {
+  return targets.map((target) => getPlugin(target, customTargets));
 }
 
 /**

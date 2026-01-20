@@ -1,11 +1,14 @@
 import { Command } from "commander";
 import { existsSync, mkdirSync } from "fs";
-import { checkbox } from "@inquirer/prompts";
+import { checkbox, input } from "@inquirer/prompts";
 import { isInitialized, saveConfig } from "#/lib/config";
 import { saveLockfile, createEmptyLockfile } from "#/lib/lockfile";
 import { getPluginChoices, getDefaultTarget } from "#/lib/plugins";
 import { GREKT_YAML, GREKT_DIR, ARTIFACTS_DIR } from "#/lib/paths";
-import { success, info, warning, newline } from "#/utils/ui";
+import { success, info, warning, newline, log, colors } from "#/utils/ui";
+import type { CustomTarget } from "#/schemas/index";
+
+const OTHER_TARGET_VALUE = "__other__";
 
 export const initCommand = new Command("init")
   .description("Initialize grekt in the current directory")
@@ -28,17 +31,63 @@ export const initCommand = new Command("init")
 
     // Select targets
     let targets: string[] = [defaultTarget];
+    const customTargets: Record<string, CustomTarget> = {};
 
     if (!options.yes) {
-      const choices = pluginChoices.map((choice, index) => ({
-        ...choice,
-        checked: index === 0, // First plugin checked by default
-      }));
+      const choices = [
+        ...pluginChoices.map((choice, index) => ({
+          ...choice,
+          checked: index === 0, // First plugin checked by default
+        })),
+        {
+          name: "Other (custom)",
+          value: OTHER_TARGET_VALUE,
+          checked: false,
+        },
+      ];
 
-      targets = await checkbox<string>({
+      const selected = await checkbox<string>({
         message: "Select AI tools to sync with:",
         choices,
       });
+
+      // Handle "Other" selection
+      if (selected.includes(OTHER_TARGET_VALUE)) {
+        newline();
+        log(colors.bold("Configure custom target:"));
+        newline();
+
+        const customId = await input({
+          message: "Target ID (e.g., my-ai):",
+          validate: (value) => {
+            if (!value.trim()) return "ID is required";
+            if (!/^[a-z0-9-]+$/.test(value)) return "ID must be lowercase alphanumeric with dashes";
+            if (pluginChoices.some((p) => p.value === value)) return "ID conflicts with built-in target";
+            return true;
+          },
+        });
+
+        const customName = await input({
+          message: "Display name (e.g., My AI Tool):",
+          validate: (value) => (value.trim() ? true : "Name is required"),
+        });
+
+        const rulesFile = await input({
+          message: "Rules file path (e.g., .my-ai-rules.md):",
+          validate: (value) => (value.trim() ? true : "Rules file path is required"),
+        });
+
+        customTargets[customId] = {
+          name: customName,
+          rulesFile,
+        };
+
+        // Replace __other__ with the custom ID
+        targets = selected.filter((t) => t !== OTHER_TARGET_VALUE);
+        targets.push(customId);
+      } else {
+        targets = selected;
+      }
 
       if (targets.length === 0) {
         targets = [defaultTarget];
@@ -57,6 +106,7 @@ export const initCommand = new Command("init")
       targets,
       autoSync: false,
       artifacts: {},
+      customTargets,
     }, projectRoot);
 
     // Create grekt.lock
