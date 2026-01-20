@@ -40,8 +40,9 @@ export type Credentials = z.infer<typeof CredentialsSchema>;
 // Lockfile entry (grekt.lock)
 export const LockfileEntrySchema = z.object({
   version: z.string(),
-  checksum: z.string(),
+  integrity: z.string(), // SHA256 hash of entire artifact
   source: z.string().optional(), // e.g., "github:grekt/artifacts"
+  files: z.record(z.string(), z.string()).default({}), // per-file hashes: { "agent.md": "sha256:abc..." }
 });
 
 export const LockfileSchema = z.object({

@@ -21,6 +21,17 @@ function ensureDir(filepath: string): void {
   }
 }
 
+/**
+ * Create a namespaced filename to avoid collisions between artifacts.
+ * @example getSafeFilename("@grekt/testing-helper", "skills/analyze.md")
+ *          → "grekt-testing-helper_analyze.md"
+ */
+function getSafeFilename(artifactId: string, filepath: string): string {
+  const safeName = artifactId.replace("@", "").replace("/", "-");
+  const filename = basename(filepath);
+  return `${safeName}_${filename}`;
+}
+
 function updateReadme(projectRoot: string, installed: InstalledYaml, result: SyncResult): void {
   const filepath = `${projectRoot}/${TARGET_README}`;
   const grektBlock = generateGrektBlock(installed);
@@ -114,10 +125,10 @@ export const claudePlugin: SyncPlugin = {
         }
       }
 
-      // Copy skills
+      // Copy skills (with namespacing to avoid collisions)
       for (const skillPath of artifact.skills) {
         const source = join(artifactDir, skillPath);
-        const skillName = basename(skillPath);
+        const skillName = getSafeFilename(artifactId, skillPath);
         const target = `${projectRoot}/${TARGET_SKILLS_DIR}/${skillName}`;
 
         if (existsSync(source)) {
@@ -134,10 +145,10 @@ export const claudePlugin: SyncPlugin = {
         }
       }
 
-      // Copy commands
+      // Copy commands (with namespacing to avoid collisions)
       for (const cmdPath of artifact.commands) {
         const source = join(artifactDir, cmdPath);
-        const cmdName = basename(cmdPath);
+        const cmdName = getSafeFilename(artifactId, cmdPath);
         const target = `${projectRoot}/${TARGET_COMMANDS_DIR}/${cmdName}`;
 
         if (existsSync(source)) {
@@ -187,7 +198,7 @@ export const claudePlugin: SyncPlugin = {
 
       for (const skillPath of artifact.skills) {
         const source = join(artifactDir, skillPath);
-        const skillName = basename(skillPath);
+        const skillName = getSafeFilename(artifactId, skillPath);
         const target = `${projectRoot}/${TARGET_SKILLS_DIR}/${skillName}`;
 
         if (!existsSync(source)) {
@@ -201,7 +212,7 @@ export const claudePlugin: SyncPlugin = {
 
       for (const cmdPath of artifact.commands) {
         const source = join(artifactDir, cmdPath);
-        const cmdName = basename(cmdPath);
+        const cmdName = getSafeFilename(artifactId, cmdPath);
         const target = `${projectRoot}/${TARGET_COMMANDS_DIR}/${cmdName}`;
 
         if (!existsSync(source)) {

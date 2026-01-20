@@ -1,7 +1,12 @@
 import { Command } from "commander";
+import { existsSync } from "fs";
 import { isInitialized } from "#/lib/config";
 import { getInstalled } from "#/lib/installed";
-import { error, info, log, colors, newline } from "#/utils/ui";
+import { GREKTS_DIR } from "#/lib/paths";
+import { getDirectorySize, formatBytes, estimateTokens } from "#/lib/integrity";
+import { error, info, log, warning, colors, newline, symbols } from "#/utils/ui";
+
+const CONTEXT_WARNING_THRESHOLD = 10 * 1024; // 10 KB
 
 export const listCommand = new Command("list")
   .alias("ls")
@@ -33,8 +38,23 @@ export const listCommand = new Command("list")
     log(colors.bold("Installed artifacts:"));
     newline();
 
+    let totalSize = 0;
+
     for (const [name, artifact] of artifacts) {
-      log(`  ${colors.highlight(name)}${colors.dim(`@${artifact.version}`)}`);
+      const artifactDir = `${projectRoot}/${GREKTS_DIR}/${name}`;
+      let size = 0;
+      let sizeStr = "";
+
+      if (existsSync(artifactDir)) {
+        size = getDirectorySize(artifactDir);
+        totalSize += size;
+        sizeStr = formatBytes(size);
+      }
+
+      // Show size warning indicator
+      const sizeIndicator = size > 5 * 1024 ? ` ${symbols.warning}` : "";
+
+      log(`  ${colors.highlight(name)}${colors.dim(`@${artifact.version}`)}  ${colors.dim(sizeStr)}${sizeIndicator}`);
 
       if (artifact.agent) {
         log(`    ${colors.dim("agent:")} ${artifact.agent}`);
@@ -49,5 +69,16 @@ export const listCommand = new Command("list")
       }
 
       newline();
+    }
+
+    // Show total context size
+    log(colors.dim("─".repeat(40)));
+    log(`  Total: ${formatBytes(totalSize)} (~${estimateTokens(totalSize).toLocaleString()} tokens)`);
+
+    if (totalSize > CONTEXT_WARNING_THRESHOLD) {
+      newline();
+      warning("Total context exceeds 10 KB. Consider:");
+      log("  • Removing unused artifacts");
+      log("  • Using smaller/more focused artifacts");
     }
   });

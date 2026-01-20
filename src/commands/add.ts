@@ -1,13 +1,15 @@
 import { Command } from "commander";
-import { existsSync, mkdirSync, readFileSync } from "fs";
-import { createHash } from "crypto";
+import { existsSync, mkdirSync } from "fs";
 import { isInitialized } from "#/lib/config";
 import { getInstalled, saveInstalled } from "#/lib/installed";
 import { getLockfile, saveLockfile } from "#/lib/lockfile";
 import { GREKTS_DIR } from "#/lib/paths";
 import { isGitHubSource, parseGitHubSource, downloadArtifact } from "#/lib/github";
 import { scanArtifact, getArtifactId } from "#/lib/artifact";
-import { success, error, info, log, newline, colors, spinner } from "#/utils/ui";
+import { hashDirectory, calculateIntegrity, getDirectorySize, formatBytes, estimateTokens } from "#/lib/integrity";
+import { success, error, info, log, warning, newline, colors, spinner } from "#/utils/ui";
+
+const CONTEXT_WARNING_THRESHOLD = 10 * 1024; // 10 KB
 
 export const addCommand = new Command("add")
   .description("Add an artifact from GitHub")
@@ -93,17 +95,27 @@ export const addCommand = new Command("add")
     };
     saveInstalled(installed, projectRoot);
 
-    // Update lockfile
-    const lockfile = getLockfile(projectRoot);
-    const manifestContent = readFileSync(`${targetDir}/grekt.yaml`, "utf-8");
-    const checksum = createHash("sha256").update(manifestContent).digest("hex");
+    // Calculate checksums for all files
+    const fileHashes = hashDirectory(targetDir);
+    const integrity = calculateIntegrity(fileHashes);
 
+    // Update lockfile with per-file hashes
+    const lockfile = getLockfile(projectRoot);
     lockfile.artifacts[artifactId] = {
       version: artifactInfo.manifest.version,
-      checksum: `sha256:${checksum.slice(0, 16)}`,
+      integrity,
       source: `github:${ghSource.owner}/${ghSource.repo}/${ghSource.path}`,
+      files: fileHashes,
     };
     saveLockfile(lockfile, projectRoot);
+
+    // Check artifact size and warn if large
+    const artifactSize = getDirectorySize(targetDir);
+    if (artifactSize > CONTEXT_WARNING_THRESHOLD) {
+      newline();
+      warning(`Artifact is ${formatBytes(artifactSize)} (~${estimateTokens(artifactSize).toLocaleString()} tokens)`);
+      info("Large artifacts may impact AI context. Consider if all content is necessary.");
+    }
 
     newline();
     success(`Installed ${colors.highlight(artifactId)}@${artifactInfo.manifest.version}`);

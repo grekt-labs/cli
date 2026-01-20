@@ -6,6 +6,8 @@ import { configCommand } from "#/commands/config";
 import { syncCommand } from "#/commands/sync";
 import { listCommand } from "#/commands/list";
 import { addCommand } from "#/commands/add";
+import { checkCommand } from "#/commands/check";
+import { removeCommand } from "#/commands/remove";
 
 const program = new Command();
 
@@ -19,5 +21,7 @@ program.addCommand(configCommand);
 program.addCommand(syncCommand);
 program.addCommand(listCommand);
 program.addCommand(addCommand);
+program.addCommand(checkCommand);
+program.addCommand(removeCommand);
 
 program.parse();
