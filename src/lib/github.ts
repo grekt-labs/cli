@@ -1,5 +1,5 @@
 /**
- * GitHub source fetcher for packages
+ * GitHub source fetcher for artifacts
  * Supports: github:user/repo/path or full URLs
  */
 
@@ -72,7 +72,7 @@ interface GitHubContentsItem {
   download_url: string | null;
 }
 
-export async function downloadPackage(
+export async function downloadArtifact(
   source: GitHubSource,
   targetDir: string
 ): Promise<boolean> {

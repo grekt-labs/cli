@@ -4,7 +4,7 @@ import type { SyncPlugin, SyncResult, SyncOptions, SyncPreview } from "./types";
 import type { InstalledYaml } from "#/schemas/index";
 import { GREKTS_DIR } from "#/lib/paths";
 
-// Target paths (where packages sync to)
+// Target paths (where artifacts sync to)
 const TARGET_DIR = ".claude";
 const TARGET_AGENTS_DIR = join(TARGET_DIR, "agents");
 const TARGET_SKILLS_DIR = join(TARGET_DIR, "skills");
@@ -47,13 +47,13 @@ function updateReadme(projectRoot: string, installed: InstalledYaml, result: Syn
 }
 
 function generateGrektBlock(installed: InstalledYaml): string {
-  const packages = Object.keys(installed.packages);
+  const artifacts = Object.keys(installed.artifacts);
 
   let content = `${GREKT_BLOCK_START}\n`;
-  content += `Grekt packages installed. See \`${GREKTS_DIR}/installed.yaml\` for details.\n`;
+  content += `Grekt artifacts installed. See \`${GREKTS_DIR}/installed.yaml\` for details.\n`;
 
-  if (packages.length > 0) {
-    content += `\nPackages: ${packages.join(", ")}\n`;
+  if (artifacts.length > 0) {
+    content += `\nArtifacts: ${artifacts.join(", ")}\n`;
   }
 
   content += `${GREKT_BLOCK_END}`;
@@ -90,14 +90,14 @@ export const claudePlugin: SyncPlugin = {
       }
     }
 
-    // Sync each package
-    for (const [packageId, pkg] of Object.entries(installed.packages)) {
-      const packageDir = `${projectRoot}/${GREKTS_DIR}/${packageId}`;
+    // Sync each artifact
+    for (const [artifactId, artifact] of Object.entries(installed.artifacts)) {
+      const artifactDir = `${projectRoot}/${GREKTS_DIR}/${artifactId}`;
 
       // Copy agent
-      if (pkg.agent) {
-        const source = join(packageDir, pkg.agent);
-        const targetName = `${packageId.replace("/", "-")}.md`;
+      if (artifact.agent) {
+        const source = join(artifactDir, artifact.agent);
+        const targetName = `${artifactId.replace("/", "-")}.md`;
         const target = `${projectRoot}/${TARGET_AGENTS_DIR}/${targetName}`;
 
         if (existsSync(source)) {
@@ -110,13 +110,13 @@ export const claudePlugin: SyncPlugin = {
             result.created.push(`${TARGET_AGENTS_DIR}/${targetName}`);
           }
         } else {
-          result.skipped.push(`${packageId}/agent (source not found)`);
+          result.skipped.push(`${artifactId}/agent (source not found)`);
         }
       }
 
       // Copy skills
-      for (const skillPath of pkg.skills) {
-        const source = join(packageDir, skillPath);
+      for (const skillPath of artifact.skills) {
+        const source = join(artifactDir, skillPath);
         const skillName = basename(skillPath);
         const target = `${projectRoot}/${TARGET_SKILLS_DIR}/${skillName}`;
 
@@ -130,13 +130,13 @@ export const claudePlugin: SyncPlugin = {
             result.created.push(`${TARGET_SKILLS_DIR}/${skillName}`);
           }
         } else {
-          result.skipped.push(`${packageId}/${skillPath} (source not found)`);
+          result.skipped.push(`${artifactId}/${skillPath} (source not found)`);
         }
       }
 
       // Copy commands
-      for (const cmdPath of pkg.commands) {
-        const source = join(packageDir, cmdPath);
+      for (const cmdPath of artifact.commands) {
+        const source = join(artifactDir, cmdPath);
         const cmdName = basename(cmdPath);
         const target = `${projectRoot}/${TARGET_COMMANDS_DIR}/${cmdName}`;
 
@@ -150,7 +150,7 @@ export const claudePlugin: SyncPlugin = {
             result.created.push(`${TARGET_COMMANDS_DIR}/${cmdName}`);
           }
         } else {
-          result.skipped.push(`${packageId}/${cmdPath} (source not found)`);
+          result.skipped.push(`${artifactId}/${cmdPath} (source not found)`);
         }
       }
     }
@@ -168,16 +168,16 @@ export const claudePlugin: SyncPlugin = {
       preview.willCreate.push(TARGET_DIR);
     }
 
-    for (const [packageId, pkg] of Object.entries(installed.packages)) {
-      const packageDir = `${projectRoot}/${GREKTS_DIR}/${packageId}`;
+    for (const [artifactId, artifact] of Object.entries(installed.artifacts)) {
+      const artifactDir = `${projectRoot}/${GREKTS_DIR}/${artifactId}`;
 
-      if (pkg.agent) {
-        const source = join(packageDir, pkg.agent);
-        const targetName = `${packageId.replace("/", "-")}.md`;
+      if (artifact.agent) {
+        const source = join(artifactDir, artifact.agent);
+        const targetName = `${artifactId.replace("/", "-")}.md`;
         const target = `${projectRoot}/${TARGET_AGENTS_DIR}/${targetName}`;
 
         if (!existsSync(source)) {
-          preview.willSkip.push(`${packageId}/agent (source not found)`);
+          preview.willSkip.push(`${artifactId}/agent (source not found)`);
         } else if (existsSync(target)) {
           preview.willUpdate.push(`${TARGET_AGENTS_DIR}/${targetName}`);
         } else {
@@ -185,13 +185,13 @@ export const claudePlugin: SyncPlugin = {
         }
       }
 
-      for (const skillPath of pkg.skills) {
-        const source = join(packageDir, skillPath);
+      for (const skillPath of artifact.skills) {
+        const source = join(artifactDir, skillPath);
         const skillName = basename(skillPath);
         const target = `${projectRoot}/${TARGET_SKILLS_DIR}/${skillName}`;
 
         if (!existsSync(source)) {
-          preview.willSkip.push(`${packageId}/${skillPath} (source not found)`);
+          preview.willSkip.push(`${artifactId}/${skillPath} (source not found)`);
         } else if (existsSync(target)) {
           preview.willUpdate.push(`${TARGET_SKILLS_DIR}/${skillName}`);
         } else {
@@ -199,13 +199,13 @@ export const claudePlugin: SyncPlugin = {
         }
       }
 
-      for (const cmdPath of pkg.commands) {
-        const source = join(packageDir, cmdPath);
+      for (const cmdPath of artifact.commands) {
+        const source = join(artifactDir, cmdPath);
         const cmdName = basename(cmdPath);
         const target = `${projectRoot}/${TARGET_COMMANDS_DIR}/${cmdName}`;
 
         if (!existsSync(source)) {
-          preview.willSkip.push(`${packageId}/${cmdPath} (source not found)`);
+          preview.willSkip.push(`${artifactId}/${cmdPath} (source not found)`);
         } else if (existsSync(target)) {
           preview.willUpdate.push(`${TARGET_COMMANDS_DIR}/${cmdName}`);
         } else {

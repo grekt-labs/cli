@@ -2,16 +2,13 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync, chmodSync } from "f
 import { dirname } from "path";
 import { parse, stringify } from "yaml";
 import {
-  GlobalConfigSchema,
   ProjectConfigSchema,
   CredentialsSchema,
-  type GlobalConfig,
   type ProjectConfig,
   type Credentials,
 } from "#/schemas/index";
 import {
   GLOBAL_CONFIG_DIR,
-  GLOBAL_CONFIG_FILE,
   GLOBAL_CREDENTIALS_FILE,
   PROJECT_CONFIG_DIR,
   PROJECT_CONFIG_FILE,
@@ -41,24 +38,6 @@ function writeYaml(filepath: string, data: unknown, secure = false): void {
   }
 }
 
-// Global config
-export function getGlobalConfig(): GlobalConfig {
-  const raw = readYaml(GLOBAL_CONFIG_FILE, {});
-  return GlobalConfigSchema.parse(raw);
-}
-
-export function setGlobalConfig(config: Partial<GlobalConfig>): void {
-  const current = getGlobalConfig();
-  const merged = { ...current, ...config };
-  writeYaml(GLOBAL_CONFIG_FILE, merged);
-}
-
-export function setGlobalConfigValue(key: keyof GlobalConfig, value: unknown): void {
-  const current = getGlobalConfig();
-  (current as Record<string, unknown>)[key] = value;
-  writeYaml(GLOBAL_CONFIG_FILE, current);
-}
-
 // Project config
 export function getProjectConfig(projectRoot: string = process.cwd()): ProjectConfig {
   const filepath = `${projectRoot}/${PROJECT_CONFIG_FILE}`;
@@ -73,13 +52,20 @@ export function setProjectConfig(config: Partial<ProjectConfig>, projectRoot: st
   writeYaml(filepath, merged);
 }
 
-// Credentials
+export function setProjectConfigValue(key: keyof ProjectConfig, value: unknown, projectRoot: string = process.cwd()): void {
+  const current = getProjectConfig(projectRoot);
+  (current as Record<string, unknown>)[key] = value;
+  setProjectConfig(current, projectRoot);
+}
+
+// Credentials (stored globally for registry auth)
 export function getCredentials(): Credentials {
   const raw = readYaml(GLOBAL_CREDENTIALS_FILE, {});
   return CredentialsSchema.parse(raw);
 }
 
 export function setCredential(registryUrl: string, token: string): void {
+  ensureGlobalConfigDir();
   const current = getCredentials();
   current[registryUrl] = { token };
   writeYaml(GLOBAL_CREDENTIALS_FILE, current, true);
@@ -101,7 +87,7 @@ export function isInitialized(projectRoot: string = process.cwd()): boolean {
   return existsSync(`${projectRoot}/${PROJECT_CONFIG_DIR}`);
 }
 
-// Ensure global config dir exists
+// Ensure global config dir exists (for credentials)
 export function ensureGlobalConfigDir(): void {
   if (!existsSync(GLOBAL_CONFIG_DIR)) {
     mkdirSync(GLOBAL_CONFIG_DIR, { recursive: true });

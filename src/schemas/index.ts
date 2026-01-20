@@ -3,16 +3,16 @@ import { z } from "zod";
 // Sync targets (validated at runtime against registered plugins)
 export type SyncTarget = string;
 
-// Package manifest (grekt.yaml in each package)
-export const PackageManifestSchema = z.object({
+// Artifact manifest (grekt.yaml in each artifact)
+export const ArtifactManifestSchema = z.object({
   name: z.string(),
   author: z.string(),
   version: z.string(),
   description: z.string(),
 });
-export type PackageManifest = z.infer<typeof PackageManifestSchema>;
+export type ArtifactManifest = z.infer<typeof ArtifactManifestSchema>;
 
-// Artifact frontmatter (YAML at top of .md files)
+// Artifact component frontmatter (YAML at top of .md files)
 export const ArtifactFrontmatterSchema = z.object({
   type: z.enum(["agent", "skill", "command"]),
   name: z.string(),
@@ -21,22 +21,14 @@ export const ArtifactFrontmatterSchema = z.object({
 });
 export type ArtifactFrontmatter = z.infer<typeof ArtifactFrontmatterSchema>;
 
-// Global config (~/.grekt/config.yaml)
-export const GlobalConfigSchema = z.object({
-  registry: z.string().url().default("https://registry.grekt.com"),
-  telemetry: z.boolean().default(true),
-  defaultTargets: z.array(z.string()).default([]),
-  autoSync: z.boolean().default(false),
-});
-export type GlobalConfig = z.infer<typeof GlobalConfigSchema>;
-
 // Project config (.grekt/config.yaml)
 export const ProjectConfigSchema = z.object({
   targets: z.array(z.string()).default([]),
+  autoSync: z.boolean().default(false),
 });
 export type ProjectConfig = z.infer<typeof ProjectConfigSchema>;
 
-// Credentials (~/.grekt/credentials.yaml)
+// Credentials (~/.grekt/credentials.yaml) - for registry auth
 export const CredentialsSchema = z.record(
   z.string(), // registry URL
   z.object({
@@ -45,7 +37,7 @@ export const CredentialsSchema = z.record(
 );
 export type Credentials = z.infer<typeof CredentialsSchema>;
 
-// Lockfile entry (grekt.lock) - now tracks packages
+// Lockfile entry (grekt.lock)
 export const LockfileEntrySchema = z.object({
   version: z.string(),
   checksum: z.string(),
@@ -54,12 +46,12 @@ export const LockfileEntrySchema = z.object({
 
 export const LockfileSchema = z.object({
   version: z.literal(1),
-  packages: z.record(z.string(), LockfileEntrySchema).default({}),
+  artifacts: z.record(z.string(), LockfileEntrySchema).default({}),
 });
 export type Lockfile = z.infer<typeof LockfileSchema>;
 
-// installed.yaml - package-based index
-export const InstalledPackageSchema = z.object({
+// installed.yaml - artifact index
+export const InstalledArtifactSchema = z.object({
   version: z.string(),
   agent: z.string().optional(), // relative path to agent.md if exists
   skills: z.array(z.string()).default([]), // relative paths to skill files
@@ -68,6 +60,6 @@ export const InstalledPackageSchema = z.object({
 
 export const InstalledYamlSchema = z.object({
   version: z.literal(1),
-  packages: z.record(z.string(), InstalledPackageSchema).default({}),
+  artifacts: z.record(z.string(), InstalledArtifactSchema).default({}),
 });
 export type InstalledYaml = z.infer<typeof InstalledYamlSchema>;

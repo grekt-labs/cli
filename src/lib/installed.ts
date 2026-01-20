@@ -26,7 +26,7 @@ export function saveInstalled(data: InstalledYaml, projectRoot: string = process
 export function createEmptyInstalled(): InstalledYaml {
   return {
     version: 1,
-    packages: {},
+    artifacts: {},
   };
 }
 

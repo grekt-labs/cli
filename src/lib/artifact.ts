@@ -1,41 +1,41 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "fs";
 import { join, relative } from "path";
 import { parse } from "yaml";
-import { PackageManifestSchema, type PackageManifest } from "#/schemas/index";
+import { ArtifactManifestSchema, type ArtifactManifest } from "#/schemas/index";
 import { parseFrontmatter, type ParsedArtifact } from "#/lib/frontmatter";
 
-export interface PackageInfo {
-  manifest: PackageManifest;
+export interface ArtifactInfo {
+  manifest: ArtifactManifest;
   agent?: { path: string; parsed: ParsedArtifact };
   skills: { path: string; parsed: ParsedArtifact }[];
   commands: { path: string; parsed: ParsedArtifact }[];
 }
 
-export function readPackageManifest(packageDir: string): PackageManifest | null {
-  const manifestPath = join(packageDir, "grekt.yaml");
+export function readArtifactManifest(artifactDir: string): ArtifactManifest | null {
+  const manifestPath = join(artifactDir, "grekt.yaml");
   if (!existsSync(manifestPath)) return null;
 
   try {
     const content = readFileSync(manifestPath, "utf-8");
     const raw = parse(content);
-    return PackageManifestSchema.parse(raw);
+    return ArtifactManifestSchema.parse(raw);
   } catch {
     return null;
   }
 }
 
-export function scanPackage(packageDir: string): PackageInfo | null {
-  const manifest = readPackageManifest(packageDir);
+export function scanArtifact(artifactDir: string): ArtifactInfo | null {
+  const manifest = readArtifactManifest(artifactDir);
   if (!manifest) return null;
 
-  const info: PackageInfo = {
+  const info: ArtifactInfo = {
     manifest,
     skills: [],
     commands: [],
   };
 
   // Scan for .md files recursively
-  const mdFiles = findMdFiles(packageDir);
+  const mdFiles = findMdFiles(artifactDir);
 
   for (const filePath of mdFiles) {
     const content = readFileSync(filePath, "utf-8");
@@ -43,7 +43,7 @@ export function scanPackage(packageDir: string): PackageInfo | null {
 
     if (!parsed) continue;
 
-    const relativePath = relative(packageDir, filePath);
+    const relativePath = relative(artifactDir, filePath);
 
     switch (parsed.frontmatter.type) {
       case "agent":
@@ -79,6 +79,6 @@ function findMdFiles(dir: string): string[] {
   return results;
 }
 
-export function getPackageId(author: string, name: string): string {
+export function getArtifactId(author: string, name: string): string {
   return `@${author}/${name}`;
 }
