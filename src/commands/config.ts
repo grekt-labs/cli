@@ -1,67 +1,52 @@
 import { Command } from "commander";
 import {
-  getGlobalConfig,
-  setGlobalConfigValue,
   getProjectConfig,
+  setProjectConfigValue,
   isInitialized,
-  ensureGlobalConfigDir,
 } from "#/lib/config";
-import { success, error, info, log, colors, newline } from "#/utils/ui";
-import type { GlobalConfig } from "#/schemas/index";
+import { success, error, info, log, colors } from "#/utils/ui";
+import type { ProjectConfig } from "#/schemas/index";
 
-const VALID_KEYS: (keyof GlobalConfig)[] = [
-  "registry",
-  "telemetry",
-  "defaultTargets",
-  "autoSync",
-];
+const VALID_KEYS: (keyof ProjectConfig)[] = ["targets", "autoSync"];
 
 export const configCommand = new Command("config")
-  .description("Manage grekt configuration");
+  .description("Manage project configuration");
 
 configCommand
   .command("list")
   .description("Show current configuration")
-  .option("-g, --global", "Show only global config")
-  .option("-l, --local", "Show only local project config")
-  .action((options: { global?: boolean; local?: boolean }) => {
-    if (!options.local) {
-      ensureGlobalConfigDir();
-      const globalConfig = getGlobalConfig();
-      log(colors.bold("Global config (~/.grekt/config.yaml):"));
-      for (const [key, value] of Object.entries(globalConfig)) {
-        log(`  ${colors.highlight(key)}: ${formatValue(value)}`);
-      }
+  .action(() => {
+    if (!isInitialized()) {
+      error("grekt is not initialized in this directory");
+      info("Run 'grekt init' first");
+      process.exit(1);
     }
 
-    if (!options.global) {
-      newline();
-      if (isInitialized()) {
-        const projectConfig = getProjectConfig();
-        log(colors.bold("Project config (.grekt/config.yaml):"));
-        for (const [key, value] of Object.entries(projectConfig)) {
-          log(`  ${colors.highlight(key)}: ${formatValue(value)}`);
-        }
-      } else {
-        info("No project config (grekt not initialized in this directory)");
-      }
+    const projectConfig = getProjectConfig();
+    log(colors.bold("Configuration (.grekt/config.yaml):"));
+    for (const [key, value] of Object.entries(projectConfig)) {
+      log(`  ${colors.highlight(key)}: ${formatValue(value)}`);
     }
   });
 
 configCommand
   .command("set <key> <value>")
-  .description("Set a global configuration value")
+  .description("Set a configuration value")
   .action((key: string, value: string) => {
-    ensureGlobalConfigDir();
+    if (!isInitialized()) {
+      error("grekt is not initialized in this directory");
+      info("Run 'grekt init' first");
+      process.exit(1);
+    }
 
-    if (!VALID_KEYS.includes(key as keyof GlobalConfig)) {
+    if (!VALID_KEYS.includes(key as keyof ProjectConfig)) {
       error(`Invalid key: ${key}`);
       info(`Valid keys: ${VALID_KEYS.join(", ")}`);
       process.exit(1);
     }
 
     const parsed = parseValue(key, value);
-    setGlobalConfigValue(key as keyof GlobalConfig, parsed);
+    setProjectConfigValue(key as keyof ProjectConfig, parsed);
     success(`Set ${key} = ${formatValue(parsed)}`);
   });
 
@@ -69,11 +54,16 @@ configCommand
   .command("get <key>")
   .description("Get a configuration value")
   .action((key: string) => {
-    ensureGlobalConfigDir();
-    const globalConfig = getGlobalConfig();
+    if (!isInitialized()) {
+      error("grekt is not initialized in this directory");
+      info("Run 'grekt init' first");
+      process.exit(1);
+    }
 
-    if (key in globalConfig) {
-      log(formatValue(globalConfig[key as keyof GlobalConfig]));
+    const projectConfig = getProjectConfig();
+
+    if (key in projectConfig) {
+      log(formatValue(projectConfig[key as keyof ProjectConfig]));
     } else {
       error(`Unknown key: ${key}`);
       process.exit(1);
@@ -82,12 +72,12 @@ configCommand
 
 function parseValue(key: string, value: string): unknown {
   // Boolean values
-  if (key === "telemetry" || key === "autoSync") {
+  if (key === "autoSync") {
     return value === "true" || value === "1";
   }
 
   // Array values (comma-separated)
-  if (key === "defaultTargets") {
+  if (key === "targets") {
     return value.split(",").map((s) => s.trim());
   }
 

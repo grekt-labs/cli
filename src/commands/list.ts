@@ -1,8 +1,12 @@
 import { Command } from "commander";
+import { existsSync } from "fs";
 import { isInitialized } from "#/lib/config";
 import { getInstalled } from "#/lib/installed";
-import { getLockfile } from "#/lib/lockfile";
-import { error, info, log, colors, newline } from "#/utils/ui";
+import { GREKTS_DIR } from "#/lib/paths";
+import { getDirectorySize, formatBytes, estimateTokens } from "#/lib/integrity";
+import { error, info, log, warning, colors, newline, symbols } from "#/utils/ui";
+
+const CONTEXT_WARNING_THRESHOLD = 10 * 1024; // 10 KB
 
 export const listCommand = new Command("list")
   .alias("ls")
@@ -18,84 +22,63 @@ export const listCommand = new Command("list")
     }
 
     const installed = getInstalled(projectRoot);
-    const lockfile = getLockfile(projectRoot);
-
-    const agents = Object.entries(installed.agents);
-    const skills = Object.entries(installed.skills);
-    const commands = Object.entries(installed.commands);
+    const artifacts = Object.entries(installed.artifacts);
 
     if (options.json) {
-      console.log(JSON.stringify({ agents: installed.agents, skills: installed.skills, commands: installed.commands }, null, 2));
+      console.log(JSON.stringify(installed, null, 2));
       return;
     }
 
-    if (agents.length === 0 && skills.length === 0 && commands.length === 0) {
+    if (artifacts.length === 0) {
       info("No artifacts installed");
       info("Run 'grekt add <artifact>' to install artifacts");
       return;
     }
 
-    // Display agents
-    if (agents.length > 0) {
-      log(colors.bold("Agents:"));
-      for (const [name, agent] of agents) {
-        const artifactId = findArtifactId(lockfile.artifacts, name);
-        const version = artifactId ? lockfile.artifacts[artifactId]?.version : undefined;
+    log(colors.bold("Installed artifacts:"));
+    newline();
 
-        log(`  ${colors.highlight(name)}${version ? colors.dim(`@${version}`) : ""}`);
-        if (agent.description) {
-          log(`    ${colors.dim(agent.description)}`);
-        }
-        if (agent.skills && agent.skills.length > 0) {
-          log(`    ${colors.dim("skills:")} ${agent.skills.join(", ")}`);
-        }
-        if (agent.commands && agent.commands.length > 0) {
-          log(`    ${colors.dim("commands:")} ${agent.commands.join(", ")}`);
-        }
+    let totalSize = 0;
+
+    for (const [name, artifact] of artifacts) {
+      const artifactDir = `${projectRoot}/${GREKTS_DIR}/${name}`;
+      let size = 0;
+      let sizeStr = "";
+
+      if (existsSync(artifactDir)) {
+        size = getDirectorySize(artifactDir);
+        totalSize += size;
+        sizeStr = formatBytes(size);
       }
+
+      // Show size warning indicator
+      const sizeIndicator = size > 5 * 1024 ? ` ${symbols.warning}` : "";
+
+      log(`  ${colors.highlight(name)}${colors.dim(`@${artifact.version}`)}  ${colors.dim(sizeStr)}${sizeIndicator}`);
+
+      if (artifact.agent) {
+        log(`    ${colors.dim("agent:")} ${artifact.agent}`);
+      }
+
+      if (artifact.skills.length > 0) {
+        log(`    ${colors.dim("skills:")} ${artifact.skills.join(", ")}`);
+      }
+
+      if (artifact.commands.length > 0) {
+        log(`    ${colors.dim("commands:")} ${artifact.commands.join(", ")}`);
+      }
+
       newline();
     }
 
-    // Display skills
-    if (skills.length > 0) {
-      log(colors.bold("Skills:"));
-      for (const [name, skill] of skills) {
-        log(`  ${colors.highlight(name)}`);
-        if (skill.description) {
-          log(`    ${colors.dim(skill.description)}`);
-        }
-        if (skill.used_by) {
-          log(`    ${colors.dim("used by:")} ${skill.used_by}`);
-        }
-      }
-      newline();
-    }
+    // Show total context size
+    log(colors.dim("─".repeat(40)));
+    log(`  Total: ${formatBytes(totalSize)} (~${estimateTokens(totalSize).toLocaleString()} tokens)`);
 
-    // Display commands
-    if (commands.length > 0) {
-      log(colors.bold("Commands:"));
-      for (const [name, command] of commands) {
-        if (command.alias) {
-          log(`  ${colors.highlight(name)} ${colors.dim(`→ ${command.alias}`)}`);
-        } else {
-          log(`  ${colors.highlight(name)}`);
-          if (command.description) {
-            log(`    ${colors.dim(command.description)}`);
-          }
-          if (command.agent) {
-            log(`    ${colors.dim("agent:")} ${command.agent}`);
-          }
-        }
-      }
+    if (totalSize > CONTEXT_WARNING_THRESHOLD) {
+      newline();
+      warning("Total context exceeds 10 KB. Consider:");
+      log("  • Removing unused artifacts");
+      log("  • Using smaller/more focused artifacts");
     }
   });
-
-function findArtifactId(artifacts: Record<string, unknown>, name: string): string | undefined {
-  for (const id of Object.keys(artifacts)) {
-    // Match @scope/name or just name
-    if (id.endsWith(`/${name}`) || id === name) {
-      return id;
-    }
-  }
-  return undefined;
-}

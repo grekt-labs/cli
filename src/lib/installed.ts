@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import { parse, stringify } from "yaml";
 import { InstalledYamlSchema, type InstalledYaml } from "#/schemas/index";
-import { INSTALLED_FILE, AGENTS_DIR, SKILLS_DIR, COMMANDS_DIR } from "#/lib/paths";
+import { INSTALLED_FILE } from "#/lib/paths";
 
 export function getInstalledPath(projectRoot: string = process.cwd()): string {
   return `${projectRoot}/${INSTALLED_FILE}`;
@@ -26,14 +26,7 @@ export function saveInstalled(data: InstalledYaml, projectRoot: string = process
 export function createEmptyInstalled(): InstalledYaml {
   return {
     version: 1,
-    paths: {
-      agents: AGENTS_DIR,
-      skills: SKILLS_DIR,
-      commands: COMMANDS_DIR,
-    },
-    agents: {},
-    skills: {},
-    commands: {},
+    artifacts: {},
   };
 }
 

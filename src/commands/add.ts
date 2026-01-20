@@ -1,23 +1,20 @@
 import { Command } from "commander";
-import { select } from "@inquirer/prompts";
-import { existsSync, mkdirSync, writeFileSync } from "fs";
-import { basename } from "path";
-import { createHash } from "crypto";
+import { existsSync, mkdirSync } from "fs";
 import { isInitialized } from "#/lib/config";
 import { getInstalled, saveInstalled } from "#/lib/installed";
 import { getLockfile, saveLockfile } from "#/lib/lockfile";
-import { AGENTS_DIR, SKILLS_DIR, COMMANDS_DIR } from "#/lib/paths";
-import { isGitHubSource, toRawUrl, fetchRawFile } from "#/lib/github";
-import { success, error, info, log, newline, colors, spinner } from "#/utils/ui";
+import { GREKTS_DIR } from "#/lib/paths";
+import { isGitHubSource, parseGitHubSource, downloadArtifact } from "#/lib/github";
+import { scanArtifact, getArtifactId } from "#/lib/artifact";
+import { hashDirectory, calculateIntegrity, getDirectorySize, formatBytes, estimateTokens } from "#/lib/integrity";
+import { success, error, info, log, warning, newline, colors, spinner } from "#/utils/ui";
 
-type ArtifactType = "agent" | "skill" | "command";
+const CONTEXT_WARNING_THRESHOLD = 10 * 1024; // 10 KB
 
 export const addCommand = new Command("add")
-  .description("Add an artifact from a GitHub URL")
-  .argument("<source>", "GitHub URL (github:user/repo/path/file.md)")
-  .option("-t, --type <type>", "Artifact type (agent, skill, command)")
-  .option("-n, --name <name>", "Override artifact name")
-  .action(async (source: string, options: { type?: ArtifactType; name?: string }) => {
+  .description("Add an artifact from GitHub")
+  .argument("<source>", "GitHub URL (github:user/repo/@scope/name)")
+  .action(async (source: string) => {
     const projectRoot = process.cwd();
 
     if (!isInitialized(projectRoot)) {
@@ -30,97 +27,109 @@ export const addCommand = new Command("add")
       error("Only GitHub sources supported for now");
       newline();
       info("Examples:");
-      log("  grekt add github:user/repo/agents/reviewer.md");
-      log("  grekt add https://github.com/user/repo/blob/main/agent.md");
+      log("  grekt add github:grekt/artifacts/@grekt/web-scraper");
+      log("  grekt add https://github.com/grekt/artifacts/tree/main/@grekt/web-scraper");
       process.exit(1);
     }
 
-    const rawUrl = toRawUrl(source);
-    if (!rawUrl) {
+    const ghSource = parseGitHubSource(source);
+    if (!ghSource) {
       error("Invalid GitHub URL");
       newline();
-      info("Format: github:user/repo/path/to/file.md");
+      info("Format: github:user/repo/path/to/artifact");
       process.exit(1);
     }
 
-    const spin = spinner("Fetching from GitHub...");
+    // Extract artifact name from path (last part like @scope/name)
+    const pathParts = ghSource.path.split("/");
+    let artifactName: string;
+
+    // Check if path ends with @scope/name pattern
+    if (pathParts.length >= 2 && pathParts[pathParts.length - 2]?.startsWith("@")) {
+      artifactName = `${pathParts[pathParts.length - 2]}/${pathParts[pathParts.length - 1]}`;
+    } else {
+      artifactName = pathParts[pathParts.length - 1] || ghSource.path;
+    }
+
+    const targetDir = `${projectRoot}/${GREKTS_DIR}/${artifactName}`;
+
+    // Check if already installed
+    if (existsSync(targetDir)) {
+      error(`Artifact ${colors.highlight(artifactName)} is already installed`);
+      info("Run 'grekt remove' first to reinstall");
+      process.exit(1);
+    }
+
+    const spin = spinner(`Downloading ${artifactName}...`);
     spin.start();
 
-    const content = await fetchRawFile(rawUrl);
+    // Download artifact from GitHub
+    mkdirSync(targetDir, { recursive: true });
+    const downloaded = await downloadArtifact(ghSource, targetDir);
+
     spin.stop();
 
-    if (!content) {
-      error("Could not fetch file from GitHub");
-      info(`URL: ${rawUrl}`);
+    if (!downloaded) {
+      error("Could not download artifact from GitHub");
+      info(`Source: ${source}`);
       process.exit(1);
     }
 
-    // Determine artifact name from URL or option
-    const fileName = basename(rawUrl);
-    const artifactName = options.name || fileName.replace(/\.md$/, "");
+    // Scan the downloaded artifact
+    const artifactInfo = scanArtifact(targetDir);
 
-    // Determine type from option or ask
-    let artifactType: ArtifactType = options.type || "agent";
-    if (!options.type) {
-      artifactType = await select({
-        message: "What type of artifact is this?",
-        choices: [
-          { name: "Agent", value: "agent" as ArtifactType },
-          { name: "Skill", value: "skill" as ArtifactType },
-          { name: "Command", value: "command" as ArtifactType },
-        ],
-      });
+    if (!artifactInfo) {
+      error("Invalid artifact: missing grekt.yaml or invalid structure");
+      process.exit(1);
     }
 
-    // Determine target directory
-    const targetDir = {
-      agent: AGENTS_DIR,
-      skill: SKILLS_DIR,
-      command: COMMANDS_DIR,
-    }[artifactType];
-
-    // Create directory if needed
-    const fullDir = `${projectRoot}/${targetDir}`;
-    if (!existsSync(fullDir)) {
-      mkdirSync(fullDir, { recursive: true });
-    }
-
-    // Write file
-    const targetFile = `${artifactName}.md`;
-    writeFileSync(`${fullDir}/${targetFile}`, content, "utf-8");
+    const artifactId = getArtifactId(artifactInfo.manifest.author, artifactInfo.manifest.name);
 
     // Update installed.yaml
     const installed = getInstalled(projectRoot);
-
-    if (artifactType === "agent") {
-      installed.agents[artifactName] = {
-        file: targetFile,
-      };
-    } else if (artifactType === "skill") {
-      installed.skills[artifactName] = {
-        file: targetFile,
-      };
-    } else if (artifactType === "command") {
-      installed.commands[artifactName] = {
-        file: targetFile,
-      };
-    }
-
+    installed.artifacts[artifactId] = {
+      version: artifactInfo.manifest.version,
+      agent: artifactInfo.agent?.path,
+      skills: artifactInfo.skills.map((s) => s.path),
+      commands: artifactInfo.commands.map((c) => c.path),
+    };
     saveInstalled(installed, projectRoot);
 
-    // Update lockfile
+    // Calculate checksums for all files
+    const fileHashes = hashDirectory(targetDir);
+    const integrity = calculateIntegrity(fileHashes);
+
+    // Update lockfile with per-file hashes
     const lockfile = getLockfile(projectRoot);
-    const checksum = createHash("sha256").update(content).digest("hex");
-
-    lockfile.artifacts[`${artifactType}:${artifactName}`] = {
-      version: "github",
-      checksum: `sha256:${checksum.slice(0, 16)}`,
+    lockfile.artifacts[artifactId] = {
+      version: artifactInfo.manifest.version,
+      integrity,
+      source: `github:${ghSource.owner}/${ghSource.repo}/${ghSource.path}`,
+      files: fileHashes,
     };
-
     saveLockfile(lockfile, projectRoot);
 
-    success(`Installed ${colors.highlight(artifactName)} (${artifactType})`);
-    info(`File: ${targetDir}/${targetFile}`);
+    // Check artifact size and warn if large
+    const artifactSize = getDirectorySize(targetDir);
+    if (artifactSize > CONTEXT_WARNING_THRESHOLD) {
+      newline();
+      warning(`Artifact is ${formatBytes(artifactSize)} (~${estimateTokens(artifactSize).toLocaleString()} tokens)`);
+      info("Large artifacts may impact AI context. Consider if all content is necessary.");
+    }
+
+    newline();
+    success(`Installed ${colors.highlight(artifactId)}@${artifactInfo.manifest.version}`);
+
+    if (artifactInfo.agent) {
+      log(`  ${colors.dim("agent:")} ${artifactInfo.agent.parsed.frontmatter.name}`);
+    }
+    if (artifactInfo.skills.length > 0) {
+      log(`  ${colors.dim("skills:")} ${artifactInfo.skills.map((s) => s.parsed.frontmatter.name).join(", ")}`);
+    }
+    if (artifactInfo.commands.length > 0) {
+      log(`  ${colors.dim("commands:")} ${artifactInfo.commands.map((c) => c.parsed.frontmatter.name).join(", ")}`);
+    }
+
     newline();
     info("Run 'grekt sync' to sync with your AI tools");
   });

@@ -1,0 +1,159 @@
+import { Command } from "commander";
+import { existsSync, rmSync, readdirSync, unlinkSync } from "fs";
+import { basename, join } from "path";
+import { confirm } from "@inquirer/prompts";
+import { isInitialized } from "#/lib/config";
+import { getInstalled, saveInstalled } from "#/lib/installed";
+import { getLockfile, saveLockfile } from "#/lib/lockfile";
+import { GREKTS_DIR } from "#/lib/paths";
+import { success, error, info, log, warning, newline, colors } from "#/utils/ui";
+
+// Claude target paths
+const CLAUDE_DIR = ".claude";
+const CLAUDE_AGENTS_DIR = join(CLAUDE_DIR, "agents");
+const CLAUDE_SKILLS_DIR = join(CLAUDE_DIR, "skills");
+const CLAUDE_COMMANDS_DIR = join(CLAUDE_DIR, "commands");
+
+/**
+ * Get namespaced filename (must match claude.ts getSafeFilename)
+ */
+function getSafeFilename(artifactId: string, filepath: string): string {
+  const safeName = artifactId.replace("@", "").replace("/", "-");
+  const filename = basename(filepath);
+  return `${safeName}_${filename}`;
+}
+
+export const removeCommand = new Command("remove")
+  .alias("rm")
+  .description("Remove an installed artifact")
+  .argument("<artifact>", "Artifact ID to remove (e.g., @grekt/code-reviewer)")
+  .option("-f, --force", "Skip confirmation prompt")
+  .action(async (artifactId: string, options: { force?: boolean }) => {
+    const projectRoot = process.cwd();
+
+    if (!isInitialized(projectRoot)) {
+      error("grekt is not initialized in this directory");
+      info("Run 'grekt init' first");
+      process.exit(1);
+    }
+
+    const installed = getInstalled(projectRoot);
+    const lockfile = getLockfile(projectRoot);
+
+    // Check if artifact is installed
+    if (!installed.artifacts[artifactId]) {
+      error(`Artifact ${colors.highlight(artifactId)} is not installed`);
+      newline();
+      info("Run 'grekt list' to see installed artifacts");
+      process.exit(1);
+    }
+
+    const artifact = installed.artifacts[artifactId];
+    const artifactDir = `${projectRoot}/${GREKTS_DIR}/${artifactId}`;
+
+    // Show what will be removed
+    log(colors.bold("Will remove:"));
+    newline();
+    log(`  ${colors.highlight(artifactId)}@${colors.dim(artifact.version)}`);
+
+    if (artifact.agent) {
+      log(`    ${colors.dim("agent:")} ${artifact.agent}`);
+    }
+    if (artifact.skills.length > 0) {
+      log(`    ${colors.dim("skills:")} ${artifact.skills.join(", ")}`);
+    }
+    if (artifact.commands.length > 0) {
+      log(`    ${colors.dim("commands:")} ${artifact.commands.join(", ")}`);
+    }
+
+    newline();
+
+    // Confirm unless --force
+    if (!options.force) {
+      const confirmed = await confirm({
+        message: "Remove this artifact?",
+        default: false,
+      });
+
+      if (!confirmed) {
+        info("Cancelled");
+        process.exit(0);
+      }
+    }
+
+    const removed: string[] = [];
+
+    // Remove from grekts/
+    if (existsSync(artifactDir)) {
+      rmSync(artifactDir, { recursive: true, force: true });
+      removed.push(`${GREKTS_DIR}/${artifactId}`);
+    }
+
+    // Remove synced files from .claude/
+    const claudeDir = `${projectRoot}/${CLAUDE_DIR}`;
+    if (existsSync(claudeDir)) {
+      // Remove agent file
+      if (artifact.agent) {
+        const agentTarget = `${projectRoot}/${CLAUDE_AGENTS_DIR}/${artifactId.replace("/", "-")}.md`;
+        if (existsSync(agentTarget)) {
+          unlinkSync(agentTarget);
+          removed.push(`${CLAUDE_AGENTS_DIR}/${artifactId.replace("/", "-")}.md`);
+        }
+      }
+
+      // Remove skill files (namespaced)
+      for (const skillPath of artifact.skills) {
+        const skillName = getSafeFilename(artifactId, skillPath);
+        const skillTarget = `${projectRoot}/${CLAUDE_SKILLS_DIR}/${skillName}`;
+        if (existsSync(skillTarget)) {
+          unlinkSync(skillTarget);
+          removed.push(`${CLAUDE_SKILLS_DIR}/${skillName}`);
+        }
+      }
+
+      // Remove command files (namespaced)
+      for (const cmdPath of artifact.commands) {
+        const cmdName = getSafeFilename(artifactId, cmdPath);
+        const cmdTarget = `${projectRoot}/${CLAUDE_COMMANDS_DIR}/${cmdName}`;
+        if (existsSync(cmdTarget)) {
+          unlinkSync(cmdTarget);
+          removed.push(`${CLAUDE_COMMANDS_DIR}/${cmdName}`);
+        }
+      }
+
+      // Clean up empty directories
+      cleanEmptyDir(`${projectRoot}/${CLAUDE_AGENTS_DIR}`);
+      cleanEmptyDir(`${projectRoot}/${CLAUDE_SKILLS_DIR}`);
+      cleanEmptyDir(`${projectRoot}/${CLAUDE_COMMANDS_DIR}`);
+    }
+
+    // Update installed.yaml
+    delete installed.artifacts[artifactId];
+    saveInstalled(installed, projectRoot);
+
+    // Update lockfile
+    delete lockfile.artifacts[artifactId];
+    saveLockfile(lockfile, projectRoot);
+
+    newline();
+    success(`Removed ${colors.highlight(artifactId)}`);
+
+    if (removed.length > 0) {
+      log(colors.dim(`  Cleaned: ${removed.length} files/directories`));
+    }
+
+    newline();
+    info("Run 'grekt sync' to update CLAUDE.md");
+  });
+
+/**
+ * Remove directory if empty
+ */
+function cleanEmptyDir(dir: string): void {
+  if (existsSync(dir)) {
+    const files = readdirSync(dir);
+    if (files.length === 0) {
+      rmSync(dir, { recursive: true });
+    }
+  }
+}

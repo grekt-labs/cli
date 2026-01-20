@@ -43,7 +43,7 @@ export const syncCommand = new Command("sync")
       process.exit(1);
     }
 
-    const hasArtifacts = Object.keys(installed.agents).length > 0 || Object.keys(installed.skills).length > 0;
+    const hasArtifacts = Object.keys(installed.artifacts).length > 0;
 
     if (!hasArtifacts) {
       info("No artifacts installed yet");
