@@ -1,25 +1,21 @@
 import { mkdirSync, writeFileSync } from "fs";
 import { execSync } from "child_process";
+import { getProjectConfig } from "#/lib/config";
 
-const REGISTRY_URL = process.env.REGISTRY_URL;
+const DEFAULT_REGISTRY_URL = "https://pub-db2542aa79e24b5f99523d0656d6b343.r2.dev/artifacts";
 
-export function getRegistryUrl(): string | undefined {
-  return REGISTRY_URL;
-}
-
-export function isRegistryConfigured(): boolean {
-  return !!REGISTRY_URL;
+export function getRegistryUrl(projectRoot: string = process.cwd()): string {
+  const config = getProjectConfig(projectRoot);
+  return config.registry || DEFAULT_REGISTRY_URL;
 }
 
 export async function downloadFromRegistry(
   artifactId: string,
-  targetDir: string
+  targetDir: string,
+  projectRoot: string = process.cwd()
 ): Promise<boolean> {
-  if (!REGISTRY_URL) {
-    throw new Error("REGISTRY_URL not configured");
-  }
-
-  const tarballUrl = `${REGISTRY_URL}/${artifactId}.tar.gz`;
+  const registryUrl = getRegistryUrl(projectRoot);
+  const tarballUrl = `${registryUrl}/${artifactId}.tar.gz`;
 
   try {
     const response = await fetch(tarballUrl);
@@ -44,13 +40,13 @@ export async function downloadFromRegistry(
   }
 }
 
-export async function artifactExists(artifactId: string): Promise<boolean> {
-  if (!REGISTRY_URL) {
-    return false;
-  }
-
+export async function artifactExists(
+  artifactId: string,
+  projectRoot: string = process.cwd()
+): Promise<boolean> {
   try {
-    const response = await fetch(`${REGISTRY_URL}/${artifactId}.tar.gz`, { method: "HEAD" });
+    const registryUrl = getRegistryUrl(projectRoot);
+    const response = await fetch(`${registryUrl}/${artifactId}.tar.gz`, { method: "HEAD" });
     return response.ok;
   } catch {
     return false;

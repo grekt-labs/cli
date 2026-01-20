@@ -21,7 +21,7 @@ if (!STORAGE_ENDPOINT || !STORAGE_ACCESS_KEY_ID || !STORAGE_SECRET_ACCESS_KEY ||
 const isDev = process.argv.includes("--dev");
 const pkg = JSON.parse(readFileSync(join(process.cwd(), "package.json"), "utf-8"));
 const version = isDev ? "dev" : `v${pkg.version}`;
-const releasePrefix = `release/${version}`;
+const releasePrefix = `cli/release/${version}`;
 
 const client = new S3Client({
   region: "auto",
