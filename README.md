@@ -22,8 +22,8 @@ Now `grekt` is available globally.
 # Initialize a project
 grekt init
 
-# Add an artifact from GitHub
-grekt add github:grekt-labs/artifacts/@grekt/code-reviewer
+# Add an artifact from registry
+grekt add my-artifact
 
 # Sync to your AI tools
 grekt sync
@@ -40,22 +40,16 @@ grekt list
 | Command | Description |
 |---------|-------------|
 | `grekt init` | Initialize grekt in current directory |
-| `grekt add <source>` | Add artifact from GitHub |
+| `grekt add <artifact>` | Add artifact from registry |
 | `grekt remove <id>` | Remove an artifact |
 | `grekt sync` | Sync to AI tools (Claude, Cursor) |
 | `grekt list` | List installed artifacts |
 | `grekt check` | Check integrity and context budget |
 | `grekt config` | Manage configuration |
 
-## GitHub Source Formats
+## Configuration
 
-```bash
-# Short format
-grekt add github:owner/repo/@scope/artifact
-
-# URL format
-grekt add https://github.com/owner/repo/tree/main/@scope/artifact
-```
+Set `REGISTRY_URL` in your environment or `.env` file to point to your artifact registry.
 
 ## Project Structure
 
