@@ -2,7 +2,7 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
 import { homedir } from "os";
 import { join } from "path";
 import { parse, stringify } from "yaml";
-import { CredentialsSchema, type Credentials, type RegistryCredentials } from "#/schemas/index";
+import { CredentialsSchema, type Credentials, type S3Credentials, type TokenCredentials } from "#/schemas/index";
 
 const GREKT_HOME = join(homedir(), ".grekt");
 const CREDENTIALS_FILE = join(GREKT_HOME, "credentials.yaml");
@@ -32,21 +32,40 @@ export function saveCredentials(data: Credentials): void {
   writeFileSync(CREDENTIALS_FILE, content, { mode: 0o600 }); // Secure permissions
 }
 
-export function getRegistryCredentials(registryName: string): RegistryCredentials | undefined {
+export function getRegistryCredentials(registryName: string): S3Credentials | undefined {
   const credentials = getCredentials();
-  return credentials[registryName];
+  const cred = credentials[registryName];
+  if (cred && "type" in cred && cred.type === "s3") {
+    return cred;
+  }
+  return undefined;
 }
 
-export function setRegistryCredentials(registryName: string, creds: RegistryCredentials): void {
+export function setRegistryCredentials(registryName: string, creds: S3Credentials): void {
   const credentials = getCredentials();
   credentials[registryName] = creds;
   saveCredentials(credentials);
 }
 
+export function getTokenCredentials(name: string): string | undefined {
+  const credentials = getCredentials();
+  const cred = credentials[name];
+  if (cred && "token" in cred) {
+    return cred.token;
+  }
+  return undefined;
+}
+
+export function setTokenCredentials(name: string, token: string): void {
+  const credentials = getCredentials();
+  credentials[name] = { token };
+  saveCredentials(credentials);
+}
+
 /**
- * Get credentials from env vars (fallback for CI/CD)
+ * Get S3 credentials from env vars (fallback for CI/CD)
  */
-export function getCredentialsFromEnv(): RegistryCredentials | undefined {
+export function getCredentialsFromEnv(): S3Credentials | undefined {
   const {
     GREKT_STORAGE_ENDPOINT,
     GREKT_STORAGE_ACCESS_KEY_ID,

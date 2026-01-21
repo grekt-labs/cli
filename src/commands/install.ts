@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, rmSync } from "fs";
 import { isInitialized, getConfig } from "#/lib/config";
 import { getLockfile, lockfileExists } from "#/lib/lockfile";
 import { ARTIFACTS_DIR } from "#/lib/paths";
-import { downloadFromRegistry } from "#/lib/registry";
+import { parseSource, downloadFromSource } from "#/lib/sources";
 import { hashDirectory, verifyIntegrity } from "#/lib/integrity";
 import { success, error, info, warning, log, newline, colors, spinner } from "#/utils/ui";
 
@@ -70,16 +70,16 @@ export const installCommand = new Command("install")
         rmSync(targetDir, { recursive: true, force: true });
       }
 
-      // Parse source to get artifact ID for download
-      const source = entry.source || `registry:${artifactId}`;
-      const sourceArtifactId = source.startsWith("registry:") ? source.slice(9) : artifactId;
+      // Parse source for download
+      const sourceStr = entry.source || artifactId;
+      const source = parseSource(sourceStr);
 
       const spin = spinner(`Installing ${artifactId}@${entry.version}...`);
       spin.start();
 
-      // Download artifact
+      // Download artifact from source
       mkdirSync(targetDir, { recursive: true });
-      const downloaded = await downloadFromRegistry(sourceArtifactId, targetDir, projectRoot);
+      const downloaded = await downloadFromSource(source, targetDir, projectRoot);
 
       if (!downloaded) {
         spin.stop();
