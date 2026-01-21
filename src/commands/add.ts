@@ -1,11 +1,12 @@
 import { Command } from "commander";
-import { existsSync, mkdirSync, rmSync, unlinkSync, readdirSync } from "fs";
+import { existsSync, mkdirSync, rmSync, unlinkSync, readdirSync, renameSync } from "fs";
 import { join } from "path";
 import { checkbox } from "@inquirer/prompts";
 import { isInitialized, getConfig, saveConfig } from "#/lib/config";
 import { getLockfile, saveLockfile } from "#/lib/lockfile";
 import { ARTIFACTS_DIR } from "#/lib/paths";
-import { getRegistryUrl, downloadFromRegistry } from "#/lib/registry";
+import { getRegistryUrl } from "#/lib/registry";
+import { parseSource, downloadFromSource, getSourceDisplayName } from "#/lib/sources";
 import { scanArtifact, getArtifactId, type ArtifactInfo } from "#/lib/artifact";
 import { hashDirectory, calculateIntegrity, getDirectorySize, formatBytes, estimateTokens } from "#/lib/integrity";
 import { success, error, info, log, warning, newline, colors, spinner } from "#/utils/ui";
@@ -130,10 +131,10 @@ function cleanEmptyDirs(dir: string): void {
 }
 
 export const addCommand = new Command("add")
-  .description("Add an artifact from the registry")
-  .argument("<artifact>", "Artifact ID (e.g., @grekt/code-reviewer)")
+  .description("Add an artifact from registry, GitHub, or GitLab")
+  .argument("<source>", "Artifact source (e.g., @grekt/code-reviewer, github:user/repo, gitlab:host/user/repo)")
   .option("-c, --choose", "Choose which components to install")
-  .action(async (artifactId: string, options: { choose?: boolean }) => {
+  .action(async (sourceArg: string, options: { choose?: boolean }) => {
     const projectRoot = process.cwd();
 
     if (!isInitialized(projectRoot)) {
@@ -142,41 +143,62 @@ export const addCommand = new Command("add")
       process.exit(1);
     }
 
-    const targetDir = `${projectRoot}/${ARTIFACTS_DIR}/${artifactId}`;
+    // Parse the source
+    const source = parseSource(sourceArg);
+    const displayName = getSourceDisplayName(source);
 
-    // Check if already installed
-    if (existsSync(targetDir)) {
-      error(`Artifact ${colors.highlight(artifactId)} is already installed`);
-      info("Run 'grekt remove' first to reinstall");
-      process.exit(1);
-    }
+    // For git sources, use temp dir first, then rename after we know the artifact ID
+    const tempDir = `${projectRoot}/${ARTIFACTS_DIR}/.tmp-${Date.now()}`;
 
-    const spin = spinner(`Downloading ${artifactId}...`);
+    const spin = spinner(`Downloading ${displayName}...`);
     spin.start();
 
-    // Download artifact from registry
-    mkdirSync(targetDir, { recursive: true });
-    const downloaded = await downloadFromRegistry(artifactId, targetDir, projectRoot);
+    // Download artifact from source
+    mkdirSync(tempDir, { recursive: true });
+    const downloaded = await downloadFromSource(source, tempDir, projectRoot);
 
     spin.stop();
 
     if (!downloaded) {
-      // Clean up empty directory
-      rmSync(targetDir, { recursive: true, force: true });
-      error(`Artifact ${colors.highlight(artifactId)} not found in registry`);
-      info(`Registry: ${getRegistryUrl(projectRoot)}`);
+      // Clean up temp directory
+      rmSync(tempDir, { recursive: true, force: true });
+      error(`Artifact ${colors.highlight(displayName)} not found`);
+      if (source.type === "registry") {
+        info(`Registry: ${getRegistryUrl(projectRoot)}`);
+      } else if (source.type === "github") {
+        info("Check the repository exists and you have access");
+        info("For private repos, set GITHUB_TOKEN environment variable");
+      } else if (source.type === "gitlab") {
+        info("Check the repository exists and you have access");
+        info(`For private repos, set GITLAB_TOKEN environment variable`);
+      }
       process.exit(1);
     }
 
     // Scan the downloaded artifact
-    const artifactInfo = scanArtifact(targetDir);
+    const artifactInfo = scanArtifact(tempDir);
 
     if (!artifactInfo) {
+      rmSync(tempDir, { recursive: true, force: true });
       error("Invalid artifact: missing grekt.yaml or invalid structure");
       process.exit(1);
     }
 
     const resolvedArtifactId = getArtifactId(artifactInfo.manifest.author, artifactInfo.manifest.name);
+
+    // Now we know the artifact ID, create final target directory
+    const targetDir = `${projectRoot}/${ARTIFACTS_DIR}/${resolvedArtifactId}`;
+
+    // Check if already installed
+    if (existsSync(targetDir)) {
+      rmSync(tempDir, { recursive: true, force: true });
+      warning(`Artifact ${colors.highlight(resolvedArtifactId)} is already installed`);
+      info("Use 'grekt remove' first to reinstall");
+      process.exit(1);
+    }
+
+    // Move temp dir to final location
+    renameSync(tempDir, targetDir);
 
     // Determine which components to install
     let selectedAgent = artifactInfo.agent?.path;
@@ -244,7 +266,7 @@ export const addCommand = new Command("add")
     lockfile.artifacts[resolvedArtifactId] = {
       version: artifactInfo.manifest.version,
       integrity,
-      source: `registry:${artifactId}`,
+      source: source.raw,
       files: fileHashes,
       agent: selectedAgent,
       skills: selectedSkills,

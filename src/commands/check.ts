@@ -139,12 +139,21 @@ export const checkCommand = new Command("check")
     // Summary
     newline();
     const okCount = results.filter((r) => r.status === "ok").length;
-    const issueCount = results.filter((r) => r.status !== "ok").length;
+    const driftCount = results.filter((r) => r.status === "drift").length;
+    const missingCount = results.filter((r) => r.status === "missing").length;
 
-    if (issueCount === 0) {
-      success(`All ${okCount} artifacts are healthy`);
+    if (driftCount === 0 && missingCount === 0) {
+      success(`All ${okCount} artifact(s) are healthy`);
     } else {
-      warning(`${issueCount} artifact(s) have issues`);
+      warning(`${driftCount + missingCount} artifact(s) have issues`);
+      newline();
+
+      if (driftCount > 0) {
+        info("To restore modified artifacts: grekt install --force");
+      }
+      if (missingCount > 0) {
+        info("To reinstall missing artifacts: grekt install");
+      }
     }
   });
 

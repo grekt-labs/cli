@@ -50,12 +50,33 @@ export const GrektYamlSchema = z.object({
 });
 export type GrektYaml = z.infer<typeof GrektYamlSchema>;
 
-// Credentials (~/.grekt/credentials.yaml) - for registry auth
+// S3 credentials for publishing to S3-compatible storage
+export const S3CredentialsSchema = z.object({
+  type: z.literal("s3"),
+  endpoint: z.string(),
+  accessKeyId: z.string(),
+  secretAccessKey: z.string(),
+  bucket: z.string(),
+  publicUrl: z.string().optional(),
+});
+export type S3Credentials = z.infer<typeof S3CredentialsSchema>;
+
+// Simple token credentials for git sources (GitHub, GitLab)
+export const TokenCredentialsSchema = z.object({
+  token: z.string(),
+});
+export type TokenCredentials = z.infer<typeof TokenCredentialsSchema>;
+
+// Registry credentials - can be S3 or token-based
+export const RegistryCredentialsSchema = z.union([
+  S3CredentialsSchema,
+  TokenCredentialsSchema,
+]);
+export type RegistryCredentials = z.infer<typeof RegistryCredentialsSchema>;
+
 export const CredentialsSchema = z.record(
-  z.string(), // registry URL
-  z.object({
-    token: z.string(),
-  })
+  z.string(), // registry name (e.g., "default", "github", "gitlab.com")
+  RegistryCredentialsSchema
 );
 export type Credentials = z.infer<typeof CredentialsSchema>;
 
