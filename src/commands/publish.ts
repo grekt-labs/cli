@@ -4,8 +4,9 @@ import { execSync } from "child_process";
 import { existsSync, readFileSync, unlinkSync } from "fs";
 import { basename, dirname, join, resolve } from "path";
 import { parse } from "yaml";
-import { getRegistryCredentials, getCredentialsFromEnv, getCredentialsPath, getRegistryToken } from "#/lib/credentials";
+import { getRegistryCredentials, getCredentialsFromEnv, getCredentialsPath } from "#/lib/credentials";
 import { createRegistryClient } from "#/lib/registry-client";
+import { isAuthenticated } from "#/lib/supabase";
 import {
   getArtifactMetadata,
   saveArtifactMetadata,
@@ -79,9 +80,9 @@ export const publishCommand = new Command("publish")
  * Publish using the new API-based registry
  */
 async function publishToApi(artifactId: string, version: string, tarballPath: string): Promise<void> {
-  const token = getRegistryToken();
+  const authenticated = await isAuthenticated();
 
-  if (!token) {
+  if (!authenticated) {
     unlinkSync(tarballPath);
     error("Not logged in");
     info("Run 'grekt login' first");

@@ -1,24 +1,17 @@
 import { Command } from "commander";
-import { removeRegistryToken, getRegistryToken } from "#/lib/credentials";
+import { getSupabaseClient, clearSession } from "#/lib/supabase";
 import { success, info } from "#/utils/ui";
 
 export const logoutCommand = new Command("logout")
-  .description("Log out from a grekt registry")
-  .action(() => {
-    const token = getRegistryToken();
+  .description("Log out from grekt registry")
+  .action(async () => {
+    const supabase = getSupabaseClient();
 
-    if (!token) {
-      info("Not logged in");
-      return;
-    }
+    // Sign out from Supabase (invalidates session)
+    await supabase.auth.signOut();
 
-    // Check if using env var
-    if (process.env.GREKT_TOKEN) {
-      info("Using GREKT_TOKEN environment variable");
-      info("Unset the environment variable to log out");
-      return;
-    }
+    // Clear local session file
+    clearSession();
 
-    removeRegistryToken();
     success("Logged out");
   });
