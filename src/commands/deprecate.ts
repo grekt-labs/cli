@@ -1,6 +1,7 @@
 import { Command } from "commander";
-import { getRegistryCredentials, getCredentialsFromEnv, getRegistryToken } from "#/lib/credentials";
+import { getRegistryCredentials, getCredentialsFromEnv } from "#/lib/credentials";
 import { createRegistryClient } from "#/lib/registry-client";
+import { isAuthenticated } from "#/lib/supabase";
 import {
   getArtifactMetadata,
   saveArtifactMetadata,
@@ -58,9 +59,9 @@ export const deprecateCommand = new Command("deprecate")
  * Deprecate using the new API-based registry
  */
 async function deprecateApi(artifactId: string, version: string, message: string): Promise<void> {
-  const token = getRegistryToken();
+  const authenticated = await isAuthenticated();
 
-  if (!token) {
+  if (!authenticated) {
     error("Not logged in");
     info("Run 'grekt login' first");
     log("");

@@ -1,7 +1,10 @@
 import { mkdirSync, writeFileSync } from "fs";
 import { execSync } from "child_process";
 import type { ArtifactMetadata } from "#/schemas/index";
-import { getRegistryToken, getRegistryUrl } from "#/lib/credentials";
+import { getSupabaseClient, getSession, SUPABASE_URL } from "#/lib/supabase";
+
+// Registry public URL for tarballs
+const REGISTRY_URL = "https://registry.grekt.com";
 
 export interface VersionInfo {
   version: string;
@@ -25,38 +28,64 @@ export interface WhoamiResult {
 }
 
 /**
- * Registry API client. Backend-agnostic - only speaks REST.
+ * Registry client using Supabase SDK.
+ * All Supabase-specific code is contained here.
  */
 export class RegistryClient {
-  constructor(
-    private baseUrl: string,
-    private getToken: () => string | undefined
-  ) {}
+  private edgeFunctionUrl: string;
 
-  private async fetch(path: string, options?: RequestInit): Promise<Response> {
-    const token = this.getToken();
-    const headers: Record<string, string> = {
-      "User-Agent": "grekt-cli",
-      ...(options?.headers as Record<string, string>),
-    };
-    if (token) {
-      headers.Authorization = `Bearer ${token}`;
-    }
-    return fetch(`${this.baseUrl}${path}`, { ...options, headers });
+  constructor(edgeFunctionUrl?: string) {
+    this.edgeFunctionUrl = edgeFunctionUrl || `${SUPABASE_URL}/functions/v1`;
   }
 
   // ============================================================================
-  // Public endpoints (no auth required)
+  // Public endpoints (no auth required) - Direct Supabase queries
   // ============================================================================
 
   /**
-   * Get artifact metadata
+   * Get artifact metadata (transformed to match expected interface)
    */
   async getArtifact(artifactId: string): Promise<ArtifactMetadata | null> {
     try {
-      const response = await this.fetch(`/artifacts/${encodeURIComponent(artifactId)}`);
-      if (!response.ok) return null;
-      return await response.json();
+      const supabase = getSupabaseClient();
+
+      // Get artifact
+      const { data: artifact, error: artifactError } = await supabase
+        .from("artifacts")
+        .select("*")
+        .eq("id", artifactId)
+        .eq("is_public", true)
+        .single();
+
+      if (artifactError || !artifact) return null;
+
+      // Get versions
+      const { data: versions, error: versionsError } = await supabase
+        .from("versions")
+        .select("*")
+        .eq("artifact_id", artifactId)
+        .order("published_at", { ascending: false });
+
+      if (versionsError) return null;
+
+      // Find latest version (first one, since ordered by published_at desc)
+      const latest = versions?.[0]?.version || "";
+
+      // Build deprecated record
+      const deprecated: Record<string, string> = {};
+      for (const v of versions || []) {
+        if (v.deprecated_message) {
+          deprecated[v.version] = v.deprecated_message;
+        }
+      }
+
+      return {
+        name: artifact.id,
+        latest,
+        deprecated,
+        createdAt: artifact.created_at,
+        updatedAt: versions?.[0]?.published_at || artifact.created_at,
+      };
     } catch {
       return null;
     }
@@ -67,9 +96,21 @@ export class RegistryClient {
    */
   async getVersions(artifactId: string): Promise<VersionInfo[]> {
     try {
-      const response = await this.fetch(`/artifacts/${encodeURIComponent(artifactId)}/versions`);
-      if (!response.ok) return [];
-      return await response.json();
+      const supabase = getSupabaseClient();
+
+      const { data: versions, error } = await supabase
+        .from("versions")
+        .select("version, deprecated_message, published_at")
+        .eq("artifact_id", artifactId)
+        .order("published_at", { ascending: false });
+
+      if (error || !versions) return [];
+
+      return versions.map((v) => ({
+        version: v.version,
+        deprecated: v.deprecated_message || undefined,
+        createdAt: v.published_at,
+      }));
     } catch {
       return [];
     }
@@ -80,14 +121,13 @@ export class RegistryClient {
    */
   async download(artifactId: string, version: string | undefined, targetDir: string): Promise<DownloadResult> {
     try {
-      // First, get metadata to resolve version
       const metadata = await this.getArtifact(artifactId);
       if (!metadata) {
         return { success: false };
       }
 
       const resolvedVersion = version || metadata.latest;
-      const tarballUrl = `${this.baseUrl}/artifacts/${encodeURIComponent(artifactId)}/${resolvedVersion}.tar.gz`;
+      const tarballUrl = `${REGISTRY_URL}/${artifactId}/${resolvedVersion}.tar.gz`;
       const deprecationMessage = metadata.deprecated[resolvedVersion];
 
       const response = await fetch(tarballUrl, {
@@ -119,30 +159,62 @@ export class RegistryClient {
     }
   }
 
+  /**
+   * Check if a version exists
+   */
+  async versionExists(artifactId: string, version: string): Promise<boolean> {
+    try {
+      const supabase = getSupabaseClient();
+
+      const { data, error } = await supabase
+        .from("versions")
+        .select("version")
+        .eq("artifact_id", artifactId)
+        .eq("version", version)
+        .single();
+
+      return !error && !!data;
+    } catch {
+      return false;
+    }
+  }
+
   // ============================================================================
-  // Authenticated endpoints (token required)
+  // Authenticated endpoints - Supabase Auth + RLS / Edge Functions
   // ============================================================================
 
   /**
-   * Get current user info. Returns null if not authenticated.
+   * Get current user info
    */
   async whoami(): Promise<WhoamiResult | null> {
     try {
-      const response = await this.fetch("/auth/whoami");
-      if (!response.ok) return null;
-      return await response.json();
+      const supabase = getSupabaseClient();
+      const { data: { user }, error } = await supabase.auth.getUser();
+
+      if (error || !user) return null;
+
+      return { email: user.email || "" };
     } catch {
       return null;
     }
   }
 
   /**
-   * Request upload URL for publishing
+   * Request upload URL for publishing (calls Edge Function)
    */
   async publish(artifactId: string, version: string): Promise<PublishResult> {
-    const response = await this.fetch(`/artifacts/${encodeURIComponent(artifactId)}/versions/${version}/upload`, {
+    const session = await getSession();
+    if (!session) {
+      throw new Error("Not authenticated");
+    }
+
+    const response = await fetch(`${this.edgeFunctionUrl}/publish`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ artifactId, version }),
     });
 
     if (!response.ok) {
@@ -154,60 +226,43 @@ export class RegistryClient {
   }
 
   /**
-   * Deprecate a version
+   * Deprecate a version (direct Supabase update, RLS checks ownership)
    */
   async deprecate(artifactId: string, version: string, message: string): Promise<void> {
-    const response = await this.fetch(
-      `/artifacts/${encodeURIComponent(artifactId)}/versions/${version}/deprecate`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message }),
-      }
-    );
+    const supabase = getSupabaseClient();
 
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(error || `Failed to deprecate: ${response.status}`);
+    const { error } = await supabase
+      .from("versions")
+      .update({ deprecated_message: message })
+      .eq("artifact_id", artifactId)
+      .eq("version", version);
+
+    if (error) {
+      throw new Error(`Failed to deprecate: ${error.message}`);
     }
   }
 
   /**
-   * Remove deprecation from a version
+   * Remove deprecation from a version (direct Supabase update, RLS checks ownership)
    */
   async undeprecate(artifactId: string, version: string): Promise<void> {
-    const response = await this.fetch(
-      `/artifacts/${encodeURIComponent(artifactId)}/versions/${version}/undeprecate`,
-      {
-        method: "POST",
-      }
-    );
+    const supabase = getSupabaseClient();
 
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(error || `Failed to undeprecate: ${response.status}`);
-    }
-  }
+    const { error } = await supabase
+      .from("versions")
+      .update({ deprecated_message: null })
+      .eq("artifact_id", artifactId)
+      .eq("version", version);
 
-  /**
-   * Check if a version exists
-   */
-  async versionExists(artifactId: string, version: string): Promise<boolean> {
-    try {
-      const response = await this.fetch(
-        `/artifacts/${encodeURIComponent(artifactId)}/versions/${version}`
-      );
-      return response.ok;
-    } catch {
-      return false;
+    if (error) {
+      throw new Error(`Failed to undeprecate: ${error.message}`);
     }
   }
 }
 
 /**
- * Factory to create a registry client with default configuration
+ * Factory to create a registry client
  */
 export function createRegistryClient(projectRoot?: string): RegistryClient {
-  const url = getRegistryUrl(projectRoot);
-  return new RegistryClient(url, () => getRegistryToken());
+  return new RegistryClient();
 }

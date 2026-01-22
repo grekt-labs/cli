@@ -3,7 +3,7 @@ import { execSync } from "child_process";
 import { getConfig } from "#/lib/config";
 import type { ArtifactMetadata } from "#/schemas/index";
 
-const DEFAULT_REGISTRY_URL = "https://pub-db2542aa79e24b5f99523d0656d6b343.r2.dev/artifacts";
+const DEFAULT_REGISTRY_URL = "https://registry.grekt.com";
 
 export function getRegistryUrl(projectRoot: string = process.cwd()): string {
   const config = getConfig(projectRoot);
