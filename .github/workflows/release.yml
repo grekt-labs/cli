@@ -19,7 +19,7 @@ jobs:
           - os: macos-latest
             target: bun-darwin-arm64
             artifact: grekt-macos-arm64
-          - os: macos-13
+          - os: macos-15
             target: bun-darwin-x64
             artifact: grekt-macos-x64
 
