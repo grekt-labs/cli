@@ -79,14 +79,21 @@ export const installCommand = new Command("install")
 
       // Download artifact from source
       mkdirSync(targetDir, { recursive: true });
-      const downloaded = await downloadFromSource(source, targetDir, projectRoot);
+      const downloadResult = await downloadFromSource(source, targetDir, projectRoot);
 
-      if (!downloaded) {
+      if (!downloadResult.success) {
         spin.stop();
         rmSync(targetDir, { recursive: true, force: true });
         error(`Failed to download ${artifactId}`);
         failed++;
         continue;
+      }
+
+      // Show deprecation warning if applicable
+      if (downloadResult.deprecationMessage) {
+        spin.stop();
+        warning(`${artifactId}@${entry.version} is deprecated: ${downloadResult.deprecationMessage}`);
+        spin.start();
       }
 
       // Verify integrity

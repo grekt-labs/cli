@@ -5,6 +5,13 @@ import { existsSync, readFileSync, unlinkSync } from "fs";
 import { basename, dirname, join, resolve } from "path";
 import { parse } from "yaml";
 import { getRegistryCredentials, getCredentialsFromEnv, getCredentialsPath } from "#/lib/credentials";
+import {
+  getArtifactMetadata,
+  saveArtifactMetadata,
+  versionExists,
+  createMetadata,
+  updateMetadataVersion,
+} from "#/lib/metadata";
 import { success, error, info, log, colors, spinner } from "#/utils/ui";
 
 export const publishCommand = new Command("publish")
@@ -83,6 +90,25 @@ export const publishCommand = new Command("publish")
       process.exit(1);
     }
 
+    // Check if version already exists
+    const checkSpin = spinner("Checking if version exists...");
+    checkSpin.start();
+
+    try {
+      const exists = await versionExists(credentials, artifactId, manifest.version);
+      checkSpin.stop();
+
+      if (exists) {
+        unlinkSync(outputPath);
+        error(`Version ${manifest.version} already exists for ${artifactId}`);
+        info("Bump the version in grekt.yaml and try again");
+        process.exit(1);
+      }
+    } catch (err) {
+      checkSpin.stop();
+      // If we can't check, continue anyway (might be a new artifact)
+    }
+
     // Upload to S3-compatible storage
     const spin = spinner("Uploading...");
     spin.start();
@@ -96,7 +122,7 @@ export const publishCommand = new Command("publish")
       },
     });
 
-    const key = `artifacts/${artifactId}.tar.gz`;
+    const key = `artifacts/${artifactId}/${manifest.version}.tar.gz`;
     const body = readFileSync(outputPath);
 
     try {
@@ -112,6 +138,21 @@ export const publishCommand = new Command("publish")
       spin.stop();
       success(`Uploaded: ${key}`);
 
+      // Update metadata
+      const metaSpin = spinner("Updating metadata...");
+      metaSpin.start();
+
+      let metadata = await getArtifactMetadata(credentials, artifactId);
+      if (metadata) {
+        metadata = updateMetadataVersion(metadata, manifest.version);
+      } else {
+        metadata = createMetadata(artifactId, manifest.version);
+      }
+      await saveArtifactMetadata(credentials, metadata);
+
+      metaSpin.stop();
+      success("Metadata updated");
+
       unlinkSync(outputPath);
 
       log("");
@@ -121,7 +162,7 @@ export const publishCommand = new Command("publish")
         log(`  URL: ${credentials.publicUrl}/${key}`);
       }
 
-      log(`\n  Install with: grekt add ${artifactId}\n`);
+      log(`\n  Install with: grekt add ${artifactId}@${manifest.version}\n`);
     } catch (err) {
       spin.stop();
       unlinkSync(outputPath);

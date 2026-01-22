@@ -155,11 +155,17 @@ export const addCommand = new Command("add")
 
     // Download artifact from source
     mkdirSync(tempDir, { recursive: true });
-    const downloaded = await downloadFromSource(source, tempDir, projectRoot);
+    const downloadResult = await downloadFromSource(source, tempDir, projectRoot);
 
     spin.stop();
 
-    if (!downloaded) {
+    // Handle deprecation warning for registry sources
+    if (downloadResult.deprecationMessage) {
+      warning(`This version is deprecated: ${downloadResult.deprecationMessage}`);
+      newline();
+    }
+
+    if (!downloadResult.success) {
       // Clean up temp directory
       rmSync(tempDir, { recursive: true, force: true });
       error(`Artifact ${colors.highlight(displayName)} not found`);

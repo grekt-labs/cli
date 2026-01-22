@@ -4,9 +4,7 @@ import { isInitialized } from "#/lib/config";
 import { getLockfile } from "#/lib/lockfile";
 import { ARTIFACTS_DIR } from "#/lib/paths";
 import { getDirectorySize, formatBytes, estimateTokens } from "#/lib/integrity";
-import { error, info, log, warning, colors, newline, symbols } from "#/utils/ui";
-
-const CONTEXT_WARNING_THRESHOLD = 10 * 1024; // 10 KB
+import { error, info, log, colors, newline, symbols } from "#/utils/ui";
 
 export const listCommand = new Command("list")
   .alias("ls")
@@ -75,10 +73,4 @@ export const listCommand = new Command("list")
     log(colors.dim("─".repeat(40)));
     log(`  Total: ${formatBytes(totalSize)} (~${estimateTokens(totalSize).toLocaleString()} tokens)`);
 
-    if (totalSize > CONTEXT_WARNING_THRESHOLD) {
-      newline();
-      warning("Total context exceeds 10 KB. Consider:");
-      log("  • Removing unused artifacts");
-      log("  • Using smaller/more focused artifacts");
-    }
   });

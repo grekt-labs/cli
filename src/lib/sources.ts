@@ -1,6 +1,7 @@
 import { mkdirSync, writeFileSync, existsSync } from "fs";
 import { execSync } from "child_process";
 import { getTokenCredentials } from "#/lib/credentials";
+import type { DownloadResult } from "#/lib/registry";
 
 export type SourceType = "registry" | "github" | "gitlab";
 
@@ -122,7 +123,7 @@ export function getSourceToken(source: ParsedSource): string | undefined {
 export async function downloadFromGitHub(
   source: ParsedSource,
   targetDir: string
-): Promise<boolean> {
+): Promise<DownloadResult> {
   const token = getSourceToken(source);
   const ref = source.ref || "HEAD";
 
@@ -145,7 +146,7 @@ export async function downloadFromGitHub(
     });
 
     if (!response.ok) {
-      return false;
+      return { success: false };
     }
 
     const buffer = await response.arrayBuffer();
@@ -160,9 +161,9 @@ export async function downloadFromGitHub(
     });
     execSync(`rm -f ${tempTarball}`, { stdio: "pipe" });
 
-    return true;
+    return { success: true, version: ref };
   } catch {
-    return false;
+    return { success: false };
   }
 }
 
@@ -172,7 +173,7 @@ export async function downloadFromGitHub(
 export async function downloadFromGitLab(
   source: ParsedSource,
   targetDir: string
-): Promise<boolean> {
+): Promise<DownloadResult> {
   const token = getSourceToken(source);
   const host = source.host || "gitlab.com";
   const ref = source.ref || "main";
@@ -198,7 +199,7 @@ export async function downloadFromGitLab(
     });
 
     if (!response.ok) {
-      return false;
+      return { success: false };
     }
 
     const buffer = await response.arrayBuffer();
@@ -213,9 +214,9 @@ export async function downloadFromGitLab(
     });
     execSync(`rm -f ${tempTarball}`, { stdio: "pipe" });
 
-    return true;
+    return { success: true, version: ref };
   } catch {
-    return false;
+    return { success: false };
   }
 }
 
@@ -226,7 +227,7 @@ export async function downloadFromSource(
   source: ParsedSource,
   targetDir: string,
   projectRoot: string
-): Promise<boolean> {
+): Promise<DownloadResult> {
   switch (source.type) {
     case "github":
       return downloadFromGitHub(source, targetDir);
@@ -237,7 +238,7 @@ export async function downloadFromSource(
       const { downloadFromRegistry } = await import("#/lib/registry");
       return downloadFromRegistry(source.identifier, targetDir, projectRoot);
     default:
-      return false;
+      return { success: false };
   }
 }
 

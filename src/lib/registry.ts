@@ -1,6 +1,7 @@
 import { mkdirSync, writeFileSync } from "fs";
 import { execSync } from "child_process";
 import { getConfig } from "#/lib/config";
+import type { ArtifactMetadata } from "#/schemas/index";
 
 const DEFAULT_REGISTRY_URL = "https://pub-db2542aa79e24b5f99523d0656d6b343.r2.dev/artifacts";
 
@@ -9,19 +10,57 @@ export function getRegistryUrl(projectRoot: string = process.cwd()): string {
   return config.registry || DEFAULT_REGISTRY_URL;
 }
 
-export async function downloadFromRegistry(
+export interface DownloadResult {
+  success: boolean;
+  version?: string;
+  deprecationMessage?: string;
+}
+
+export async function fetchRegistryMetadata(
   artifactId: string,
+  projectRoot: string = process.cwd()
+): Promise<ArtifactMetadata | null> {
+  const registryUrl = getRegistryUrl(projectRoot);
+  const metadataUrl = `${registryUrl}/${artifactId}/metadata.json`;
+
+  try {
+    const response = await fetch(metadataUrl);
+    if (!response.ok) return null;
+    return await response.json();
+  } catch {
+    return null;
+  }
+}
+
+export function parseArtifactWithVersion(source: string): { artifactId: string; version?: string } {
+  const match = source.match(/^(@[^@]+)(?:@(.+))?$/);
+  if (match) {
+    return { artifactId: match[1], version: match[2] };
+  }
+  return { artifactId: source };
+}
+
+export async function downloadFromRegistry(
+  artifactSource: string,
   targetDir: string,
   projectRoot: string = process.cwd()
-): Promise<boolean> {
+): Promise<DownloadResult> {
   const registryUrl = getRegistryUrl(projectRoot);
-  const tarballUrl = `${registryUrl}/${artifactId}.tar.gz`;
+  const { artifactId, version: requestedVersion } = parseArtifactWithVersion(artifactSource);
+
+  const metadata = await fetchRegistryMetadata(artifactId, projectRoot);
+  if (!metadata) {
+    return { success: false };
+  }
+
+  const version = requestedVersion || metadata.latest;
+  const tarballUrl = `${registryUrl}/${artifactId}/${version}.tar.gz`;
+  const deprecationMessage = metadata.deprecated[version];
 
   try {
     const response = await fetch(tarballUrl);
-
     if (!response.ok) {
-      return false;
+      return { success: false };
     }
 
     const buffer = await response.arrayBuffer();
@@ -34,9 +73,9 @@ export async function downloadFromRegistry(
     });
     execSync(`rm -f ${tempTarball}`, { stdio: "pipe" });
 
-    return true;
+    return { success: true, version, deprecationMessage };
   } catch {
-    return false;
+    return { success: false };
   }
 }
 
@@ -44,11 +83,6 @@ export async function artifactExists(
   artifactId: string,
   projectRoot: string = process.cwd()
 ): Promise<boolean> {
-  try {
-    const registryUrl = getRegistryUrl(projectRoot);
-    const response = await fetch(`${registryUrl}/${artifactId}.tar.gz`, { method: "HEAD" });
-    return response.ok;
-  } catch {
-    return false;
-  }
+  const metadata = await fetchRegistryMetadata(artifactId, projectRoot);
+  return metadata !== null;
 }

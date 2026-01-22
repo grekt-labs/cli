@@ -98,3 +98,13 @@ export const LockfileSchema = z.object({
 });
 export type Lockfile = z.infer<typeof LockfileSchema>;
 export type LockfileEntry = z.infer<typeof LockfileEntrySchema>;
+
+// Registry artifact metadata (stored in S3 as metadata.json per artifact)
+export const ArtifactMetadataSchema = z.object({
+  name: z.string(), // Full artifact ID: @author/name
+  latest: z.string(), // Latest version
+  deprecated: z.record(z.string(), z.string()).default({}), // version -> deprecation message
+  createdAt: z.string(), // ISO timestamp
+  updatedAt: z.string(), // ISO timestamp
+});
+export type ArtifactMetadata = z.infer<typeof ArtifactMetadataSchema>;
