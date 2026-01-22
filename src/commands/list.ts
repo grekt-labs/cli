@@ -4,7 +4,7 @@ import { isInitialized } from "#/lib/config";
 import { getLockfile } from "#/lib/lockfile";
 import { ARTIFACTS_DIR } from "#/lib/paths";
 import { getDirectorySize, formatBytes, estimateTokens } from "#/lib/integrity";
-import { error, info, log, colors, newline, symbols } from "#/utils/ui";
+import { error, info, log, colors, newline } from "#/utils/ui";
 
 export const listCommand = new Command("list")
   .alias("ls")
@@ -49,10 +49,7 @@ export const listCommand = new Command("list")
         sizeStr = formatBytes(size);
       }
 
-      // Show size warning indicator
-      const sizeIndicator = size > 5 * 1024 ? ` ${symbols.warning}` : "";
-
-      log(`  ${colors.highlight(name)}${colors.dim(`@${artifact.version}`)}  ${colors.dim(sizeStr)}${sizeIndicator}`);
+      log(`  ${colors.highlight(name)}${colors.dim(`@${artifact.version}`)}  ${colors.dim(sizeStr)}`);
 
       if (artifact.agent) {
         log(`    ${colors.dim("agent:")} ${artifact.agent}`);
