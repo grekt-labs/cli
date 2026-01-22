@@ -67,10 +67,18 @@ export const TokenCredentialsSchema = z.object({
 });
 export type TokenCredentials = z.infer<typeof TokenCredentialsSchema>;
 
-// Registry credentials - can be S3 or token-based
+// API registry credentials (url + token)
+export const ApiCredentialsSchema = z.object({
+  url: z.string(),
+  token: z.string(),
+});
+export type ApiCredentials = z.infer<typeof ApiCredentialsSchema>;
+
+// Registry credentials - can be S3, token-based, or API-based
 export const RegistryCredentialsSchema = z.union([
   S3CredentialsSchema,
   TokenCredentialsSchema,
+  ApiCredentialsSchema,
 ]);
 export type RegistryCredentials = z.infer<typeof RegistryCredentialsSchema>;
 
@@ -85,6 +93,7 @@ export const LockfileEntrySchema = z.object({
   version: z.string(),
   integrity: z.string(), // SHA256 hash of entire artifact
   source: z.string().optional(),
+  resolved: z.string().optional(), // Full URL, IMMUTABLE after write
   files: z.record(z.string(), z.string()).default({}), // per-file hashes: { "agent.md": "sha256:abc..." }
   // Component paths (where to find agents/skills/commands in the artifact)
   agent: z.string().optional(), // relative path to agent.md if exists

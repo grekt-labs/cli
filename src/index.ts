@@ -14,14 +14,24 @@ import { deprecateCommand } from "#/commands/deprecate";
 import { undeprecateCommand } from "#/commands/undeprecate";
 import { infoCommand } from "#/commands/info";
 import { versionsCommand } from "#/commands/versions";
+import { loginCommand } from "#/commands/login";
+import { logoutCommand } from "#/commands/logout";
+import { whoamiCommand } from "#/commands/whoami";
+import pkg from "../package.json";
 
 const program = new Command();
 
 program
-  .name("grekt")
-  .description("CLI for managing AI artifacts (agents, skills, commands)")
-  .version("0.1.0");
+  .name(pkg.name)
+  .description(pkg.description)
+  .version(pkg.version);
 
+// Auth commands
+program.addCommand(loginCommand);
+program.addCommand(logoutCommand);
+program.addCommand(whoamiCommand);
+
+// Project commands
 program.addCommand(initCommand);
 program.addCommand(configCommand);
 program.addCommand(syncCommand);
@@ -30,6 +40,8 @@ program.addCommand(addCommand);
 program.addCommand(installCommand);
 program.addCommand(checkCommand);
 program.addCommand(removeCommand);
+
+// Registry commands
 program.addCommand(publishCommand);
 program.addCommand(deprecateCommand);
 program.addCommand(undeprecateCommand);
