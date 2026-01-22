@@ -72,6 +72,6 @@ jobs:
         uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
-          repository: grekt-labs/homebrew-tap
+          repository: grekt-labs/homebrew-grekt
           event-type: update-formula
           client-payload: '{"version": "${{ github.ref_name }}"}'
