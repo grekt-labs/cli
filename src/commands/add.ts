@@ -273,6 +273,7 @@ export const addCommand = new Command("add")
       version: artifactInfo.manifest.version,
       integrity,
       source: source.raw,
+      resolved: downloadResult.resolved, // Full URL, immutable after write
       files: fileHashes,
       agent: selectedAgent,
       skills: selectedSkills,

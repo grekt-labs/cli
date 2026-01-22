@@ -1,11 +1,41 @@
 import { Command } from "commander";
-import { existsSync, mkdirSync, rmSync } from "fs";
+import { existsSync, mkdirSync, rmSync, writeFileSync } from "fs";
+import { execSync } from "child_process";
 import { isInitialized, getConfig } from "#/lib/config";
 import { getLockfile, lockfileExists } from "#/lib/lockfile";
 import { ARTIFACTS_DIR } from "#/lib/paths";
 import { parseSource, downloadFromSource } from "#/lib/sources";
 import { hashDirectory, verifyIntegrity } from "#/lib/integrity";
 import { success, error, info, warning, log, newline, colors, spinner } from "#/utils/ui";
+
+/**
+ * Download directly from a resolved URL
+ */
+async function downloadFromUrl(url: string, targetDir: string): Promise<boolean> {
+  try {
+    const response = await fetch(url, {
+      headers: { "User-Agent": "grekt-cli" },
+    });
+
+    if (!response.ok) {
+      return false;
+    }
+
+    const buffer = await response.arrayBuffer();
+    const tempTarball = `/tmp/grekt-${Date.now()}.tar.gz`;
+    writeFileSync(tempTarball, Buffer.from(buffer));
+
+    mkdirSync(targetDir, { recursive: true });
+    execSync(`tar -xzf ${tempTarball} -C ${targetDir} --strip-components=1`, {
+      stdio: "pipe",
+    });
+    execSync(`rm -f ${tempTarball}`, { stdio: "pipe" });
+
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export const installCommand = new Command("install")
   .alias("i")
@@ -70,30 +100,37 @@ export const installCommand = new Command("install")
         rmSync(targetDir, { recursive: true, force: true });
       }
 
-      // Parse source for download
-      const sourceStr = entry.source || artifactId;
-      const source = parseSource(sourceStr);
-
       const spin = spinner(`Installing ${artifactId}@${entry.version}...`);
       spin.start();
 
-      // Download artifact from source
-      mkdirSync(targetDir, { recursive: true });
-      const downloadResult = await downloadFromSource(source, targetDir, projectRoot);
+      let downloadSuccess = false;
 
-      if (!downloadResult.success) {
+      // Use resolved URL if available (strict mode - no recalculation)
+      if (entry.resolved) {
+        mkdirSync(targetDir, { recursive: true });
+        downloadSuccess = await downloadFromUrl(entry.resolved, targetDir);
+      } else {
+        // Fallback for old lockfiles without resolved
+        const sourceStr = entry.source || artifactId;
+        const source = parseSource(sourceStr);
+        mkdirSync(targetDir, { recursive: true });
+        const downloadResult = await downloadFromSource(source, targetDir, projectRoot);
+        downloadSuccess = downloadResult.success;
+
+        // Show deprecation warning if applicable
+        if (downloadResult.deprecationMessage) {
+          spin.stop();
+          warning(`${artifactId}@${entry.version} is deprecated: ${downloadResult.deprecationMessage}`);
+          spin.start();
+        }
+      }
+
+      if (!downloadSuccess) {
         spin.stop();
         rmSync(targetDir, { recursive: true, force: true });
         error(`Failed to download ${artifactId}`);
         failed++;
         continue;
-      }
-
-      // Show deprecation warning if applicable
-      if (downloadResult.deprecationMessage) {
-        spin.stop();
-        warning(`${artifactId}@${entry.version} is deprecated: ${downloadResult.deprecationMessage}`);
-        spin.start();
       }
 
       // Verify integrity

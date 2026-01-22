@@ -13,6 +13,7 @@ export function getRegistryUrl(projectRoot: string = process.cwd()): string {
 export interface DownloadResult {
   success: boolean;
   version?: string;
+  resolved?: string;
   deprecationMessage?: string;
 }
 
@@ -32,11 +33,24 @@ export async function fetchRegistryMetadata(
   }
 }
 
+/**
+ * Parse artifact source string into ID and optional version.
+ * Examples:
+ *   "@author/name"       → { artifactId: "@author/name" }
+ *   "@author/name@1.0.0" → { artifactId: "@author/name", version: "1.0.0" }
+ */
 export function parseArtifactWithVersion(source: string): { artifactId: string; version?: string } {
-  const match = source.match(/^(@[^@]+)(?:@(.+))?$/);
-  if (match) {
-    return { artifactId: match[1], version: match[2] };
+  // @scope/name optionally followed by @version
+  const ARTIFACT_WITH_VERSION = /^(?<artifactId>@[^@]+)(?:@(?<version>.+))?$/;
+
+  const match = source.match(ARTIFACT_WITH_VERSION);
+  if (match?.groups?.artifactId) {
+    return {
+      artifactId: match.groups.artifactId,
+      version: match.groups.version,
+    };
   }
+
   return { artifactId: source };
 }
 
@@ -73,7 +87,7 @@ export async function downloadFromRegistry(
     });
     execSync(`rm -f ${tempTarball}`, { stdio: "pipe" });
 
-    return { success: true, version, deprecationMessage };
+    return { success: true, version, resolved: tarballUrl, deprecationMessage };
   } catch {
     return { success: false };
   }

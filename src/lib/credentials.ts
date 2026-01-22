@@ -2,7 +2,9 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
 import { homedir } from "os";
 import { join } from "path";
 import { parse, stringify } from "yaml";
-import { CredentialsSchema, type Credentials, type S3Credentials, type TokenCredentials } from "#/schemas/index";
+import { CredentialsSchema, type Credentials, type S3Credentials, type TokenCredentials, type ApiCredentials } from "#/schemas/index";
+import { getConfig } from "#/lib/config";
+import { DEFAULT_REGISTRY } from "#/lib/paths";
 
 const GREKT_HOME = join(homedir(), ".grekt");
 const CREDENTIALS_FILE = join(GREKT_HOME, "credentials.yaml");
@@ -98,4 +100,79 @@ export function getCredentialsFromEnv(): S3Credentials | undefined {
     bucket,
     publicUrl,
   };
+}
+
+// ============================================================================
+// Registry Token Management (for API-based registries)
+// ============================================================================
+
+/**
+ * Get registry token. Priority: GREKT_TOKEN env > credentials.yaml
+ */
+export function getRegistryToken(): string | undefined {
+  // 1. Env var (CI/CD) - never persisted, logout doesn't affect it
+  const envToken = process.env.GREKT_TOKEN;
+  if (envToken) return envToken;
+
+  // 2. Credentials file
+  const credentials = getCredentials();
+  const defaultCred = credentials.default;
+  if (defaultCred && "url" in defaultCred && "token" in defaultCred) {
+    return defaultCred.token;
+  }
+
+  return undefined;
+}
+
+/**
+ * Save registry token (only for login, not for env)
+ */
+export function setRegistryToken(token: string, url: string): void {
+  const credentials = getCredentials();
+  credentials.default = { url, token } as ApiCredentials;
+  saveCredentials(credentials);
+}
+
+/**
+ * Remove registry token (only affects credentials.yaml, not env)
+ */
+export function removeRegistryToken(): void {
+  const credentials = getCredentials();
+  delete credentials.default;
+  saveCredentials(credentials);
+}
+
+/**
+ * Get registry URL. Priority: project config > credentials.yaml > default
+ */
+export function getRegistryUrl(projectRoot?: string): string {
+  // 1. Project config
+  try {
+    const config = getConfig(projectRoot);
+    if (config.registry) return config.registry;
+  } catch {
+    // Config might not exist (e.g., global commands like whoami)
+  }
+
+  // 2. Credentials file
+  const credentials = getCredentials();
+  const defaultCred = credentials.default;
+  if (defaultCred && "url" in defaultCred) {
+    return defaultCred.url;
+  }
+
+  // 3. Default
+  return DEFAULT_REGISTRY;
+}
+
+/**
+ * Get API credentials for the default registry
+ */
+export function getApiCredentials(): ApiCredentials | undefined {
+  const credentials = getCredentials();
+  const defaultCred = credentials.default;
+  if (defaultCred && "url" in defaultCred && "token" in defaultCred) {
+    return defaultCred as ApiCredentials;
+  }
+  return undefined;
 }

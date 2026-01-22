@@ -51,10 +51,10 @@ export const versionsCommand = new Command("versions")
 
       let line = `  ${version}`;
       if (isLatest) {
-        line += colors.green(" (latest)");
+        line += colors.success(" (latest)");
       }
       if (deprecationMsg) {
-        line += colors.yellow(` ⚠ deprecated: ${deprecationMsg}`);
+        line += colors.warning(` ⚠ deprecated: ${deprecationMsg}`);
       }
 
       log(line);
