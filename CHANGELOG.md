@@ -1,0 +1,6 @@
+## [0.3.1](https://github.com/grekt-labs/cli/compare/v0.3.0...v0.3.1) (2026-01-23)
+
+
+### Bug Fixes
+
+* **ci:** use Node 22 for semantic-release ([f695191](https://github.com/grekt-labs/cli/commit/f6951914d381879960509e75fbc14ee4b0380da9))
