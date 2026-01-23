@@ -3,7 +3,7 @@ import { z } from "zod";
 // Sync targets (validated at runtime against registered plugins)
 export type SyncTarget = string;
 
-// Artifact manifest (grekt.yaml in each artifact package)
+// Artifact manifest (grekt.yaml inside each published artifact)
 export const ArtifactManifestSchema = z.object({
   name: z.string(),
   author: z.string(),
@@ -40,15 +40,15 @@ export const ArtifactEntrySchema = z.union([
 ]);
 export type ArtifactEntry = z.infer<typeof ArtifactEntrySchema>;
 
-// Project grekt.yaml (like package.json: config + artifact declarations)
-export const GrektYamlSchema = z.object({
+// Project config (grekt.yaml) - declares which artifacts to install and sync targets
+export const ProjectConfigSchema = z.object({
   targets: z.array(z.string()).default([]),
   autoSync: z.boolean().default(false),
   registry: z.string().optional(),
   artifacts: z.record(z.string(), ArtifactEntrySchema).default({}),
   customTargets: z.record(z.string(), CustomTargetSchema).default({}),
 });
-export type GrektYaml = z.infer<typeof GrektYamlSchema>;
+export type ProjectConfig = z.infer<typeof ProjectConfigSchema>;
 
 // S3 credentials for publishing to S3-compatible storage
 export const S3CredentialsSchema = z.object({
@@ -88,7 +88,7 @@ export const CredentialsSchema = z.record(
 );
 export type Credentials = z.infer<typeof CredentialsSchema>;
 
-// Lockfile entry (grekt.lock) - like package-lock.json: exact versions + paths + integrity
+// Lockfile entry (grekt.lock) - pinned versions, integrity hashes, and resolved URLs for reproducible installs
 export const LockfileEntrySchema = z.object({
   version: z.string(),
   integrity: z.string(), // SHA256 hash of entire artifact
@@ -117,3 +117,21 @@ export const ArtifactMetadataSchema = z.object({
   updatedAt: z.string(), // ISO timestamp
 });
 export type ArtifactMetadata = z.infer<typeof ArtifactMetadataSchema>;
+
+// Registry entry for local config (.grekt/config.yaml)
+export const RegistryEntrySchema = z.object({
+  type: z.enum(["gitlab", "github", "default"]),
+  project: z.string().optional(), // Required for gitlab/github, validated at runtime
+  host: z.string().optional(), // Optional, has defaults (gitlab.com, github.com)
+  token: z.string().optional(), // Can also be set via env vars
+});
+export type RegistryEntry = z.infer<typeof RegistryEntrySchema>;
+
+// Local config (.grekt/config.yaml) - gitignored, contains registry configs and tokens
+export const LocalConfigSchema = z.object({
+  registries: z.record(
+    z.string().regex(/^@/, "Registry scope must start with @"),
+    RegistryEntrySchema
+  ).optional(),
+});
+export type LocalConfig = z.infer<typeof LocalConfigSchema>;

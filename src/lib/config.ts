@@ -2,13 +2,19 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync, chmodSync } from "f
 import { dirname } from "path";
 import { parse, stringify } from "yaml";
 import {
-  GrektYamlSchema,
-  type GrektYaml,
+  ProjectConfigSchema,
+  LocalConfigSchema,
+  type ProjectConfig,
+  type LocalConfig,
 } from "#/schemas/index";
 import {
   GLOBAL_CONFIG_DIR,
   GREKT_YAML,
+  GREKT_DIR,
 } from "#/lib/paths";
+
+// Local config file path (inside .grekt/ directory)
+const LOCAL_CONFIG_FILE = "config.yaml";
 
 function ensureDir(filepath: string): void {
   const dir = dirname(filepath);
@@ -35,18 +41,18 @@ function writeYaml(filepath: string, data: unknown, secure = false): void {
 }
 
 // Project config (grekt.yaml)
-export function getConfig(projectRoot: string = process.cwd()): GrektYaml {
+export function getConfig(projectRoot: string = process.cwd()): ProjectConfig {
   const filepath = `${projectRoot}/${GREKT_YAML}`;
   const raw = readYaml(filepath, {});
-  return GrektYamlSchema.parse(raw);
+  return ProjectConfigSchema.parse(raw);
 }
 
-export function saveConfig(config: GrektYaml, projectRoot: string = process.cwd()): void {
+export function saveConfig(config: ProjectConfig, projectRoot: string = process.cwd()): void {
   const filepath = `${projectRoot}/${GREKT_YAML}`;
   writeYaml(filepath, config);
 }
 
-export function setConfigValue(key: keyof GrektYaml, value: unknown, projectRoot: string = process.cwd()): void {
+export function setConfigValue(key: keyof ProjectConfig, value: unknown, projectRoot: string = process.cwd()): void {
   const current = getConfig(projectRoot);
   (current as Record<string, unknown>)[key] = value;
   saveConfig(current, projectRoot);
@@ -62,4 +68,23 @@ export function ensureGlobalConfigDir(): void {
   if (!existsSync(GLOBAL_CONFIG_DIR)) {
     mkdirSync(GLOBAL_CONFIG_DIR, { recursive: true });
   }
+}
+
+// Local config (.grekt/config.yaml) - gitignored, contains registry configs
+export function getLocalConfig(projectRoot: string = process.cwd()): LocalConfig | null {
+  const filepath = `${projectRoot}/${GREKT_DIR}/${LOCAL_CONFIG_FILE}`;
+  if (!existsSync(filepath)) {
+    return null;
+  }
+  const raw = readYaml(filepath, {});
+  return LocalConfigSchema.parse(raw);
+}
+
+export function saveLocalConfig(config: LocalConfig, projectRoot: string = process.cwd()): void {
+  const filepath = `${projectRoot}/${GREKT_DIR}/${LOCAL_CONFIG_FILE}`;
+  writeYaml(filepath, config, true); // secure = true (chmod 600)
+}
+
+export function getLocalConfigPath(projectRoot: string = process.cwd()): string {
+  return `${projectRoot}/${GREKT_DIR}/${LOCAL_CONFIG_FILE}`;
 }

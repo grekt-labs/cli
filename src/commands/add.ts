@@ -5,7 +5,6 @@ import { checkbox } from "@inquirer/prompts";
 import { isInitialized, getConfig, saveConfig } from "#/lib/config";
 import { getLockfile, saveLockfile } from "#/lib/lockfile";
 import { ARTIFACTS_DIR } from "#/lib/paths";
-import { getRegistryUrl } from "#/lib/registry";
 import { parseSource, downloadFromSource, getSourceDisplayName } from "#/lib/sources";
 import { scanArtifact, getArtifactId, type ArtifactInfo } from "#/lib/artifact";
 import { hashDirectory, calculateIntegrity, getDirectorySize, formatBytes, estimateTokens } from "#/lib/integrity";
@@ -170,13 +169,13 @@ export const addCommand = new Command("add")
       rmSync(tempDir, { recursive: true, force: true });
       error(`Artifact ${colors.highlight(displayName)} not found`);
       if (source.type === "registry") {
-        info(`Registry: ${getRegistryUrl(projectRoot)}`);
+        info("Check .grekt/config.yaml for custom registry configuration");
       } else if (source.type === "github") {
         info("Check the repository exists and you have access");
         info("For private repos, set GITHUB_TOKEN environment variable");
       } else if (source.type === "gitlab") {
         info("Check the repository exists and you have access");
-        info(`For private repos, set GITLAB_TOKEN environment variable`);
+        info("For private repos, set GITLAB_TOKEN environment variable");
       }
       process.exit(1);
     }

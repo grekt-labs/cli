@@ -57,11 +57,11 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
     if (!rulesFile || !generateRulesContent) return;
 
     const filepath = `${projectRoot}/${rulesFile}`;
-    const grektBlock = generateRulesContent(lockfile);
+    const managedBlock = generateRulesContent(lockfile);
 
     if (!existsSync(filepath)) {
       ensureDir(filepath);
-      writeFileSync(filepath, grektBlock, "utf-8");
+      writeFileSync(filepath, managedBlock, "utf-8");
       result.created.push(rulesFile);
       return;
     }
@@ -71,9 +71,9 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
     const endIndex = content.indexOf(GREKT_BLOCK_END);
 
     if (startIndex !== -1 && endIndex !== -1) {
-      content = content.slice(0, startIndex) + grektBlock + content.slice(endIndex + GREKT_BLOCK_END.length);
+      content = content.slice(0, startIndex) + managedBlock + content.slice(endIndex + GREKT_BLOCK_END.length);
     } else {
-      content = content.trimEnd() + "\n\n" + grektBlock;
+      content = content.trimEnd() + "\n\n" + managedBlock;
     }
 
     writeFileSync(filepath, content, "utf-8");
@@ -276,14 +276,14 @@ export function createRulesOnlyPlugin(config: RulesOnlyPluginConfig): SyncPlugin
       }
 
       const filepath = `${projectRoot}/${rulesFile}`;
-      const grektBlock = generateRulesContent(lockfile);
+      const managedBlock = generateRulesContent(lockfile);
 
       if (!existsSync(filepath)) {
         if (!options.createTarget) {
           result.skipped.push(`${rulesFile} (file doesn't exist)`);
           return result;
         }
-        writeFileSync(filepath, grektBlock, "utf-8");
+        writeFileSync(filepath, managedBlock, "utf-8");
         result.created.push(rulesFile);
         return result;
       }
@@ -293,9 +293,9 @@ export function createRulesOnlyPlugin(config: RulesOnlyPluginConfig): SyncPlugin
       const endIndex = content.indexOf(GREKT_BLOCK_END);
 
       if (startIndex !== -1 && endIndex !== -1) {
-        content = content.slice(0, startIndex) + grektBlock + content.slice(endIndex + GREKT_BLOCK_END.length);
+        content = content.slice(0, startIndex) + managedBlock + content.slice(endIndex + GREKT_BLOCK_END.length);
       } else {
-        content = content.trimEnd() + "\n\n" + grektBlock;
+        content = content.trimEnd() + "\n\n" + managedBlock;
       }
 
       writeFileSync(filepath, content, "utf-8");

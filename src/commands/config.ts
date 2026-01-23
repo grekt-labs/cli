@@ -5,9 +5,9 @@ import {
   isInitialized,
 } from "#/lib/config";
 import { success, error, info, log, colors } from "#/utils/ui";
-import type { GrektYaml } from "#/schemas/index";
+import type { ProjectConfig } from "#/schemas/index";
 
-const VALID_KEYS: (keyof GrektYaml)[] = ["targets", "autoSync", "registry"];
+const VALID_KEYS: (keyof ProjectConfig)[] = ["targets", "autoSync", "registry"];
 
 export const configCommand = new Command("config")
   .description("Manage project configuration");
@@ -41,14 +41,14 @@ configCommand
       process.exit(1);
     }
 
-    if (!VALID_KEYS.includes(key as keyof GrektYaml)) {
+    if (!VALID_KEYS.includes(key as keyof ProjectConfig)) {
       error(`Invalid key: ${key}`);
       info(`Valid keys: ${VALID_KEYS.join(", ")}`);
       process.exit(1);
     }
 
     const parsed = parseValue(key, value);
-    setConfigValue(key as keyof GrektYaml, parsed);
+    setConfigValue(key as keyof ProjectConfig, parsed);
     success(`Set ${key} = ${formatValue(parsed)}`);
   });
 
@@ -65,7 +65,7 @@ configCommand
     const config = getConfig();
 
     if (key in config) {
-      log(formatValue(config[key as keyof GrektYaml]));
+      log(formatValue(config[key as keyof ProjectConfig]));
     } else {
       error(`Unknown key: ${key}`);
       process.exit(1);
