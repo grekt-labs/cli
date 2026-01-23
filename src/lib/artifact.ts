@@ -11,7 +11,7 @@ export interface ArtifactInfo {
   commands: { path: string; parsed: ParsedArtifact }[];
 }
 
-export function readArtifactManifest(artifactDir: string): ArtifactManifest | null {
+function readArtifactManifest(artifactDir: string): ArtifactManifest | null {
   const manifestPath = join(artifactDir, "grekt.yaml");
   if (!existsSync(manifestPath)) return null;
 

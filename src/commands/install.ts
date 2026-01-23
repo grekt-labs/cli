@@ -6,6 +6,7 @@ import { getLockfile, lockfileExists } from "#/lib/lockfile";
 import { ARTIFACTS_DIR } from "#/lib/paths";
 import { parseSource, downloadFromSource } from "#/lib/sources";
 import { hashDirectory, verifyIntegrity } from "#/lib/integrity";
+import { runCheck, displayCompactCheckResults } from "#/lib/check";
 import { success, error, info, warning, log, newline, colors, spinner } from "#/utils/ui";
 
 /**
@@ -176,5 +177,11 @@ export const installCommand = new Command("install")
     if (installed > 0) {
       newline();
       info("Run 'grekt sync' to sync with your AI tools");
+    }
+
+    const config = getConfig(projectRoot);
+    if (config.options.autoCheck) {
+      const summary = runCheck(projectRoot);
+      displayCompactCheckResults(summary);
     }
   });

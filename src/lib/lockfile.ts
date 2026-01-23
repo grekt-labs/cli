@@ -3,7 +3,7 @@ import { parse, stringify } from "yaml";
 import { LockfileSchema, type Lockfile } from "#/schemas/index";
 import { LOCKFILE } from "#/lib/paths";
 
-export function getLockfilePath(projectRoot: string = process.cwd()): string {
+function getLockfilePath(projectRoot: string = process.cwd()): string {
   return `${projectRoot}/${LOCKFILE}`;
 }
 

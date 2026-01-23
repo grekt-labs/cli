@@ -51,21 +51,3 @@ export function newline(): void {
 export function spinner(text: string): Ora {
   return ora({ text, color: "cyan" });
 }
-
-// Format artifact name
-export function formatArtifact(name: string, version?: string): string {
-  if (version) {
-    return `${colors.highlight(name)}${colors.dim("@")}${colors.dim(version)}`;
-  }
-  return colors.highlight(name);
-}
-
-// Format path
-export function formatPath(path: string): string {
-  return colors.dim(path);
-}
-
-// Format command
-export function formatCommand(command: string): string {
-  return colors.bold(command);
-}

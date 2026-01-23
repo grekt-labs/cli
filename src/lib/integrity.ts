@@ -2,10 +2,7 @@ import { createHash } from "crypto";
 import { readFileSync, readdirSync, statSync } from "fs";
 import { join, relative } from "path";
 
-/**
- * Hash a single file using SHA256
- */
-export function hashFile(filepath: string): string {
+function hashFile(filepath: string): string {
   const content = readFileSync(filepath);
   const hash = createHash("sha256").update(content).digest("hex");
   return `sha256:${hash.slice(0, 16)}`; // First 16 hex chars for readability
@@ -126,13 +123,6 @@ export function getDirectorySize(dir: string): number {
 
   walkDir(dir);
   return totalSize;
-}
-
-/**
- * Get size of a single file (in bytes)
- */
-export function getFileSize(filepath: string): number {
-  return statSync(filepath).size;
 }
 
 /**

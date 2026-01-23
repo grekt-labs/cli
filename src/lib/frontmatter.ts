@@ -15,7 +15,3 @@ export function parseFrontmatter(content: string): ParsedArtifact | null {
     return null;
   }
 }
-
-export function hasFrontmatter(content: string): boolean {
-  return content.trimStart().startsWith("---");
-}

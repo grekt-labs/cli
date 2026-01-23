@@ -40,6 +40,12 @@ export const ArtifactEntrySchema = z.union([
 ]);
 export type ArtifactEntry = z.infer<typeof ArtifactEntrySchema>;
 
+// Project options (optional settings in grekt.yaml)
+export const ProjectOptionsSchema = z.object({
+  autoCheck: z.boolean().default(false),
+});
+export type ProjectOptions = z.infer<typeof ProjectOptionsSchema>;
+
 // Project config (grekt.yaml) - declares which artifacts to install and sync targets
 export const ProjectConfigSchema = z.object({
   targets: z.array(z.string()).default([]),
@@ -47,6 +53,7 @@ export const ProjectConfigSchema = z.object({
   registry: z.string().optional(),
   artifacts: z.record(z.string(), ArtifactEntrySchema).default({}),
   customTargets: z.record(z.string(), CustomTargetSchema).default({}),
+  options: ProjectOptionsSchema.default({}),
 });
 export type ProjectConfig = z.infer<typeof ProjectConfigSchema>;
 

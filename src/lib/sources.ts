@@ -88,10 +88,7 @@ export function parseSource(source: string): ParsedSource {
   };
 }
 
-/**
- * Get auth token for a source
- */
-export function getSourceToken(source: ParsedSource): string | undefined {
+function getSourceToken(source: ParsedSource): string | undefined {
   // Check environment variables first
   if (source.type === "github") {
     const envToken = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
@@ -123,10 +120,7 @@ export function getSourceToken(source: ParsedSource): string | undefined {
   return undefined;
 }
 
-/**
- * Download artifact from GitHub
- */
-export async function downloadFromGitHub(
+async function downloadFromGitHub(
   source: ParsedSource,
   targetDir: string
 ): Promise<DownloadResult> {
@@ -173,10 +167,7 @@ export async function downloadFromGitHub(
   }
 }
 
-/**
- * Download artifact from GitLab
- */
-export async function downloadFromGitLab(
+async function downloadFromGitLab(
   source: ParsedSource,
   targetDir: string
 ): Promise<DownloadResult> {

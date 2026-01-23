@@ -8,6 +8,7 @@ import { ARTIFACTS_DIR } from "#/lib/paths";
 import { parseSource, downloadFromSource, getSourceDisplayName } from "#/lib/sources";
 import { scanArtifact, getArtifactId, type ArtifactInfo } from "#/lib/artifact";
 import { hashDirectory, calculateIntegrity, getDirectorySize, formatBytes, estimateTokens } from "#/lib/integrity";
+import { runCheck, displayCompactCheckResults } from "#/lib/check";
 import { success, error, info, log, warning, newline, colors, spinner } from "#/utils/ui";
 
 const CONTEXT_WARNING_THRESHOLD = 10 * 1024; // 10 KB
@@ -313,4 +314,9 @@ export const addCommand = new Command("add")
 
     newline();
     info("Run 'grekt sync' to sync with your AI tools");
+
+    if (config.options.autoCheck) {
+      const summary = runCheck(projectRoot);
+      displayCompactCheckResults(summary);
+    }
   });
