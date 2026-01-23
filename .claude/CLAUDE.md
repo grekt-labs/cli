@@ -1,5 +1,47 @@
 # grekt CLI
 
+## Terminology (MANDATORY)
+
+**NEVER** use "package" or "pkg" anywhere in code, comments, docs, or conversation.
+
+The correct term is **ARTIFACT**.
+
+- `package.json` → OK (it's npm's file, not ours)
+- `packageName` → **NO** → use `artifactName` or `artifactId`
+- `pkg` → **NO** → use `artifact`
+- "install the package" → **NO** → "install the artifact"
+
+This is non-negotiable. grekt distributes artifacts, not packages.
+
+## Naming (MANDATORY)
+
+**NEVER** include the project name in function/variable/class names.
+
+If tomorrow the project is called "patata" instead of "grekt", internal code shouldn't break.
+
+- `grektConfig` → **NO** → use `config` or `projectConfig`
+- `parseGrektYaml()` → **NO** → use `parseConfig()` or `parseManifest()`
+- `GrektError` → **NO** → use `ConfigError`, `RegistryError`, etc.
+- `isGrektInitialized()` → **NO** → use `isInitialized()`
+
+**NEVER** include file formats in semantic function names.
+
+Today it's markdown, tomorrow it could be anything. Name by purpose, not format.
+
+- `parseMD()` → **NO** → use `parseArtifact()` or `parseComponent()`
+- `loadYamlConfig()` → **NO** → use `loadConfig()` (format is implementation detail)
+- `writeMarkdownFile()` → **NO** → use `writeArtifact()` or `writeComponent()`
+
+**Exceptions (user-facing interfaces):**
+- `GREKT_*` env vars → OK (external contract)
+- `grekt.yaml`, `grekt.lock` → OK (file conventions)
+- CLI binary name → OK (brand)
+- Low-level I/O utilities → OK if truly generic (`readYaml`, `writeJson`)
+
+Internal code must be project-name and format agnostic. Name by domain semantics.
+
+---
+
 ## Architectural Principles
 
 1. **Backend Agnosticism**: CLI doesn't know what's behind the API. Could be Supabase, custom, anything.
