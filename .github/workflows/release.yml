@@ -76,14 +76,14 @@ jobs:
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Create Release in cli-releases
-        uses: softprops/action-gh-release@v2
-        with:
-          repository: grekt-labs/cli-releases
-          token: ${{ secrets.RELEASES_REPO_TOKEN }}
-          tag_name: ${{ github.ref_name }}
-          name: ${{ github.ref_name }}
-          files: artifacts/*
-          body: ${{ steps.notes.outputs.notes }}
+        env:
+          GH_TOKEN: ${{ secrets.RELEASES_REPO_TOKEN }}
+        run: |
+          gh release create ${{ github.ref_name }} \
+            --repo grekt-labs/cli-releases \
+            --title "${{ github.ref_name }}" \
+            --notes "${{ steps.notes.outputs.notes }}" \
+            artifacts/*
 
   update-homebrew:
     needs: release
