@@ -1,3 +1,10 @@
+# [0.4.0](https://github.com/grekt-labs/cli/compare/v0.3.3...v0.4.0) (2026-01-23)
+
+
+### Features
+
+* **check:** add autoCheck option and refactor check module ([40bedd1](https://github.com/grekt-labs/cli/commit/40bedd141e1f0d89a8e37210d13db6f64e770f68))
+
 ## [0.3.3](https://github.com/grekt-labs/cli/compare/v0.3.2...v0.3.3) (2026-01-23)
 
 
