@@ -7,6 +7,11 @@ import { parse } from "yaml";
 import { getRegistryCredentials, getCredentialsFromEnv, getCredentialsPath } from "#/lib/credentials";
 import { createRegistryClient } from "#/lib/registry-client";
 import { isAuthenticated } from "#/lib/supabase";
+import { getLocalConfig, getLocalConfigPath } from "#/lib/config";
+import {
+  resolveRegistry,
+  createRegistryClient as createAbstractRegistryClient,
+} from "#/lib/registry";
 import {
   getArtifactMetadata,
   saveArtifactMetadata,
@@ -69,10 +74,22 @@ export const publishCommand = new Command("publish")
     }
 
     // Determine publish mode
+    // Priority: --s3 flag > custom registry config > default API
     if (options.s3) {
       await publishToS3(artifactId, manifest.version, outputPath, options.registry);
     } else {
-      await publishToApi(artifactId, manifest.version, outputPath);
+      // Check for custom registry configuration
+      const scope = `@${manifest.author}`;
+      const localConfig = getLocalConfig(process.cwd());
+      const registry = resolveRegistry(scope, localConfig);
+
+      if (registry.type !== "default") {
+        // Use custom registry (GitLab, GitHub, etc.)
+        await publishToCustomRegistry(artifactId, manifest.version, outputPath, scope, registry);
+      } else {
+        // Use default API-based registry (Supabase)
+        await publishToApi(artifactId, manifest.version, outputPath);
+      }
     }
   });
 
@@ -137,6 +154,83 @@ async function publishToApi(artifactId: string, version: string, tarballPath: st
 
     log("");
     success(`Published ${artifactId}@${version}`);
+    log(`\n  Install with: grekt add ${artifactId}@${version}\n`);
+  } catch (err) {
+    spin.stop();
+    unlinkSync(tarballPath);
+    error(`Publish failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+    process.exit(1);
+  }
+}
+
+/**
+ * Publish using custom registry (GitLab, GitHub, etc.)
+ */
+async function publishToCustomRegistry(
+  artifactId: string,
+  version: string,
+  tarballPath: string,
+  scope: string,
+  registry: ReturnType<typeof resolveRegistry>
+): Promise<void> {
+  const client = createAbstractRegistryClient(registry);
+
+  // Check if version already exists
+  const checkSpin = spinner("Checking if version exists...");
+  checkSpin.start();
+
+  try {
+    const exists = await client.versionExists(artifactId, version);
+    checkSpin.stop();
+
+    if (exists) {
+      unlinkSync(tarballPath);
+      error(`Version ${version} already exists for ${artifactId}`);
+      info("Bump the version in grekt.yaml and try again");
+      process.exit(1);
+    }
+  } catch {
+    checkSpin.stop();
+    // If we can't check, continue anyway (might be a new artifact)
+  }
+
+  // Publish
+  const spin = spinner(`Publishing to ${registry.type} registry...`);
+  spin.start();
+
+  try {
+    const result = await client.publish(artifactId, version, tarballPath);
+
+    spin.stop();
+
+    if (!result.success) {
+      unlinkSync(tarballPath);
+      error(`Publish failed: ${result.error || "Unknown error"}`);
+      log("");
+      if (registry.type === "gitlab" && !registry.token) {
+        info("GitLab registry requires authentication.");
+        log("");
+        log(colors.dim("  Configure token in one of these ways:"));
+        log(`  1. Add token to ${getLocalConfigPath()}:`);
+        log(`     registries:`);
+        log(`       "${scope}":`);
+        log(`         type: gitlab`);
+        log(`         project: your/project`);
+        log(`         token: glpat-xxx`);
+        log("");
+        log(`  2. Set environment variable: GREKT_TOKEN_${scope.slice(1).toUpperCase()}`);
+        log(`  3. Set GITLAB_TOKEN environment variable`);
+      }
+      process.exit(1);
+    }
+
+    unlinkSync(tarballPath);
+
+    log("");
+    success(`Published ${artifactId}@${version}`);
+    if (result.url) {
+      log(`  URL: ${result.url}`);
+    }
     log(`\n  Install with: grekt add ${artifactId}@${version}\n`);
   } catch (err) {
     spin.stop();

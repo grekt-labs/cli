@@ -1,7 +1,13 @@
 import { mkdirSync, writeFileSync, existsSync } from "fs";
 import { execSync } from "child_process";
 import { getTokenCredentials } from "#/lib/credentials";
-import type { DownloadResult } from "#/lib/registry";
+import { getLocalConfig } from "#/lib/config";
+import {
+  type DownloadResult,
+  parseArtifactId,
+  resolveRegistry,
+  createRegistryClient,
+} from "#/lib/registry";
 
 export type SourceType = "registry" | "github" | "gitlab";
 
@@ -234,11 +240,29 @@ export async function downloadFromSource(
     case "gitlab":
       return downloadFromGitLab(source, targetDir);
     case "registry":
-      // Import dynamically to avoid circular dependency
-      const { downloadFromRegistry } = await import("#/lib/registry");
-      return downloadFromRegistry(source.identifier, targetDir, projectRoot);
+      return downloadFromRegistrySource(source.identifier, targetDir, projectRoot);
     default:
       return { success: false };
+  }
+}
+
+/**
+ * Download artifact from registry using the registry abstraction layer
+ */
+async function downloadFromRegistrySource(
+  artifactSource: string,
+  targetDir: string,
+  projectRoot: string
+): Promise<DownloadResult> {
+  try {
+    const { scope, artifactId, version } = parseArtifactId(artifactSource);
+    const localConfig = getLocalConfig(projectRoot);
+    const registry = resolveRegistry(scope, localConfig);
+    const client = createRegistryClient(registry);
+
+    return await client.download(artifactId, version, targetDir);
+  } catch {
+    return { success: false };
   }
 }
 
