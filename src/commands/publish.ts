@@ -1,28 +1,21 @@
 import { Command } from "commander";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { execSync } from "child_process";
 import { existsSync, readFileSync, unlinkSync } from "fs";
 import { basename, dirname, join, resolve } from "path";
 import { parse } from "yaml";
-import { getRegistryCredentials, getCredentialsFromEnv, getCredentialsPath } from "#/auth/credentials/credentials";
-import { createRegistryClient } from "#/registry/api-client/api-client";
-import { isAuthenticated } from "#/auth/session/session";
-import { getLocalConfig, getLocalConfigPath } from "#/config/project/project";
+import { setProjectRoot } from "#/auth/session/session";
+import { isInitialized, getLocalConfigPath } from "#/config/project/project";
 import {
-  resolveRegistry,
-  createRegistryClient as createAbstractRegistryClient,
-} from "#/registry/registry";
-import {
-  getArtifactMetadata,
-  saveArtifactMetadata,
-  versionExists,
-  createMetadata,
-  updateMetadataVersion,
-} from "#/registry/metadata/metadata";
+  createPublisher,
+  getPublisherTypeName,
+} from "#/registry/publishers/factory";
+import { S3Publisher } from "#/registry/publishers/s3-publisher";
+import { CustomPublisher } from "#/registry/publishers/custom-publisher";
+import { isApiAuthenticated } from "#/registry/publishers/api-publisher";
+import type { PublishContext } from "#/registry/publishers/publisher.types";
 import { success, error, info, log, colors, spinner } from "#/shared/ui/ui";
 
 interface PublishOptions {
-  registry: string;
   local?: boolean;
   output?: string;
   s3?: boolean;
@@ -31,12 +24,21 @@ interface PublishOptions {
 export const publishCommand = new Command("publish")
   .description("Publish an artifact to a registry")
   .argument("<path>", "Path to artifact directory")
-  .option("-r, --registry <name>", "Registry name from credentials.yaml", "default")
   .option("--local", "Only create tarball locally (no upload)")
   .option("-o, --output <path>", "Output path for tarball (with --local)")
-  .option("--s3", "Use S3-compatible storage (legacy mode)")
+  .option("--s3", "Use S3-compatible storage (legacy mode, env vars only)")
   .action(async (artifactPath: string, options: PublishOptions) => {
     const fullPath = resolve(artifactPath);
+    const projectRoot = process.cwd();
+
+    // Require project initialization
+    if (!isInitialized(projectRoot)) {
+      error("Not in a grekt project. Run 'grekt init' first.");
+      process.exit(1);
+    }
+
+    // Set project root for session operations
+    setProjectRoot(projectRoot);
 
     if (!existsSync(fullPath)) {
       error(`Artifact not found: ${fullPath}`);
@@ -51,6 +53,7 @@ export const publishCommand = new Command("publish")
 
     const manifest = parse(readFileSync(manifestPath, "utf-8"));
     const artifactId = `@${manifest.author}/${manifest.name}`;
+    const scope = `@${manifest.author}`;
 
     log(colors.bold(`\nPublishing ${artifactId}@${manifest.version}...\n`));
 
@@ -73,286 +76,119 @@ export const publishCommand = new Command("publish")
       return;
     }
 
-    // Determine publish mode
-    // Priority: --s3 flag > custom registry config > default API
-    if (options.s3) {
-      await publishToS3(artifactId, manifest.version, outputPath, options.registry);
-    } else {
-      // Check for custom registry configuration
-      const scope = `@${manifest.author}`;
-      const localConfig = getLocalConfig(process.cwd());
-      const registry = resolveRegistry(scope, localConfig);
-
-      if (registry.type !== "default") {
-        // Use custom registry (GitLab, GitHub, etc.)
-        await publishToCustomRegistry(artifactId, manifest.version, outputPath, scope, registry);
-      } else {
-        // Use default API-based registry (Supabase)
-        await publishToApi(artifactId, manifest.version, outputPath);
-      }
-    }
-  });
-
-/**
- * Publish using the new API-based registry
- */
-async function publishToApi(artifactId: string, version: string, tarballPath: string): Promise<void> {
-  const authenticated = await isAuthenticated();
-
-  if (!authenticated) {
-    unlinkSync(tarballPath);
-    error("Not logged in");
-    info("Run 'grekt login' first");
-    log("");
-    log(colors.dim("For S3-compatible storage, use --s3 flag"));
-    process.exit(1);
-  }
-
-  const client = createRegistryClient();
-
-  // Check if version already exists
-  const checkSpin = spinner("Checking if version exists...");
-  checkSpin.start();
-
-  try {
-    const exists = await client.versionExists(artifactId, version);
-    checkSpin.stop();
-
-    if (exists) {
-      unlinkSync(tarballPath);
-      error(`Version ${version} already exists for ${artifactId}`);
-      info("Bump the version in grekt.yaml and try again");
-      process.exit(1);
-    }
-  } catch {
-    checkSpin.stop();
-    // If we can't check, continue anyway (might be a new artifact)
-  }
-
-  // Get upload URL from API
-  const spin = spinner("Requesting upload URL...");
-  spin.start();
-
-  try {
-    const { uploadUrl } = await client.publish(artifactId, version);
-    spin.text = "Uploading...";
-
-    // Upload tarball to signed URL
-    const body = readFileSync(tarballPath);
-    const uploadResponse = await fetch(uploadUrl, {
-      method: "PUT",
-      body,
-      headers: { "Content-Type": "application/gzip" },
+    // Create appropriate publisher
+    const publisher = createPublisher({
+      s3: options.s3,
+      scope,
+      projectRoot,
     });
 
-    if (!uploadResponse.ok) {
-      throw new Error(`Upload failed: ${uploadResponse.status}`);
-    }
+    // Create publish context
+    const ctx: PublishContext = {
+      artifactId,
+      version: manifest.version,
+      tarballPath: outputPath,
+      scope,
+      projectRoot,
+    };
 
-    spin.stop();
-    unlinkSync(tarballPath);
-
-    log("");
-    success(`Published ${artifactId}@${version}`);
-    log(`\n  Install with: grekt add ${artifactId}@${version}\n`);
-  } catch (err) {
-    spin.stop();
-    unlinkSync(tarballPath);
-    error(`Publish failed: ${err instanceof Error ? err.message : "Unknown error"}`);
-    process.exit(1);
-  }
-}
-
-/**
- * Publish using custom registry (GitLab, GitHub, etc.)
- */
-async function publishToCustomRegistry(
-  artifactId: string,
-  version: string,
-  tarballPath: string,
-  scope: string,
-  registry: ReturnType<typeof resolveRegistry>
-): Promise<void> {
-  const client = createAbstractRegistryClient(registry);
-
-  // Check if version already exists
-  const checkSpin = spinner("Checking if version exists...");
-  checkSpin.start();
-
-  try {
-    const exists = await client.versionExists(artifactId, version);
-    checkSpin.stop();
-
-    if (exists) {
-      unlinkSync(tarballPath);
-      error(`Version ${version} already exists for ${artifactId}`);
-      info("Bump the version in grekt.yaml and try again");
+    // Check authentication/credentials before proceeding
+    if (publisher instanceof S3Publisher && !publisher.hasCredentials()) {
+      unlinkSync(outputPath);
+      showS3CredentialsHelp();
       process.exit(1);
     }
-  } catch {
-    checkSpin.stop();
-    // If we can't check, continue anyway (might be a new artifact)
-  }
 
-  // Publish
-  const spin = spinner(`Publishing to ${registry.type} registry...`);
-  spin.start();
+    if (publisher.type === "api") {
+      const authenticated = await isApiAuthenticated();
+      if (!authenticated) {
+        unlinkSync(outputPath);
+        error("Not logged in");
+        info("Run 'grekt login' first");
+        log("");
+        log(colors.dim("For S3-compatible storage, use --s3 flag"));
+        process.exit(1);
+      }
+    }
 
-  try {
-    const result = await client.publish(artifactId, version, tarballPath);
+    // Check if version already exists
+    const checkSpin = spinner("Checking if version exists...");
+    checkSpin.start();
 
+    try {
+      const exists = await publisher.versionExists(ctx);
+      checkSpin.stop();
+
+      if (exists) {
+        unlinkSync(outputPath);
+        error(`Version ${manifest.version} already exists for ${artifactId}`);
+        info("Bump the version in grekt.yaml and try again");
+        process.exit(1);
+      }
+    } catch {
+      checkSpin.stop();
+      // If we can't check, continue anyway (might be a new artifact)
+    }
+
+    // Publish
+    const publisherName = getPublisherTypeName(publisher);
+    const spin = spinner(`Publishing to ${publisherName}...`);
+    spin.start();
+
+    const result = await publisher.publish(ctx);
     spin.stop();
 
     if (!result.success) {
-      unlinkSync(tarballPath);
-      error(`Publish failed: ${result.error || "Unknown error"}`);
-      log("");
-      if (registry.type === "gitlab" && !registry.token) {
-        info("GitLab registry requires authentication.");
-        log("");
-        log(colors.dim("  Configure token in one of these ways:"));
-        log(`  1. Add token to ${getLocalConfigPath()}:`);
-        log(`     registries:`);
-        log(`       "${scope}":`);
-        log(`         type: gitlab`);
-        log(`         project: your/project`);
-        log(`         token: glpat-xxx`);
-        log("");
-        log(`  2. Set environment variable: GREKT_TOKEN_${scope.slice(1).toUpperCase()}`);
-        log(`  3. Set GITLAB_TOKEN environment variable`);
+      unlinkSync(outputPath);
+      error(`Publish failed: ${result.error}`);
+
+      // Show registry-specific help
+      if (publisher instanceof CustomPublisher) {
+        const registry = publisher.getRegistry();
+        if (registry.type === "gitlab" && !registry.token) {
+          showGitLabHelp(scope);
+        }
       }
+
       process.exit(1);
     }
 
-    unlinkSync(tarballPath);
+    unlinkSync(outputPath);
 
     log("");
-    success(`Published ${artifactId}@${version}`);
+    success(`Published ${artifactId}@${manifest.version}`);
     if (result.url) {
       log(`  URL: ${result.url}`);
     }
-    log(`\n  Install with: grekt add ${artifactId}@${version}\n`);
-  } catch (err) {
-    spin.stop();
-    unlinkSync(tarballPath);
-    error(`Publish failed: ${err instanceof Error ? err.message : "Unknown error"}`);
-    process.exit(1);
-  }
-}
-
-/**
- * Publish using S3-compatible storage (legacy mode)
- */
-async function publishToS3(artifactId: string, version: string, tarballPath: string, registryName: string): Promise<void> {
-  // Get credentials (env vars take precedence, then credentials file)
-  let credentials = getCredentialsFromEnv();
-
-  if (!credentials) {
-    credentials = getRegistryCredentials(registryName);
-  }
-
-  if (!credentials) {
-    unlinkSync(tarballPath);
-    error("No S3 credentials found");
-    log("");
-    info("Configure credentials in one of these ways:");
-    log("");
-    log(colors.dim("  1. Environment variables:"));
-    log("     GREKT_STORAGE_ENDPOINT=https://...");
-    log("     GREKT_STORAGE_ACCESS_KEY_ID=...");
-    log("     GREKT_STORAGE_SECRET_ACCESS_KEY=...");
-    log("     GREKT_STORAGE_BUCKET=...");
-    log("");
-    log(colors.dim(`  2. Credentials file (${getCredentialsPath()}):`));
-    log("     default:");
-    log("       type: s3");
-    log("       endpoint: https://...");
-    log("       accessKeyId: ...");
-    log("       secretAccessKey: ...");
-    log("       bucket: ...");
-    log("       publicUrl: https://... (optional)");
-    log("");
-    log(colors.dim("  3. Use --local to create tarball without uploading"));
-    process.exit(1);
-  }
-
-  // Check if version already exists
-  const checkSpin = spinner("Checking if version exists...");
-  checkSpin.start();
-
-  try {
-    const exists = await versionExists(credentials, artifactId, version);
-    checkSpin.stop();
-
-    if (exists) {
-      unlinkSync(tarballPath);
-      error(`Version ${version} already exists for ${artifactId}`);
-      info("Bump the version in grekt.yaml and try again");
-      process.exit(1);
-    }
-  } catch {
-    checkSpin.stop();
-    // If we can't check, continue anyway (might be a new artifact)
-  }
-
-  // Upload to S3-compatible storage
-  const spin = spinner("Uploading...");
-  spin.start();
-
-  const client = new S3Client({
-    region: "auto",
-    endpoint: credentials.endpoint,
-    credentials: {
-      accessKeyId: credentials.accessKeyId,
-      secretAccessKey: credentials.secretAccessKey,
-    },
+    log(`\n  Install with: grekt add ${artifactId}@${manifest.version}\n`);
   });
 
-  const key = `artifacts/${artifactId}/${version}.tar.gz`;
-  const body = readFileSync(tarballPath);
+function showS3CredentialsHelp(): void {
+  error("No S3 credentials found");
+  log("");
+  info("Configure S3 credentials via environment variables:");
+  log("");
+  log("  GREKT_STORAGE_ENDPOINT=https://...");
+  log("  GREKT_STORAGE_ACCESS_KEY_ID=...");
+  log("  GREKT_STORAGE_SECRET_ACCESS_KEY=...");
+  log("  GREKT_STORAGE_BUCKET=...");
+  log("  GREKT_STORAGE_PUBLIC_URL=https://... (optional)");
+  log("");
+  log(colors.dim("Or use --local to create tarball without uploading"));
+}
 
-  try {
-    await client.send(
-      new PutObjectCommand({
-        Bucket: credentials.bucket,
-        Key: key,
-        Body: body,
-        ContentType: "application/gzip",
-      })
-    );
-
-    spin.stop();
-    success(`Uploaded: ${key}`);
-
-    // Update metadata
-    const metaSpin = spinner("Updating metadata...");
-    metaSpin.start();
-
-    let metadata = await getArtifactMetadata(credentials, artifactId);
-    if (metadata) {
-      metadata = updateMetadataVersion(metadata, version);
-    } else {
-      metadata = createMetadata(artifactId, version);
-    }
-    await saveArtifactMetadata(credentials, metadata);
-
-    metaSpin.stop();
-    success("Metadata updated");
-
-    unlinkSync(tarballPath);
-
-    log("");
-    success(`Published ${artifactId}@${version}`);
-
-    if (credentials.publicUrl) {
-      log(`  URL: ${credentials.publicUrl}/${key}`);
-    }
-
-    log(`\n  Install with: grekt add ${artifactId}@${version}\n`);
-  } catch (err) {
-    spin.stop();
-    unlinkSync(tarballPath);
-    error(`Upload failed: ${err instanceof Error ? err.message : "Unknown error"}`);
-    process.exit(1);
-  }
+function showGitLabHelp(scope: string): void {
+  log("");
+  info("GitLab registry requires authentication.");
+  log("");
+  log(colors.dim("  Configure token in one of these ways:"));
+  log(`  1. Add token to ${getLocalConfigPath()}:`);
+  log(`     registries:`);
+  log(`       "${scope}":`);
+  log(`         type: gitlab`);
+  log(`         project: your/project`);
+  log(`         token: glpat-xxx`);
+  log("");
+  log(`  2. Set environment variable: GREKT_TOKEN_${scope.slice(1).toUpperCase()}`);
+  log(`  3. Set GITLAB_TOKEN environment variable`);
 }

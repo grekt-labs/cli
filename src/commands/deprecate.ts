@@ -1,7 +1,8 @@
 import { Command } from "commander";
-import { getRegistryCredentials, getCredentialsFromEnv } from "#/auth/credentials/credentials";
 import { createRegistryClient } from "#/registry/api-client/api-client";
-import { isAuthenticated } from "#/auth/session/session";
+import { isAuthenticated, setProjectRoot } from "#/auth/session/session";
+import { isInitialized } from "#/config/project/project";
+import { getS3CredentialsFromEnv } from "#/registry/publishers/s3-publisher";
 import {
   getArtifactMetadata,
   saveArtifactMetadata,
@@ -15,7 +16,6 @@ import { success, error, info, log, colors, spinner } from "#/shared/ui/ui";
  * Returns null if format is invalid.
  */
 function parseArtifactVersion(input: string): { artifactId: string; version: string } | null {
-  // @scope/name@version (version required)
   const ARTIFACT_AT_VERSION = /^(?<artifactId>@[^@]+)@(?<version>.+)$/;
 
   const match = input.match(ARTIFACT_AT_VERSION);
@@ -29,7 +29,6 @@ function parseArtifactVersion(input: string): { artifactId: string; version: str
 
 interface DeprecateOptions {
   message: string;
-  registry: string;
   s3?: boolean;
 }
 
@@ -37,9 +36,19 @@ export const deprecateCommand = new Command("deprecate")
   .description("Deprecate an artifact version")
   .argument("<artifact@version>", "Artifact and version to deprecate (e.g., @author/name@1.0.0)")
   .option("-m, --message <message>", "Deprecation message", "This version is deprecated")
-  .option("-r, --registry <name>", "Registry name from credentials.yaml", "default")
-  .option("--s3", "Use S3-compatible storage (legacy mode)")
+  .option("--s3", "Use S3-compatible storage (legacy mode, env vars only)")
   .action(async (artifactVersion: string, options: DeprecateOptions) => {
+    const projectRoot = process.cwd();
+
+    // Require project initialization
+    if (!isInitialized(projectRoot)) {
+      error("Not in a grekt project. Run 'grekt init' first.");
+      process.exit(1);
+    }
+
+    // Set project root for session operations
+    setProjectRoot(projectRoot);
+
     const parsed = parseArtifactVersion(artifactVersion);
     if (!parsed) {
       error("Invalid format. Use: @author/name@version");
@@ -49,14 +58,14 @@ export const deprecateCommand = new Command("deprecate")
     const { artifactId, version } = parsed;
 
     if (options.s3) {
-      await deprecateS3(artifactId, version, options.message, options.registry);
+      await deprecateS3(artifactId, version, options.message);
     } else {
       await deprecateApi(artifactId, version, options.message);
     }
   });
 
 /**
- * Deprecate using the new API-based registry
+ * Deprecate using the API-based registry
  */
 async function deprecateApi(artifactId: string, version: string, message: string): Promise<void> {
   const authenticated = await isAuthenticated();
@@ -88,14 +97,12 @@ async function deprecateApi(artifactId: string, version: string, message: string
 /**
  * Deprecate using S3-compatible storage (legacy mode)
  */
-async function deprecateS3(artifactId: string, version: string, message: string, registryName: string): Promise<void> {
-  let credentials = getCredentialsFromEnv();
-  if (!credentials) {
-    credentials = getRegistryCredentials(registryName);
-  }
+async function deprecateS3(artifactId: string, version: string, message: string): Promise<void> {
+  const credentials = getS3CredentialsFromEnv();
 
   if (!credentials) {
     error("No S3 credentials found");
+    info("Set GREKT_STORAGE_* environment variables for S3 mode");
     process.exit(1);
   }
 

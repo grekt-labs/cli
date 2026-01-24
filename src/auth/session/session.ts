@@ -1,59 +1,39 @@
 import { createClient, type SupabaseClient, type Session } from "@supabase/supabase-js";
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
-import { homedir } from "os";
-import { join } from "path";
-import { parse, stringify } from "yaml";
+import {
+  getSession as getStoredSession,
+  saveSession as saveStoredSession,
+  clearSession as clearStoredSession,
+} from "#/config/project/project";
+import type { StoredSession } from "#/schemas/index";
 
-// Supabase project config
-const SUPABASE_URL = "https://your-project.supabase.co"; // TODO: Replace with actual
-const SUPABASE_ANON_KEY = "your-anon-key"; // TODO: Replace with actual
+// Supabase project config - loaded from environment
+const SUPABASE_URL = process.env.GREKT_SUPABASE_URL || process.env.SUPABASE_URL || "";
+const SUPABASE_ANON_KEY = process.env.GREKT_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || "";
 
-const GREKT_HOME = join(homedir(), ".grekt");
-const SESSION_FILE = join(GREKT_HOME, "session.yaml");
+/**
+ * Check if Supabase is configured.
+ * Returns false if environment variables are not set.
+ */
+export function isSupabaseConfigured(): boolean {
+  return Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
+}
 
-interface StoredSession {
-  access_token: string;
-  refresh_token: string;
-  expires_at?: number;
+// Current project root for session persistence
+let _projectRoot: string = process.cwd();
+
+/**
+ * Set the project root for session operations.
+ * Call this before any auth operations.
+ */
+export function setProjectRoot(projectRoot: string): void {
+  _projectRoot = projectRoot;
 }
 
 /**
- * Get stored session from disk.
+ * Get the current project root.
  */
-function getStoredSession(): StoredSession | null {
-  if (!existsSync(SESSION_FILE)) {
-    return null;
-  }
-  try {
-    const content = readFileSync(SESSION_FILE, "utf-8");
-    return parse(content) as StoredSession;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Save session to disk.
- */
-function saveSession(session: Session): void {
-  if (!existsSync(GREKT_HOME)) {
-    mkdirSync(GREKT_HOME, { recursive: true });
-  }
-  const stored: StoredSession = {
-    access_token: session.access_token,
-    refresh_token: session.refresh_token,
-    expires_at: session.expires_at,
-  };
-  writeFileSync(SESSION_FILE, stringify(stored), { mode: 0o600 });
-}
-
-/**
- * Clear stored session.
- */
-export function clearSession(): void {
-  if (existsSync(SESSION_FILE)) {
-    writeFileSync(SESSION_FILE, "", { mode: 0o600 });
-  }
+export function getProjectRoot(): string {
+  return _projectRoot;
 }
 
 /**
@@ -64,6 +44,12 @@ let _client: SupabaseClient | null = null;
 export function getSupabaseClient(): SupabaseClient {
   if (_client) return _client;
 
+  if (!isSupabaseConfigured()) {
+    throw new Error(
+      "Supabase not configured. Set GREKT_SUPABASE_URL and GREKT_SUPABASE_ANON_KEY environment variables."
+    );
+  }
+
   _client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: {
       autoRefreshToken: true,
@@ -71,8 +57,8 @@ export function getSupabaseClient(): SupabaseClient {
     },
   });
 
-  // Restore session if exists
-  const stored = getStoredSession();
+  // Restore session from project config if exists
+  const stored = getStoredSession(_projectRoot);
   if (stored) {
     _client.auth.setSession({
       access_token: stored.access_token,
@@ -80,16 +66,28 @@ export function getSupabaseClient(): SupabaseClient {
     });
   }
 
-  // Listen for auth changes to persist
+  // Listen for auth changes to persist to project config
   _client.auth.onAuthStateChange((event, session) => {
     if (session) {
-      saveSession(session);
+      const toStore: StoredSession = {
+        access_token: session.access_token,
+        refresh_token: session.refresh_token,
+        expires_at: session.expires_at,
+      };
+      saveStoredSession(toStore, _projectRoot);
     } else if (event === "SIGNED_OUT") {
-      clearSession();
+      clearStoredSession(_projectRoot);
     }
   });
 
   return _client;
+}
+
+/**
+ * Reset the client (for testing or when switching projects).
+ */
+export function resetClient(): void {
+  _client = null;
 }
 
 /**
@@ -107,6 +105,13 @@ export async function getSession(): Promise<Session | null> {
 export async function isAuthenticated(): Promise<boolean> {
   const session = await getSession();
   return session !== null;
+}
+
+/**
+ * Clear session from project config.
+ */
+export function clearSession(): void {
+  clearStoredSession(_projectRoot);
 }
 
 export { SUPABASE_URL, SUPABASE_ANON_KEY };

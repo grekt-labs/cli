@@ -1,25 +1,21 @@
 import { Command } from "commander";
-import { getRegistryCredentials, getCredentialsFromEnv } from "#/auth/credentials/credentials";
+import { getS3CredentialsFromEnv } from "#/registry/publishers/s3-publisher";
 import { getArtifactMetadata, listVersions } from "#/registry/metadata/metadata";
-import { error, log, colors, spinner } from "#/shared/ui/ui";
+import { error, info as showInfo, log, colors, spinner } from "#/shared/ui/ui";
 
 export const infoCommand = new Command("info")
-  .description("Show information about an artifact")
+  .description("Show information about an artifact (S3 storage only)")
   .argument("<artifact>", "Artifact ID (e.g., @author/name)")
-  .option("-r, --registry <name>", "Registry name from credentials.yaml", "default")
-  .action(async (artifactId: string, options: { registry: string }) => {
+  .action(async (artifactId: string) => {
     if (!artifactId.startsWith("@")) {
       error("Invalid artifact ID. Use: @author/name");
       process.exit(1);
     }
 
-    let credentials = getCredentialsFromEnv();
+    const credentials = getS3CredentialsFromEnv();
     if (!credentials) {
-      credentials = getRegistryCredentials(options.registry);
-    }
-
-    if (!credentials) {
-      error("No registry credentials found");
+      error("No S3 credentials found");
+      showInfo("Set GREKT_STORAGE_* environment variables for S3 mode");
       process.exit(1);
     }
 
