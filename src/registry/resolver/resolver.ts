@@ -56,20 +56,6 @@ function getDefaultHost(type: RegistryType): string {
 }
 
 /**
- * Get token from environment variable for a scope
- *
- * @example
- * getEnvToken("@miscope") → process.env.GREKT_TOKEN_MISCOPE
- * getEnvToken("@my-team") → process.env.GREKT_TOKEN_MY_TEAM
- */
-function getEnvToken(scope: string): string | undefined {
-  // @miscope → GREKT_TOKEN_MISCOPE
-  // @my-team → GREKT_TOKEN_MY_TEAM
-  const envName = `GREKT_TOKEN_${scope.slice(1).replace(/-/g, "_").toUpperCase()}`;
-  return process.env[envName];
-}
-
-/**
  * Resolve a scope to a registry configuration
  *
  * Priority:
@@ -77,9 +63,8 @@ function getEnvToken(scope: string): string | undefined {
  * 2. Fall back to default public registry
  *
  * Token priority:
- * 1. Environment variable (GREKT_TOKEN_SCOPE)
- * 2. Config file token
- * 3. Generic token (GITLAB_TOKEN, GITHUB_TOKEN)
+ * 1. Config file token (.grekt/config.yaml)
+ * 2. Platform env vars (GITLAB_TOKEN, GITHUB_TOKEN)
  */
 export function resolveRegistry(
   scope: string,
@@ -95,11 +80,9 @@ export function resolveRegistry(
     };
   }
 
-  // Get token: env var takes priority
-  const envToken = getEnvToken(scope);
-  let token = envToken || entry.token;
+  // Get token from config, fall back to platform env vars
+  let token = entry.token;
 
-  // Fall back to generic tokens if no specific token
   if (!token) {
     if (entry.type === "gitlab") {
       token = process.env.GITLAB_TOKEN || process.env.GL_TOKEN;

@@ -189,6 +189,5 @@ function showGitLabHelp(scope: string): void {
   log(`         project: your/project`);
   log(`         token: glpat-xxx`);
   log("");
-  log(`  2. Set environment variable: GREKT_TOKEN_${scope.slice(1).toUpperCase()}`);
-  log(`  3. Set GITLAB_TOKEN environment variable`);
+  log(`  2. Set GITLAB_TOKEN environment variable`);
 }

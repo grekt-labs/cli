@@ -92,25 +92,15 @@ export function parseSource(source: string): ParsedSource {
   };
 }
 
+/**
+ * Get token for a git source
+ *
+ * Priority:
+ * 1. Config file (.grekt/config.yaml tokens section)
+ * 2. Platform env vars (GITHUB_TOKEN, GITLAB_TOKEN) - for users who already have them set
+ */
 function getSourceToken(source: ParsedSource, projectRoot: string): string | undefined {
-  // Check environment variables first (always takes priority)
-  if (source.type === "github") {
-    const envToken = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
-    if (envToken) return envToken;
-  }
-
-  if (source.type === "gitlab") {
-    // For self-hosted, check host-specific env var first
-    if (source.host && source.host !== "gitlab.com") {
-      const hostEnvKey = `GITLAB_TOKEN_${source.host.replace(/\./g, "_").toUpperCase()}`;
-      const hostToken = process.env[hostEnvKey];
-      if (hostToken) return hostToken;
-    }
-    const envToken = process.env.GITLAB_TOKEN || process.env.GL_TOKEN;
-    if (envToken) return envToken;
-  }
-
-  // Check project config (.grekt/config.yaml tokens section)
+  // Check project config first (.grekt/config.yaml tokens section)
   if (source.type === "github") {
     const token = getToken("github", projectRoot);
     if (token) return token;
@@ -119,6 +109,15 @@ function getSourceToken(source: ParsedSource, projectRoot: string): string | und
     const key = source.host || "gitlab.com";
     const token = getToken(key, projectRoot);
     if (token) return token;
+  }
+
+  // Fall back to platform env vars (users might already have these set)
+  if (source.type === "github") {
+    return process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
+  }
+
+  if (source.type === "gitlab") {
+    return process.env.GITLAB_TOKEN || process.env.GL_TOKEN;
   }
 
   return undefined;
