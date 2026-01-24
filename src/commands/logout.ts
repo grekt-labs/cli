@@ -1,6 +1,6 @@
 import { Command } from "commander";
-import { getSupabaseClient, clearSession } from "#/lib/supabase";
-import { success, info } from "#/utils/ui";
+import { getSupabaseClient, clearSession } from "#/auth/session/session";
+import { success, info } from "#/shared/ui/ui";
 
 export const logoutCommand = new Command("logout")
   .description("Log out from grekt registry")

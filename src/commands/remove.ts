@@ -2,10 +2,10 @@ import { Command } from "commander";
 import { existsSync, rmSync, readdirSync, unlinkSync } from "fs";
 import { basename, join } from "path";
 import { confirm } from "@inquirer/prompts";
-import { isInitialized, getConfig, saveConfig } from "#/lib/config";
-import { getLockfile, saveLockfile } from "#/lib/lockfile";
-import { ARTIFACTS_DIR } from "#/lib/paths";
-import { success, error, info, log, newline, colors } from "#/utils/ui";
+import { isInitialized, getConfig, saveConfig } from "#/config/project/project";
+import { getLockfile, saveLockfile } from "#/artifact/lockfile/lockfile";
+import { ARTIFACTS_DIR } from "#/config/paths/paths";
+import { success, error, info, log, newline, colors } from "#/shared/ui/ui";
 
 // Claude target paths
 const CLAUDE_DIR = ".claude";

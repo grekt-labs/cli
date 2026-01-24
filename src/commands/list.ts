@@ -1,10 +1,10 @@
 import { Command } from "commander";
 import { existsSync } from "fs";
-import { isInitialized } from "#/lib/config";
-import { getLockfile } from "#/lib/lockfile";
-import { ARTIFACTS_DIR } from "#/lib/paths";
-import { getDirectorySize, formatBytes, estimateTokens } from "#/lib/integrity";
-import { error, info, log, colors, newline } from "#/utils/ui";
+import { isInitialized } from "#/config/project/project";
+import { getLockfile } from "#/artifact/lockfile/lockfile";
+import { ARTIFACTS_DIR } from "#/config/paths/paths";
+import { getDirectorySize, formatBytes, estimateTokens } from "#/artifact/integrity/integrity";
+import { error, info, log, colors, newline } from "#/shared/ui/ui";
 
 export const listCommand = new Command("list")
   .alias("ls")

@@ -1,13 +1,13 @@
 import { Command } from "commander";
-import { getRegistryCredentials, getCredentialsFromEnv } from "#/lib/credentials";
-import { createRegistryClient } from "#/lib/registry-client";
-import { isAuthenticated } from "#/lib/supabase";
+import { getRegistryCredentials, getCredentialsFromEnv } from "#/auth/credentials/credentials";
+import { createRegistryClient } from "#/registry/api-client/api-client";
+import { isAuthenticated } from "#/auth/session/session";
 import {
   getArtifactMetadata,
   saveArtifactMetadata,
   undeprecateVersion,
-} from "#/lib/metadata";
-import { success, error, info, log, colors, spinner } from "#/utils/ui";
+} from "#/registry/metadata/metadata";
+import { success, error, info, log, colors, spinner } from "#/shared/ui/ui";
 
 /**
  * Parse "@author/name@version" format.
