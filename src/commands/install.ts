@@ -1,13 +1,13 @@
 import { Command } from "commander";
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "fs";
 import { execSync } from "child_process";
-import { isInitialized, getConfig } from "#/lib/config";
-import { getLockfile, lockfileExists } from "#/lib/lockfile";
-import { ARTIFACTS_DIR } from "#/lib/paths";
-import { parseSource, downloadFromSource } from "#/lib/sources";
-import { hashDirectory, verifyIntegrity } from "#/lib/integrity";
-import { runCheck, displayCompactCheckResults } from "#/lib/check";
-import { success, error, info, warning, log, newline, colors, spinner } from "#/utils/ui";
+import { isInitialized, getConfig } from "#/config/project/project";
+import { getLockfile, lockfileExists } from "#/artifact/lockfile/lockfile";
+import { ARTIFACTS_DIR } from "#/config/paths/paths";
+import { parseSource, downloadFromSource } from "#/registry/sources/sources";
+import { hashDirectory, verifyIntegrity } from "#/artifact/integrity/integrity";
+import { runCheck, displayCompactCheckResults } from "#/artifact/check/check";
+import { success, error, info, warning, log, newline, colors, spinner } from "#/shared/ui/ui";
 
 /**
  * Download directly from a resolved URL

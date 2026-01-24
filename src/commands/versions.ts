@@ -1,7 +1,7 @@
 import { Command } from "commander";
-import { getRegistryCredentials, getCredentialsFromEnv } from "#/lib/credentials";
-import { getArtifactMetadata, listVersions } from "#/lib/metadata";
-import { error, log, colors, spinner } from "#/utils/ui";
+import { getRegistryCredentials, getCredentialsFromEnv } from "#/auth/credentials/credentials";
+import { getArtifactMetadata, listVersions } from "#/registry/metadata/metadata";
+import { error, log, colors, spinner } from "#/shared/ui/ui";
 
 export const versionsCommand = new Command("versions")
   .description("List all versions of an artifact")

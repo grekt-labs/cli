@@ -1,11 +1,11 @@
 import { Command } from "commander";
 import { existsSync, mkdirSync } from "fs";
 import { checkbox, input } from "@inquirer/prompts";
-import { isInitialized, saveConfig } from "#/lib/config";
-import { saveLockfile, createEmptyLockfile } from "#/lib/lockfile";
-import { getPluginChoices, getDefaultTarget } from "#/lib/plugins";
-import { GREKT_YAML, GREKT_DIR, ARTIFACTS_DIR } from "#/lib/paths";
-import { success, info, warning, newline, log, colors } from "#/utils/ui";
+import { isInitialized, saveConfig } from "#/config/project/project";
+import { saveLockfile, createEmptyLockfile } from "#/artifact/lockfile/lockfile";
+import { getPluginChoices, getDefaultTarget } from "#/sync/manager/manager";
+import { GREKT_YAML, GREKT_DIR, ARTIFACTS_DIR } from "#/config/paths/paths";
+import { success, info, warning, newline, log, colors } from "#/shared/ui/ui";
 import type { CustomTarget } from "#/schemas/index";
 
 const OTHER_TARGET_VALUE = "__other__";
@@ -107,6 +107,7 @@ export const initCommand = new Command("init")
       autoSync: false,
       artifacts: {},
       customTargets,
+      options: { autoCheck: false },
     }, projectRoot);
 
     // Create grekt.lock

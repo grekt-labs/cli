@@ -2,14 +2,14 @@ import { Command } from "commander";
 import { existsSync, mkdirSync, rmSync, unlinkSync, readdirSync, renameSync } from "fs";
 import { join } from "path";
 import { checkbox } from "@inquirer/prompts";
-import { isInitialized, getConfig, saveConfig } from "#/lib/config";
-import { getLockfile, saveLockfile } from "#/lib/lockfile";
-import { ARTIFACTS_DIR } from "#/lib/paths";
-import { parseSource, downloadFromSource, getSourceDisplayName } from "#/lib/sources";
-import { scanArtifact, getArtifactId, type ArtifactInfo } from "#/lib/artifact";
-import { hashDirectory, calculateIntegrity, getDirectorySize, formatBytes, estimateTokens } from "#/lib/integrity";
-import { runCheck, displayCompactCheckResults } from "#/lib/check";
-import { success, error, info, log, warning, newline, colors, spinner } from "#/utils/ui";
+import { isInitialized, getConfig, saveConfig } from "#/config/project/project";
+import { getLockfile, saveLockfile } from "#/artifact/lockfile/lockfile";
+import { ARTIFACTS_DIR } from "#/config/paths/paths";
+import { parseSource, downloadFromSource, getSourceDisplayName } from "#/registry/sources/sources";
+import { scanArtifact, getArtifactId, type ArtifactInfo } from "#/artifact/scanner/scanner";
+import { hashDirectory, calculateIntegrity, getDirectorySize, formatBytes, estimateTokens } from "#/artifact/integrity/integrity";
+import { runCheck, displayCompactCheckResults } from "#/artifact/check/check";
+import { success, error, info, log, warning, newline, colors, spinner } from "#/shared/ui/ui";
 
 const CONTEXT_WARNING_THRESHOLD = 10 * 1024; // 10 KB
 

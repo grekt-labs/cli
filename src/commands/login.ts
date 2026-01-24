@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import { createServer, type Server } from "http";
-import { getSupabaseClient, SUPABASE_URL } from "#/lib/supabase";
-import { success, error, info, log, spinner } from "#/utils/ui";
+import { getSupabaseClient, SUPABASE_URL } from "#/auth/session/session";
+import { success, error, info, log, spinner } from "#/shared/ui/ui";
 
 const LOGIN_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 

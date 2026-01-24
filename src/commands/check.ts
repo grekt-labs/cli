@@ -1,8 +1,8 @@
 import { Command } from "commander";
-import { isInitialized } from "#/lib/config";
-import { getLockfile } from "#/lib/lockfile";
-import { runCheck, displayCheckResults } from "#/lib/check";
-import { error, info, newline } from "#/utils/ui";
+import { isInitialized } from "#/config/project/project";
+import { getLockfile } from "#/artifact/lockfile/lockfile";
+import { runCheck, displayCheckResults } from "#/artifact/check/check";
+import { error, info, newline } from "#/shared/ui/ui";
 
 export const checkCommand = new Command("check")
   .description("Check artifact integrity, sync status, and detect conflicts")

@@ -3,8 +3,8 @@ import {
   getConfig,
   setConfigValue,
   isInitialized,
-} from "#/lib/config";
-import { success, error, info, log, colors } from "#/utils/ui";
+} from "#/config/project/project";
+import { success, error, info, log, colors } from "#/shared/ui/ui";
 import type { ProjectConfig } from "#/schemas/index";
 
 const VALID_KEYS: (keyof ProjectConfig)[] = ["targets", "autoSync", "registry"];

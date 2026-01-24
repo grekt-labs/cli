@@ -4,22 +4,22 @@ import { execSync } from "child_process";
 import { existsSync, readFileSync, unlinkSync } from "fs";
 import { basename, dirname, join, resolve } from "path";
 import { parse } from "yaml";
-import { getRegistryCredentials, getCredentialsFromEnv, getCredentialsPath } from "#/lib/credentials";
-import { createRegistryClient } from "#/lib/registry-client";
-import { isAuthenticated } from "#/lib/supabase";
-import { getLocalConfig, getLocalConfigPath } from "#/lib/config";
+import { getRegistryCredentials, getCredentialsFromEnv, getCredentialsPath } from "#/auth/credentials/credentials";
+import { createRegistryClient } from "#/registry/api-client/api-client";
+import { isAuthenticated } from "#/auth/session/session";
+import { getLocalConfig, getLocalConfigPath } from "#/config/project/project";
 import {
   resolveRegistry,
   createRegistryClient as createAbstractRegistryClient,
-} from "#/lib/registry";
+} from "#/registry/registry";
 import {
   getArtifactMetadata,
   saveArtifactMetadata,
   versionExists,
   createMetadata,
   updateMetadataVersion,
-} from "#/lib/metadata";
-import { success, error, info, log, colors, spinner } from "#/utils/ui";
+} from "#/registry/metadata/metadata";
+import { success, error, info, log, colors, spinner } from "#/shared/ui/ui";
 
 interface PublishOptions {
   registry: string;

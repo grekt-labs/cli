@@ -1,6 +1,6 @@
 import { Command } from "commander";
-import { getSupabaseClient, getSession, SUPABASE_URL } from "#/lib/supabase";
-import { log, colors, spinner } from "#/utils/ui";
+import { getSupabaseClient, getSession, SUPABASE_URL } from "#/auth/session/session";
+import { log, colors, spinner } from "#/shared/ui/ui";
 
 export const whoamiCommand = new Command("whoami")
   .description("Show current user")

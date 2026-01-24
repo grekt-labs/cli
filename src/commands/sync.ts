@@ -1,9 +1,9 @@
 import { Command } from "commander";
 import { confirm } from "@inquirer/prompts";
-import { isInitialized, getConfig } from "#/lib/config";
-import { getLockfile } from "#/lib/lockfile";
-import { getPlugin, getAvailableTargets } from "#/lib/plugins";
-import { success, error, info, warning, log, newline, colors, spinner } from "#/utils/ui";
+import { isInitialized, getConfig } from "#/config/project/project";
+import { getLockfile } from "#/artifact/lockfile/lockfile";
+import { getPlugin, getAvailableTargets } from "#/sync/manager/manager";
+import { success, error, info, warning, log, newline, colors, spinner } from "#/shared/ui/ui";
 
 export const syncCommand = new Command("sync")
   .description("Sync artifacts to AI tools")
