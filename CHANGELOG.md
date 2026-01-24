@@ -1,3 +1,30 @@
+# [2.0.0](https://github.com/grekt-labs/cli/compare/v1.0.0...v2.0.0) (2026-01-24)
+
+
+* refactor!: unify configuration in project-level .grekt/config.yaml ([824b950](https://github.com/grekt-labs/cli/commit/824b950b2cb6b0431c79b5e326c22ef693d502d7))
+
+
+### BREAKING CHANGES
+
+* All commands now require project initialization.
+Global ~/.grekt/ directory is no longer used.
+
+- Add session and tokens storage to LocalConfig schema
+- Move OAuth session from ~/.grekt/session.yaml to .grekt/config.yaml
+- Move git source tokens to .grekt/config.yaml tokens section
+- Add setProjectRoot() to session module for project context
+- Add writeLocalConfigWithComments() for self-documenting YAML
+- Update all auth commands to require isInitialized()
+- Delete global credentials module
+- Remove GLOBAL_CONFIG_DIR from paths
+
+New .grekt/config.yaml schema:
+  registries: scope-to-backend mappings
+  session: OAuth session (access_token, refresh_token, expires_at)
+  tokens: git source tokens (github, gitlab.com, etc.)
+
+Token priority unchanged: env vars > config file
+
 # [1.0.0](https://github.com/grekt-labs/cli/compare/v0.4.0...v1.0.0) (2026-01-24)
 
 
