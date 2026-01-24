@@ -125,19 +125,5 @@ export function getDirectorySize(dir: string): number {
   return totalSize;
 }
 
-/**
- * Format bytes to human readable string
- */
-export function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-/**
- * Estimate tokens from bytes (rough approximation)
- */
-export function estimateTokens(bytes: number): number {
-  // ~4 chars per token, ~1 byte per char for ASCII
-  return Math.round(bytes / 4);
-}
+// Re-export formatters for backwards compatibility
+export { formatBytes, estimateTokens } from "#/shared/formatters/formatters";
