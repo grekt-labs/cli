@@ -1,5 +1,3 @@
-import { mkdirSync, writeFileSync, existsSync } from "fs";
-import { execSync } from "child_process";
 import { getTokenCredentials } from "#/auth/credentials/credentials";
 import { getLocalConfig } from "#/config/project/project";
 import {
@@ -8,6 +6,13 @@ import {
   resolveRegistry,
   createRegistryClient,
 } from "#/registry/registry";
+import {
+  downloadAndExtractTarball,
+  buildGitHubTarballUrl,
+  buildGitLabArchiveUrl,
+  getGitHubHeaders,
+  getGitLabHeaders,
+} from "#/registry/download/download";
 
 export type SourceType = "registry" | "github" | "gitlab";
 
@@ -126,45 +131,17 @@ async function downloadFromGitHub(
 ): Promise<DownloadResult> {
   const token = getSourceToken(source);
   const ref = source.ref || "HEAD";
+  const [owner, repo] = source.identifier.split("/");
 
-  // GitHub tarball URL
-  const tarballUrl = `https://api.github.com/repos/${source.identifier}/tarball/${ref}`;
+  const url = buildGitHubTarballUrl(owner!, repo!, ref);
+  const headers = getGitHubHeaders(token);
 
-  const headers: Record<string, string> = {
-    Accept: "application/vnd.github+json",
-    "User-Agent": "grekt-cli",
-  };
+  const result = await downloadAndExtractTarball(url, targetDir, { headers });
 
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-
-  try {
-    const response = await fetch(tarballUrl, {
-      headers,
-      redirect: "follow",
-    });
-
-    if (!response.ok) {
-      return { success: false };
-    }
-
-    const buffer = await response.arrayBuffer();
-    const tempTarball = `/tmp/grekt-github-${Date.now()}.tar.gz`;
-    writeFileSync(tempTarball, Buffer.from(buffer));
-
-    mkdirSync(targetDir, { recursive: true });
-
-    // Extract with strip-components to remove the GitHub-generated root folder
-    execSync(`tar -xzf ${tempTarball} -C ${targetDir} --strip-components=1`, {
-      stdio: "pipe",
-    });
-    execSync(`rm -f ${tempTarball}`, { stdio: "pipe" });
-
+  if (result.success) {
     return { success: true, version: ref };
-  } catch {
-    return { success: false };
   }
+  return { success: false };
 }
 
 async function downloadFromGitLab(
@@ -175,46 +152,15 @@ async function downloadFromGitLab(
   const host = source.host || "gitlab.com";
   const ref = source.ref || "main";
 
-  // URL-encode the project path for GitLab API
-  const encodedProject = encodeURIComponent(source.identifier);
+  const url = buildGitLabArchiveUrl(host, source.identifier, ref);
+  const headers = getGitLabHeaders(token);
 
-  // GitLab archive URL
-  const archiveUrl = `https://${host}/api/v4/projects/${encodedProject}/repository/archive.tar.gz?sha=${ref}`;
+  const result = await downloadAndExtractTarball(url, targetDir, { headers });
 
-  const headers: Record<string, string> = {
-    "User-Agent": "grekt-cli",
-  };
-
-  if (token) {
-    headers["PRIVATE-TOKEN"] = token;
-  }
-
-  try {
-    const response = await fetch(archiveUrl, {
-      headers,
-      redirect: "follow",
-    });
-
-    if (!response.ok) {
-      return { success: false };
-    }
-
-    const buffer = await response.arrayBuffer();
-    const tempTarball = `/tmp/grekt-gitlab-${Date.now()}.tar.gz`;
-    writeFileSync(tempTarball, Buffer.from(buffer));
-
-    mkdirSync(targetDir, { recursive: true });
-
-    // Extract with strip-components to remove the GitLab-generated root folder
-    execSync(`tar -xzf ${tempTarball} -C ${targetDir} --strip-components=1`, {
-      stdio: "pipe",
-    });
-    execSync(`rm -f ${tempTarball}`, { stdio: "pipe" });
-
+  if (result.success) {
     return { success: true, version: ref };
-  } catch {
-    return { success: false };
   }
+  return { success: false };
 }
 
 /**

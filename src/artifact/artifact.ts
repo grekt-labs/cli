@@ -4,3 +4,6 @@ export * from "./integrity/integrity";
 export * from "./lockfile/lockfile";
 export * from "./check/check";
 export * from "./frontmatter/frontmatter";
+export * from "./naming/naming";
+export * from "./selector/selector";
+export * from "./component-manager/component-manager";

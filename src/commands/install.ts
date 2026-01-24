@@ -1,42 +1,13 @@
 import { Command } from "commander";
-import { existsSync, mkdirSync, rmSync, writeFileSync } from "fs";
-import { execSync } from "child_process";
+import { existsSync, mkdirSync, rmSync } from "fs";
 import { isInitialized, getConfig } from "#/config/project/project";
 import { getLockfile, lockfileExists } from "#/artifact/lockfile/lockfile";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
 import { parseSource, downloadFromSource } from "#/registry/sources/sources";
-import { hashDirectory, verifyIntegrity } from "#/artifact/integrity/integrity";
+import { downloadAndExtractTarball } from "#/registry/download/download";
+import { verifyIntegrity } from "#/artifact/integrity/integrity";
 import { runCheck, displayCompactCheckResults } from "#/artifact/check/check";
 import { success, error, info, warning, log, newline, colors, spinner } from "#/shared/ui/ui";
-
-/**
- * Download directly from a resolved URL
- */
-async function downloadFromUrl(url: string, targetDir: string): Promise<boolean> {
-  try {
-    const response = await fetch(url, {
-      headers: { "User-Agent": "grekt-cli" },
-    });
-
-    if (!response.ok) {
-      return false;
-    }
-
-    const buffer = await response.arrayBuffer();
-    const tempTarball = `/tmp/grekt-${Date.now()}.tar.gz`;
-    writeFileSync(tempTarball, Buffer.from(buffer));
-
-    mkdirSync(targetDir, { recursive: true });
-    execSync(`tar -xzf ${tempTarball} -C ${targetDir} --strip-components=1`, {
-      stdio: "pipe",
-    });
-    execSync(`rm -f ${tempTarball}`, { stdio: "pipe" });
-
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 export const installCommand = new Command("install")
   .alias("i")
@@ -108,8 +79,8 @@ export const installCommand = new Command("install")
 
       // Use resolved URL if available (strict mode - no recalculation)
       if (entry.resolved) {
-        mkdirSync(targetDir, { recursive: true });
-        downloadSuccess = await downloadFromUrl(entry.resolved, targetDir);
+        const result = await downloadAndExtractTarball(entry.resolved, targetDir);
+        downloadSuccess = result.success;
       } else {
         // Fallback for old lockfiles without resolved
         const sourceStr = entry.source || artifactId;
@@ -135,7 +106,6 @@ export const installCommand = new Command("install")
       }
 
       // Verify integrity
-      const actualHashes = hashDirectory(targetDir);
       const integrity = verifyIntegrity(targetDir, entry.files);
 
       if (!integrity.valid) {

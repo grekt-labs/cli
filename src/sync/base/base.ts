@@ -1,8 +1,9 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync, copyFileSync } from "fs";
-import { dirname, join, basename } from "path";
+import { dirname, join } from "path";
 import type { SyncPlugin, SyncResult, SyncOptions, SyncPreview } from "#/sync/sync.types";
 import type { Lockfile } from "#/schemas/index";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
+import { getSafeFilename } from "#/artifact/naming/naming";
 
 // Shared constants
 export const GREKT_BLOCK_START = "<!-- GREKT -->";
@@ -16,15 +17,8 @@ export function ensureDir(filepath: string): void {
   }
 }
 
-/**
- * Create a namespaced filename to avoid collisions between artifacts.
- * @example getSafeFilename("my-artifact", "skills/analyze.md") → "my-artifact_analyze.md"
- */
-export function getSafeFilename(artifactId: string, filepath: string): string {
-  const safeName = artifactId.replace("@", "").replace("/", "-");
-  const filename = basename(filepath);
-  return `${safeName}_${filename}`;
-}
+// Re-export for backwards compatibility
+export { getSafeFilename } from "#/artifact/naming/naming";
 
 // Plugin configuration types
 export interface FolderPluginConfig {

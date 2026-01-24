@@ -1,9 +1,10 @@
 import { Command } from "commander";
 import { existsSync, rmSync, readdirSync, unlinkSync } from "fs";
-import { basename, join } from "path";
+import { join } from "path";
 import { confirm } from "@inquirer/prompts";
 import { isInitialized, getConfig, saveConfig } from "#/config/project/project";
 import { getLockfile, saveLockfile } from "#/artifact/lockfile/lockfile";
+import { getSafeFilename } from "#/artifact/naming/naming";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
 import { success, error, info, log, newline, colors } from "#/shared/ui/ui";
 
@@ -12,15 +13,6 @@ const CLAUDE_DIR = ".claude";
 const CLAUDE_AGENTS_DIR = join(CLAUDE_DIR, "agents");
 const CLAUDE_SKILLS_DIR = join(CLAUDE_DIR, "skills");
 const CLAUDE_COMMANDS_DIR = join(CLAUDE_DIR, "commands");
-
-/**
- * Get namespaced filename (must match claude.ts getSafeFilename)
- */
-function getSafeFilename(artifactId: string, filepath: string): string {
-  const safeName = artifactId.replace("@", "").replace("/", "-");
-  const filename = basename(filepath);
-  return `${safeName}_${filename}`;
-}
 
 export const removeCommand = new Command("remove")
   .alias("rm")
