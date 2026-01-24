@@ -189,7 +189,7 @@ export class GitLabRegistryClient implements RegistryClient {
     if (!this.token) {
       return {
         success: false,
-        error: "GitLab registry requires authentication. Set token in .grekt/config.yaml or GREKT_TOKEN_* env var.",
+        error: "GitLab registry requires authentication. Set token in .grekt/config.yaml or GITLAB_TOKEN env var.",
       };
     }
 
