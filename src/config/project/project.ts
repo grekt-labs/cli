@@ -6,9 +6,9 @@ import {
   LocalConfigSchema,
   type ProjectConfig,
   type LocalConfig,
+  type StoredSession,
 } from "#/schemas/index";
 import {
-  GLOBAL_CONFIG_DIR,
   GREKT_YAML,
   GREKT_DIR,
 } from "#/config/paths/paths";
@@ -63,14 +63,7 @@ export function isInitialized(projectRoot: string = process.cwd()): boolean {
   return existsSync(`${projectRoot}/${GREKT_YAML}`);
 }
 
-// Ensure global config dir exists (for credentials)
-export function ensureGlobalConfigDir(): void {
-  if (!existsSync(GLOBAL_CONFIG_DIR)) {
-    mkdirSync(GLOBAL_CONFIG_DIR, { recursive: true });
-  }
-}
-
-// Local config (.grekt/config.yaml) - gitignored, contains registry configs
+// Local config (.grekt/config.yaml) - gitignored, contains registry configs, session, and tokens
 export function getLocalConfig(projectRoot: string = process.cwd()): LocalConfig | null {
   const filepath = `${projectRoot}/${GREKT_DIR}/${LOCAL_CONFIG_FILE}`;
   if (!existsSync(filepath)) {
@@ -82,9 +75,102 @@ export function getLocalConfig(projectRoot: string = process.cwd()): LocalConfig
 
 export function saveLocalConfig(config: LocalConfig, projectRoot: string = process.cwd()): void {
   const filepath = `${projectRoot}/${GREKT_DIR}/${LOCAL_CONFIG_FILE}`;
-  writeYaml(filepath, config, true); // secure = true (chmod 600)
+  writeLocalConfigWithComments(filepath, config);
 }
 
 export function getLocalConfigPath(projectRoot: string = process.cwd()): string {
   return `${projectRoot}/${GREKT_DIR}/${LOCAL_CONFIG_FILE}`;
+}
+
+// Generate YAML with helpful comments for self-documentation
+function writeLocalConfigWithComments(filepath: string, config: LocalConfig): void {
+  ensureDir(filepath);
+
+  const lines: string[] = [];
+
+  // Registries section
+  if (config.registries && Object.keys(config.registries).length > 0) {
+    lines.push("# Registry backends for artifacts with scope (@scope/name)");
+    lines.push("# Each scope can point to a different backend (GitLab, etc.)");
+    lines.push("registries:");
+    for (const [scope, entry] of Object.entries(config.registries)) {
+      lines.push(`  "${scope}":`);
+      lines.push(`    type: ${entry.type}`);
+      if (entry.project) lines.push(`    project: ${entry.project}`);
+      if (entry.host) lines.push(`    host: ${entry.host}`);
+      if (entry.token) lines.push(`    token: ${entry.token}`);
+    }
+    lines.push("");
+  }
+
+  // Session section
+  if (config.session) {
+    lines.push("# Session for the public registry (grekt login)");
+    lines.push("# Generated automatically by grekt login");
+    lines.push("session:");
+    lines.push(`  access_token: ${config.session.access_token}`);
+    lines.push(`  refresh_token: ${config.session.refresh_token}`);
+    if (config.session.expires_at !== undefined) {
+      lines.push(`  expires_at: ${config.session.expires_at}`);
+    }
+    lines.push("");
+  }
+
+  // Tokens section
+  if (config.tokens && Object.keys(config.tokens).length > 0) {
+    lines.push("# Tokens for git sources (github:owner/repo, gitlab:owner/repo)");
+    lines.push("# Only needed for private repos");
+    lines.push("tokens:");
+    for (const [name, token] of Object.entries(config.tokens)) {
+      lines.push(`  ${name}: ${token}`);
+    }
+    lines.push("");
+  }
+
+  const content = lines.length > 0 ? lines.join("\n") : "";
+  writeFileSync(filepath, content, "utf-8");
+  chmodSync(filepath, 0o600);
+}
+
+// Session management
+export function getSession(projectRoot: string = process.cwd()): StoredSession | null {
+  const config = getLocalConfig(projectRoot);
+  return config?.session ?? null;
+}
+
+export function saveSession(session: StoredSession, projectRoot: string = process.cwd()): void {
+  const config = getLocalConfig(projectRoot) ?? {};
+  config.session = session;
+  saveLocalConfig(config, projectRoot);
+}
+
+export function clearSession(projectRoot: string = process.cwd()): void {
+  const config = getLocalConfig(projectRoot);
+  if (config) {
+    delete config.session;
+    saveLocalConfig(config, projectRoot);
+  }
+}
+
+// Token management for git sources
+export function getToken(name: string, projectRoot: string = process.cwd()): string | undefined {
+  const config = getLocalConfig(projectRoot);
+  return config?.tokens?.[name];
+}
+
+export function setToken(name: string, token: string, projectRoot: string = process.cwd()): void {
+  const config = getLocalConfig(projectRoot) ?? {};
+  if (!config.tokens) {
+    config.tokens = {};
+  }
+  config.tokens[name] = token;
+  saveLocalConfig(config, projectRoot);
+}
+
+export function removeToken(name: string, projectRoot: string = process.cwd()): void {
+  const config = getLocalConfig(projectRoot);
+  if (config?.tokens) {
+    delete config.tokens[name];
+    saveLocalConfig(config, projectRoot);
+  }
 }

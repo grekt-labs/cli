@@ -1,8 +1,4 @@
-import { homedir } from "os";
 import { join } from "path";
-
-// Global directory (~/.grekt/) - for credentials only
-export const GLOBAL_CONFIG_DIR = join(homedir(), ".grekt");
 
 // Project-level paths (relative to project root)
 export const GREKT_YAML = "grekt.yaml"; // project config: sync targets and artifact declarations

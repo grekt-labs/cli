@@ -1,5 +1,4 @@
-import { getTokenCredentials } from "#/auth/credentials/credentials";
-import { getLocalConfig } from "#/config/project/project";
+import { getLocalConfig, getToken } from "#/config/project/project";
 import {
   type DownloadResult,
   parseArtifactId,
@@ -93,8 +92,8 @@ export function parseSource(source: string): ParsedSource {
   };
 }
 
-function getSourceToken(source: ParsedSource): string | undefined {
-  // Check environment variables first
+function getSourceToken(source: ParsedSource, projectRoot: string): string | undefined {
+  // Check environment variables first (always takes priority)
   if (source.type === "github") {
     const envToken = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
     if (envToken) return envToken;
@@ -111,14 +110,14 @@ function getSourceToken(source: ParsedSource): string | undefined {
     if (envToken) return envToken;
   }
 
-  // Check credentials file
+  // Check project config (.grekt/config.yaml tokens section)
   if (source.type === "github") {
-    const token = getTokenCredentials("github");
+    const token = getToken("github", projectRoot);
     if (token) return token;
   }
   if (source.type === "gitlab") {
     const key = source.host || "gitlab.com";
-    const token = getTokenCredentials(key);
+    const token = getToken(key, projectRoot);
     if (token) return token;
   }
 
@@ -127,9 +126,10 @@ function getSourceToken(source: ParsedSource): string | undefined {
 
 async function downloadFromGitHub(
   source: ParsedSource,
-  targetDir: string
+  targetDir: string,
+  projectRoot: string
 ): Promise<DownloadResult> {
-  const token = getSourceToken(source);
+  const token = getSourceToken(source, projectRoot);
   const ref = source.ref || "HEAD";
   const [owner, repo] = source.identifier.split("/");
 
@@ -146,9 +146,10 @@ async function downloadFromGitHub(
 
 async function downloadFromGitLab(
   source: ParsedSource,
-  targetDir: string
+  targetDir: string,
+  projectRoot: string
 ): Promise<DownloadResult> {
-  const token = getSourceToken(source);
+  const token = getSourceToken(source, projectRoot);
   const host = source.host || "gitlab.com";
   const ref = source.ref || "main";
 
@@ -173,9 +174,9 @@ export async function downloadFromSource(
 ): Promise<DownloadResult> {
   switch (source.type) {
     case "github":
-      return downloadFromGitHub(source, targetDir);
+      return downloadFromGitHub(source, targetDir, projectRoot);
     case "gitlab":
-      return downloadFromGitLab(source, targetDir);
+      return downloadFromGitLab(source, targetDir, projectRoot);
     case "registry":
       return downloadFromRegistrySource(source.identifier, targetDir, projectRoot);
     default:

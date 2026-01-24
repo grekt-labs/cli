@@ -1,10 +1,22 @@
 import { Command } from "commander";
-import { getSupabaseClient, getSession, SUPABASE_URL } from "#/auth/session/session";
-import { log, colors, spinner } from "#/shared/ui/ui";
+import { getSupabaseClient, setProjectRoot, SUPABASE_URL } from "#/auth/session/session";
+import { isInitialized } from "#/config/project/project";
+import { log, colors, spinner, error as showError } from "#/shared/ui/ui";
 
 export const whoamiCommand = new Command("whoami")
   .description("Show current user")
   .action(async () => {
+    const projectRoot = process.cwd();
+
+    // Require project initialization
+    if (!isInitialized(projectRoot)) {
+      showError("Not in a grekt project. Run 'grekt init' first.");
+      process.exit(1);
+    }
+
+    // Set project root for session operations
+    setProjectRoot(projectRoot);
+
     const spin = spinner("Checking...");
     spin.start();
 

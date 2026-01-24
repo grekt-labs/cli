@@ -1,7 +1,8 @@
 import { Command } from "commander";
-import { getRegistryCredentials, getCredentialsFromEnv } from "#/auth/credentials/credentials";
 import { createRegistryClient } from "#/registry/api-client/api-client";
-import { isAuthenticated } from "#/auth/session/session";
+import { isAuthenticated, setProjectRoot } from "#/auth/session/session";
+import { isInitialized } from "#/config/project/project";
+import { getS3CredentialsFromEnv } from "#/registry/publishers/s3-publisher";
 import {
   getArtifactMetadata,
   saveArtifactMetadata,
@@ -14,7 +15,6 @@ import { success, error, info, log, colors, spinner } from "#/shared/ui/ui";
  * Returns null if format is invalid.
  */
 function parseArtifactVersion(input: string): { artifactId: string; version: string } | null {
-  // @scope/name@version (version required)
   const ARTIFACT_AT_VERSION = /^(?<artifactId>@[^@]+)@(?<version>.+)$/;
 
   const match = input.match(ARTIFACT_AT_VERSION);
@@ -27,16 +27,25 @@ function parseArtifactVersion(input: string): { artifactId: string; version: str
 }
 
 interface UndeprecateOptions {
-  registry: string;
   s3?: boolean;
 }
 
 export const undeprecateCommand = new Command("undeprecate")
   .description("Remove deprecation from an artifact version")
   .argument("<artifact@version>", "Artifact and version to undeprecate (e.g., @author/name@1.0.0)")
-  .option("-r, --registry <name>", "Registry name from credentials.yaml", "default")
-  .option("--s3", "Use S3-compatible storage (legacy mode)")
+  .option("--s3", "Use S3-compatible storage (legacy mode, env vars only)")
   .action(async (artifactVersion: string, options: UndeprecateOptions) => {
+    const projectRoot = process.cwd();
+
+    // Require project initialization
+    if (!isInitialized(projectRoot)) {
+      error("Not in a grekt project. Run 'grekt init' first.");
+      process.exit(1);
+    }
+
+    // Set project root for session operations
+    setProjectRoot(projectRoot);
+
     const parsed = parseArtifactVersion(artifactVersion);
     if (!parsed) {
       error("Invalid format. Use: @author/name@version");
@@ -46,14 +55,14 @@ export const undeprecateCommand = new Command("undeprecate")
     const { artifactId, version } = parsed;
 
     if (options.s3) {
-      await undeprecateS3(artifactId, version, options.registry);
+      await undeprecateS3(artifactId, version);
     } else {
       await undeprecateApi(artifactId, version);
     }
   });
 
 /**
- * Undeprecate using the new API-based registry
+ * Undeprecate using the API-based registry
  */
 async function undeprecateApi(artifactId: string, version: string): Promise<void> {
   const authenticated = await isAuthenticated();
@@ -84,14 +93,12 @@ async function undeprecateApi(artifactId: string, version: string): Promise<void
 /**
  * Undeprecate using S3-compatible storage (legacy mode)
  */
-async function undeprecateS3(artifactId: string, version: string, registryName: string): Promise<void> {
-  let credentials = getCredentialsFromEnv();
-  if (!credentials) {
-    credentials = getRegistryCredentials(registryName);
-  }
+async function undeprecateS3(artifactId: string, version: string): Promise<void> {
+  const credentials = getS3CredentialsFromEnv();
 
   if (!credentials) {
     error("No S3 credentials found");
+    info("Set GREKT_STORAGE_* environment variables for S3 mode");
     process.exit(1);
   }
 
