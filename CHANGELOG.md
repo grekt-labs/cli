@@ -1,3 +1,23 @@
+# [1.0.0](https://github.com/grekt-labs/cli/compare/v0.4.0...v1.0.0) (2026-01-24)
+
+
+* refactor!: reorganize codebase to domain-driven architecture ([a272c24](https://github.com/grekt-labs/cli/commit/a272c24fb5eb3c8c13dd20ae8abe3c8b0b5ff8d4))
+
+
+### BREAKING CHANGES
+
+* All import paths from lib/, plugins/, and utils/
+have changed. Update imports to use new domain paths:
+- lib/config → config/project
+- lib/paths → config/paths
+- lib/artifact, integrity, lockfile, check → artifact/
+- lib/credentials, supabase → auth/
+- lib/registry/*, sources, metadata → registry/
+- lib/plugins, plugins/* → sync/
+- utils/ui → shared/ui
+
+- ca
+
 # [0.4.0](https://github.com/grekt-labs/cli/compare/v0.3.3...v0.4.0) (2026-01-23)
 
 
