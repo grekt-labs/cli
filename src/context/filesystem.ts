@@ -19,7 +19,9 @@ import type { FileSystem } from "@grekt-labs/cli-engine";
 export function createFileSystem(): FileSystem {
   return {
     readFile: (path: string) => readFileSync(path, "utf-8"),
+    readFileBinary: (path: string) => readFileSync(path),
     writeFile: (path: string, content: string) => writeFileSync(path, content, "utf-8"),
+    writeFileBinary: (path: string, content: Buffer) => writeFileSync(path, content),
     exists: (path: string) => existsSync(path),
     mkdir: (path: string, options?: { recursive?: boolean }) => {
       mkdirSync(path, options);

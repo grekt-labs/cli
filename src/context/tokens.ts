@@ -1,0 +1,31 @@
+import type { TokenProvider } from "@grekt-labs/cli-engine";
+import { getToken } from "#/config/project/project";
+
+/**
+ * Real TokenProvider implementation.
+ * Gets tokens from project config and environment variables.
+ */
+export function createTokenProvider(projectRoot: string): TokenProvider {
+  return {
+    getRegistryToken: (scope: string) => {
+      // Registry tokens from env var (highest priority for CI/CD)
+      return process.env.GREKT_TOKEN;
+    },
+    getGitToken: (type: "github" | "gitlab", host?: string) => {
+      // First check project config (.grekt/config.yaml tokens section)
+      const key = type === "github" ? "github" : (host || "gitlab.com");
+      const configToken = getToken(key, projectRoot);
+      if (configToken) return configToken;
+
+      // Fall back to platform env vars
+      if (type === "github") {
+        return process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
+      }
+      if (type === "gitlab") {
+        return process.env.GITLAB_TOKEN || process.env.GL_TOKEN;
+      }
+
+      return undefined;
+    },
+  };
+}

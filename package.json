@@ -26,7 +26,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.971.0",
-    "@grekt-labs/cli-engine": "^1.2.0",
+    "@grekt-labs/cli-engine": "^1.3.0",
     "@inquirer/prompts": "^7.2.0",
     "@supabase/supabase-js": "^2.91.0",
     "chalk": "^5.4.1",
