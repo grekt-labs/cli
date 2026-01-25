@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import { isInitialized } from "#/config/project/project";
-import { getLockfile } from "#/artifact/lockfile/lockfile";
+import { getLockfile } from "#/context";
 import { runCheck, displayCheckResults } from "#/artifact/check/check";
 import { error, info, newline } from "#/shared/ui/ui";
 

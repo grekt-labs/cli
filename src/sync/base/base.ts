@@ -3,7 +3,7 @@ import { dirname, join } from "path";
 import type { SyncPlugin, SyncResult, SyncOptions, SyncPreview } from "#/sync/sync.types";
 import type { Lockfile } from "@grekt-labs/cli-engine";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
-import { getSafeFilename } from "#/artifact/naming/naming";
+import { getSafeFilename } from "@grekt-labs/cli-engine";
 
 // Shared constants
 export const GREKT_BLOCK_START = "<!-- GREKT -->";
@@ -18,7 +18,7 @@ export function ensureDir(filepath: string): void {
 }
 
 // Re-export for backwards compatibility
-export { getSafeFilename } from "#/artifact/naming/naming";
+export { getSafeFilename } from "@grekt-labs/cli-engine";
 
 // Plugin configuration types
 export interface FolderPluginConfig {

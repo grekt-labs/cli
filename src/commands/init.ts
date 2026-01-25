@@ -2,7 +2,7 @@ import { Command } from "commander";
 import { existsSync, mkdirSync } from "fs";
 import { checkbox, input } from "@inquirer/prompts";
 import { isInitialized, saveConfig } from "#/config/project/project";
-import { saveLockfile, createEmptyLockfile } from "#/artifact/lockfile/lockfile";
+import { saveLockfile, createEmptyLockfile } from "#/context";
 import { getPluginChoices, getDefaultTarget } from "#/sync/manager/manager";
 import { GREKT_YAML, GREKT_DIR, ARTIFACTS_DIR } from "#/config/paths/paths";
 import { success, info, warning, newline, log, colors } from "#/shared/ui/ui";

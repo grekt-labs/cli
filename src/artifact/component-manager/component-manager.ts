@@ -1,6 +1,6 @@
 import { existsSync, unlinkSync, readdirSync, rmSync } from "fs";
 import { join } from "path";
-import type { ArtifactInfo } from "#/artifact/scanner/scanner";
+import type { ArtifactInfo } from "#/context";
 import type { ComponentSelection } from "#/artifact/selector/selector";
 
 /**

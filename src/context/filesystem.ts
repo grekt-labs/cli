@@ -1,0 +1,49 @@
+import {
+  readFileSync,
+  writeFileSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  statSync,
+  unlinkSync,
+  rmSync,
+  copyFileSync,
+  renameSync,
+} from "fs";
+import type { FileSystem } from "@grekt-labs/cli-engine";
+
+/**
+ * Real FileSystem implementation using Node.js fs module.
+ * This is passed to cli-engine functions for actual file operations.
+ */
+export function createFileSystem(): FileSystem {
+  return {
+    readFile: (path: string) => readFileSync(path, "utf-8"),
+    writeFile: (path: string, content: string) => writeFileSync(path, content, "utf-8"),
+    exists: (path: string) => existsSync(path),
+    mkdir: (path: string, options?: { recursive?: boolean }) => {
+      mkdirSync(path, options);
+    },
+    readdir: (path: string) => readdirSync(path),
+    stat: (path: string) => {
+      const stat = statSync(path);
+      return {
+        isDirectory: stat.isDirectory(),
+        isFile: stat.isFile(),
+        size: stat.size,
+      };
+    },
+    unlink: (path: string) => unlinkSync(path),
+    rmdir: (path: string, options?: { recursive?: boolean }) => {
+      rmSync(path, { ...options, force: true });
+    },
+    copyFile: (src: string, dest: string) => copyFileSync(src, dest),
+    rename: (src: string, dest: string) => renameSync(src, dest),
+  };
+}
+
+/**
+ * Singleton instance for convenience.
+ * Most CLI code can use this directly.
+ */
+export const fs = createFileSystem();
