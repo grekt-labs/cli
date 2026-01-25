@@ -1,3 +1,10 @@
+# [2.2.0](https://github.com/grekt-labs/cli/compare/v2.1.0...v2.2.0) (2026-01-25)
+
+
+### Features
+
+* unified release workflow ([c077f3a](https://github.com/grekt-labs/cli/commit/c077f3a2a557787a8334b77d69e8951a4c65b8fe))
+
 # [2.1.0](https://github.com/grekt-labs/cli/compare/v2.0.0...v2.1.0) (2026-01-25)
 
 
