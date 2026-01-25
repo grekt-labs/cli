@@ -1,3 +1,10 @@
+# [2.3.0](https://github.com/grekt-labs/cli/compare/v2.2.0...v2.3.0) (2026-01-25)
+
+
+### Features
+
+* fix macos build runner ([70d3471](https://github.com/grekt-labs/cli/commit/70d3471a2d376fb5bc224ad2cb6e0f996d9a0c33))
+
 # [2.2.0](https://github.com/grekt-labs/cli/compare/v2.1.0...v2.2.0) (2026-01-25)
 
 
