@@ -1,5 +1,5 @@
 import type { SyncPlugin } from "#/sync/sync.types";
-import type { CustomTarget } from "#/schemas/index";
+import type { CustomTarget } from "@grekt-labs/cli-engine";
 import { claudePlugin } from "#/sync/plugins/claude/claude";
 import { cursorPlugin } from "#/sync/plugins/cursor/cursor";
 import { opencodePlugin } from "#/sync/plugins/opencode/opencode";

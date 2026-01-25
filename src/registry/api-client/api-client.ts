@@ -1,6 +1,6 @@
 import { mkdirSync, writeFileSync } from "fs";
 import { execSync } from "child_process";
-import type { ArtifactMetadata } from "#/schemas/index";
+import type { ArtifactMetadata } from "@grekt-labs/cli-engine";
 import { getSupabaseClient, getSession, SUPABASE_URL } from "#/auth/session/session";
 
 // Registry public URL for tarballs

@@ -1,6 +1,6 @@
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { readFileSync } from "fs";
-import type { S3Credentials } from "#/schemas/index";
+import type { S3Credentials } from "@grekt-labs/cli-engine";
 import {
   getArtifactMetadata,
   saveArtifactMetadata,

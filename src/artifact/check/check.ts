@@ -4,7 +4,7 @@ import { getLockfile } from "#/artifact/lockfile/lockfile";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
 import { verifyIntegrity, getDirectorySize, formatBytes, estimateTokens } from "#/artifact/integrity/integrity";
 import { success, warning, log, newline, colors, symbols } from "#/shared/ui/ui";
-import type { Lockfile } from "#/schemas/index";
+import type { Lockfile } from "@grekt-labs/cli-engine";
 
 const CONTEXT_WARNING_THRESHOLD = 10 * 1024; // 10 KB
 

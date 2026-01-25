@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import { parse, stringify } from "yaml";
-import { LockfileSchema, type Lockfile } from "#/schemas/index";
+import { LockfileSchema, type Lockfile } from "@grekt-labs/cli-engine";
 import { LOCKFILE } from "#/config/paths/paths";
 
 function getLockfilePath(projectRoot: string = process.cwd()): string {

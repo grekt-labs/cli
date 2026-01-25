@@ -5,7 +5,7 @@ import {
   isInitialized,
 } from "#/config/project/project";
 import { success, error, info, log, colors } from "#/shared/ui/ui";
-import type { ProjectConfig } from "#/schemas/index";
+import type { ProjectConfig } from "@grekt-labs/cli-engine";
 
 const VALID_KEYS: (keyof ProjectConfig)[] = ["targets", "autoSync", "registry"];
 

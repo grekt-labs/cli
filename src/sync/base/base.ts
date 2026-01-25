@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync, copyFileSync } from "fs";
 import { dirname, join } from "path";
 import type { SyncPlugin, SyncResult, SyncOptions, SyncPreview } from "#/sync/sync.types";
-import type { Lockfile } from "#/schemas/index";
+import type { Lockfile } from "@grekt-labs/cli-engine";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
 import { getSafeFilename } from "#/artifact/naming/naming";
 

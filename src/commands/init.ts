@@ -6,7 +6,7 @@ import { saveLockfile, createEmptyLockfile } from "#/artifact/lockfile/lockfile"
 import { getPluginChoices, getDefaultTarget } from "#/sync/manager/manager";
 import { GREKT_YAML, GREKT_DIR, ARTIFACTS_DIR } from "#/config/paths/paths";
 import { success, info, warning, newline, log, colors } from "#/shared/ui/ui";
-import type { CustomTarget } from "#/schemas/index";
+import type { CustomTarget } from "@grekt-labs/cli-engine";
 
 const OTHER_TARGET_VALUE = "__other__";
 

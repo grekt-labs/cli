@@ -1,5 +1,5 @@
 import matter from "gray-matter";
-import { ArtifactFrontmatterSchema, type ArtifactFrontmatter } from "#/schemas/index";
+import { ArtifactFrontmatterSchema, type ArtifactFrontmatter } from "@grekt-labs/cli-engine";
 
 export interface ParsedArtifact {
   frontmatter: ArtifactFrontmatter;

@@ -1,5 +1,5 @@
 import { createFolderPlugin, GREKT_BLOCK_START, GREKT_BLOCK_END } from "#/sync/base/base";
-import type { Lockfile } from "#/schemas/index";
+import type { Lockfile } from "@grekt-labs/cli-engine";
 
 const TARGET_DIR = ".claude";
 const RULES_FILE = `${TARGET_DIR}/CLAUDE.md`;
