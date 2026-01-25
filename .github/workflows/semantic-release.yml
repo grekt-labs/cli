@@ -31,7 +31,7 @@ jobs:
       - name: Configure GitHub Packages auth
         run: |
           echo "@grekt-labs:registry=https://npm.pkg.github.com" >> .npmrc
-          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> .npmrc
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GH_PACKAGES_TOKEN }}" >> .npmrc
 
       - run: bun install
 
