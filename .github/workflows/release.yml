@@ -2,15 +2,61 @@ name: Release
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - main
 
 permissions:
   contents: write
+  issues: write
+  pull-requests: write
   packages: read
 
 jobs:
+  semantic-release:
+    runs-on: ubuntu-latest
+    outputs:
+      new-release: ${{ steps.release.outputs.new-release }}
+      version: ${{ steps.release.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Configure GitHub Packages auth
+        run: |
+          echo "@grekt-labs:registry=https://npm.pkg.github.com" >> .npmrc
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GREKT_PACKAGES_NPMRC }}" >> .npmrc
+
+      - run: bun install
+
+      - name: Semantic Release
+        id: release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          OUTPUT=$(npx semantic-release 2>&1) || true
+          echo "$OUTPUT"
+
+          if echo "$OUTPUT" | grep -q "Published release"; then
+            VERSION=$(echo "$OUTPUT" | grep -oP "Published release \K[0-9]+\.[0-9]+\.[0-9]+")
+            echo "new-release=true" >> $GITHUB_OUTPUT
+            echo "version=v$VERSION" >> $GITHUB_OUTPUT
+          else
+            echo "new-release=false" >> $GITHUB_OUTPUT
+          fi
+
   build:
+    needs: semantic-release
+    if: needs.semantic-release.outputs.new-release == 'true'
     strategy:
       matrix:
         include:
@@ -20,7 +66,7 @@ jobs:
           - os: macos-latest
             target: bun-darwin-arm64
             artifact: grekt-macos-arm64
-          - os: macos-15
+          - os: macos-13
             target: bun-darwin-x64
             artifact: grekt-macos-x64
 
@@ -28,6 +74,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.semantic-release.outputs.version }}
 
       - uses: oven-sh/setup-bun@v2
         with:
@@ -55,8 +103,8 @@ jobs:
             ${{ matrix.artifact }}.tar.gz
             ${{ matrix.artifact }}.tar.gz.sha256
 
-  release:
-    needs: build
+  publish:
+    needs: [semantic-release, build]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -71,9 +119,10 @@ jobs:
       - name: Generate Release Notes
         id: notes
         run: |
-          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          VERSION="${{ needs.semantic-release.outputs.version }}"
+          PREV_TAG=$(git describe --tags --abbrev=0 ${VERSION}^ 2>/dev/null || echo "")
           if [ -n "$PREV_TAG" ]; then
-            NOTES=$(git log --pretty=format:"- %s" $PREV_TAG..HEAD)
+            NOTES=$(git log --pretty=format:"- %s" $PREV_TAG..${VERSION})
           else
             NOTES="Initial release"
           fi
@@ -85,14 +134,14 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.RELEASES_REPO_TOKEN }}
         run: |
-          gh release create ${{ github.ref_name }} \
+          gh release create ${{ needs.semantic-release.outputs.version }} \
             --repo grekt-labs/cli-releases \
-            --title "${{ github.ref_name }}" \
+            --title "${{ needs.semantic-release.outputs.version }}" \
             --notes "${{ steps.notes.outputs.notes }}" \
             artifacts/*
 
   update-homebrew:
-    needs: release
+    needs: [semantic-release, publish]
     runs-on: ubuntu-latest
     steps:
       - name: Update Homebrew formula
@@ -101,4 +150,4 @@ jobs:
           token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
           repository: grekt-labs/homebrew-grekt
           event-type: update-formula
-          client-payload: '{"version": "${{ github.ref_name }}"}'
+          client-payload: '{"version": "${{ needs.semantic-release.outputs.version }}"}'
