@@ -4,7 +4,7 @@ import {
   saveSession as saveStoredSession,
   clearSession as clearStoredSession,
 } from "#/config/project/project";
-import type { StoredSession } from "#/schemas/index";
+import type { StoredSession } from "@grekt-labs/cli-engine";
 
 // Supabase project config - loaded from environment
 const SUPABASE_URL = process.env.GREKT_SUPABASE_URL || process.env.SUPABASE_URL || "";

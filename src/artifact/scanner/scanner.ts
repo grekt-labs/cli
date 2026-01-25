@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "fs";
 import { join, relative } from "path";
 import { parse } from "yaml";
-import { ArtifactManifestSchema, type ArtifactManifest } from "#/schemas/index";
+import { ArtifactManifestSchema, type ArtifactManifest } from "@grekt-labs/cli-engine";
 import { parseFrontmatter, type ParsedArtifact } from "#/artifact/frontmatter/frontmatter";
 
 export interface ArtifactInfo {

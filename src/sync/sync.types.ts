@@ -1,4 +1,4 @@
-import type { Lockfile } from "#/schemas/index";
+import type { Lockfile } from "@grekt-labs/cli-engine";
 
 export interface SyncResult {
   created: string[];

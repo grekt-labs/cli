@@ -7,7 +7,7 @@ import {
   type ProjectConfig,
   type LocalConfig,
   type StoredSession,
-} from "#/schemas/index";
+} from "@grekt-labs/cli-engine";
 import {
   GREKT_YAML,
   GREKT_DIR,

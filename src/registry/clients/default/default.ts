@@ -13,7 +13,7 @@ import type {
   DownloadResult,
   PublishResult,
 } from "#/registry/registry.types";
-import type { ArtifactMetadata } from "#/schemas/index";
+import type { ArtifactMetadata } from "@grekt-labs/cli-engine";
 
 export class DefaultRegistryClient implements RegistryClient {
   private host: string;
