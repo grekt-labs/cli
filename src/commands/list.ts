@@ -1,9 +1,9 @@
 import { Command } from "commander";
 import { existsSync } from "fs";
 import { isInitialized } from "#/config/project/project";
-import { getLockfile } from "#/artifact/lockfile/lockfile";
+import { getLockfile } from "#/context";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
-import { getDirectorySize, formatBytes, estimateTokens } from "#/artifact/integrity/integrity";
+import { getDirectorySize, formatBytes, estimateTokens } from "#/context";
 import { error, info, log, colors, newline } from "#/shared/ui/ui";
 
 export const listCommand = new Command("list")

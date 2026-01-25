@@ -1,0 +1,66 @@
+/**
+ * CLI wrappers for cli-engine functions.
+ * These inject the real FileSystem so callers don't have to.
+ */
+import { fs } from "./filesystem";
+import {
+  getLockfile as _getLockfile,
+  saveLockfile as _saveLockfile,
+  createEmptyLockfile,
+  lockfileExists as _lockfileExists,
+  scanArtifact as _scanArtifact,
+  hashDirectory as _hashDirectory,
+  verifyIntegrity as _verifyIntegrity,
+  getDirectorySize as _getDirectorySize,
+  type Lockfile,
+} from "@grekt-labs/cli-engine";
+import { LOCKFILE } from "#/config/paths/paths";
+
+// Lockfile operations
+export function getLockfile(projectRoot: string = process.cwd()): Lockfile {
+  const lockfilePath = `${projectRoot}/${LOCKFILE}`;
+  return _getLockfile(fs, lockfilePath);
+}
+
+export function saveLockfile(data: Lockfile, projectRoot: string = process.cwd()): void {
+  const lockfilePath = `${projectRoot}/${LOCKFILE}`;
+  _saveLockfile(fs, lockfilePath, data);
+}
+
+export function lockfileExists(projectRoot: string = process.cwd()): boolean {
+  const lockfilePath = `${projectRoot}/${LOCKFILE}`;
+  return _lockfileExists(fs, lockfilePath);
+}
+
+export { createEmptyLockfile };
+
+// Scanner operations
+export function scanArtifact(artifactDir: string) {
+  return _scanArtifact(fs, artifactDir);
+}
+
+export type { ArtifactInfo } from "@grekt-labs/cli-engine";
+
+// Integrity operations
+export function hashDirectory(dir: string) {
+  return _hashDirectory(fs, dir);
+}
+
+export function verifyIntegrity(artifactDir: string, expectedFiles: Record<string, string>) {
+  return _verifyIntegrity(fs, artifactDir, expectedFiles);
+}
+
+export function getDirectorySize(dir: string) {
+  return _getDirectorySize(fs, dir);
+}
+
+// Re-export pure functions directly
+export {
+  calculateIntegrity,
+  formatBytes,
+  estimateTokens,
+  getArtifactId,
+  parseFrontmatter,
+  getSafeFilename,
+  toSafeName,
+} from "@grekt-labs/cli-engine";

@@ -1,8 +1,8 @@
 import { existsSync } from "fs";
 import { basename } from "path";
-import { getLockfile } from "#/artifact/lockfile/lockfile";
+import { getLockfile } from "#/context";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
-import { verifyIntegrity, getDirectorySize, formatBytes, estimateTokens } from "#/artifact/integrity/integrity";
+import { verifyIntegrity, getDirectorySize, formatBytes, estimateTokens } from "#/context";
 import { success, warning, log, newline, colors, symbols } from "#/shared/ui/ui";
 import type { Lockfile } from "@grekt-labs/cli-engine";
 

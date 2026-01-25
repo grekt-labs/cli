@@ -1,11 +1,12 @@
 import { Command } from "commander";
 import { existsSync, mkdirSync, rmSync, renameSync } from "fs";
 import { isInitialized, getConfig, saveConfig } from "#/config/project/project";
-import { getLockfile, saveLockfile } from "#/artifact/lockfile/lockfile";
+import { getLockfile, saveLockfile } from "#/context";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
-import { parseSource, downloadFromSource, getSourceDisplayName } from "#/registry/sources/sources";
-import { scanArtifact, getArtifactId } from "#/artifact/scanner/scanner";
-import { hashDirectory, calculateIntegrity, getDirectorySize, formatBytes, estimateTokens } from "#/artifact/integrity/integrity";
+import { parseSource, downloadFromSource } from "#/registry/sources/sources";
+import { getSourceDisplayName } from "#/registry/registry";
+import { scanArtifact, getArtifactId } from "#/context";
+import { hashDirectory, calculateIntegrity, getDirectorySize, formatBytes, estimateTokens } from "#/context";
 import { selectComponents, isEmptySelection, isFullSelection } from "#/artifact/selector/selector";
 import { removeUnselectedFiles } from "#/artifact/component-manager/component-manager";
 import { runCheck, displayCompactCheckResults } from "#/artifact/check/check";

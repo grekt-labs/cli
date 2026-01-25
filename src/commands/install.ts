@@ -1,11 +1,11 @@
 import { Command } from "commander";
 import { existsSync, mkdirSync, rmSync } from "fs";
 import { isInitialized, getConfig } from "#/config/project/project";
-import { getLockfile, lockfileExists } from "#/artifact/lockfile/lockfile";
+import { getLockfile, lockfileExists } from "#/context";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
 import { parseSource, downloadFromSource } from "#/registry/sources/sources";
 import { downloadAndExtractTarball } from "#/registry/download/download";
-import { verifyIntegrity } from "#/artifact/integrity/integrity";
+import { verifyIntegrity } from "#/context";
 import { runCheck, displayCompactCheckResults } from "#/artifact/check/check";
 import { success, error, info, warning, log, newline, colors, spinner } from "#/shared/ui/ui";
 

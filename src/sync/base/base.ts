@@ -1,13 +1,12 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync, copyFileSync } from "fs";
 import { dirname, join } from "path";
-import type { SyncPlugin, SyncResult, SyncOptions, SyncPreview } from "#/sync/sync.types";
+import type { SyncPlugin, SyncResult, SyncOptions, SyncPreview, FolderPluginConfig, RulesOnlyPluginConfig } from "#/sync/sync.types";
 import type { Lockfile } from "@grekt-labs/cli-engine";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
-import { getSafeFilename } from "#/artifact/naming/naming";
+import { getSafeFilename, GREKT_BLOCK_START, GREKT_BLOCK_END } from "@grekt-labs/cli-engine";
 
-// Shared constants
-export const GREKT_BLOCK_START = "<!-- GREKT -->";
-export const GREKT_BLOCK_END = "<!-- /GREKT -->";
+// Re-export constants for backwards compatibility
+export { GREKT_BLOCK_START, GREKT_BLOCK_END } from "@grekt-labs/cli-engine";
 
 // Utility functions
 export function ensureDir(filepath: string): void {
@@ -18,23 +17,8 @@ export function ensureDir(filepath: string): void {
 }
 
 // Re-export for backwards compatibility
-export { getSafeFilename } from "#/artifact/naming/naming";
-
-// Plugin configuration types
-export interface FolderPluginConfig {
-  id: string;
-  name: string;
-  targetDir: string;
-  rulesFile?: string;
-  generateRulesContent?: (lockfile: Lockfile) => string;
-}
-
-export interface RulesOnlyPluginConfig {
-  id: string;
-  name: string;
-  rulesFile: string;
-  generateRulesContent: (lockfile: Lockfile) => string;
-}
+export { getSafeFilename } from "@grekt-labs/cli-engine";
+export type { FolderPluginConfig, RulesOnlyPluginConfig } from "@grekt-labs/cli-engine";
 
 /**
  * Create a folder-based plugin that syncs agents/skills/commands to subfolders.

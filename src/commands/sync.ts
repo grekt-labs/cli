@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import { confirm } from "@inquirer/prompts";
 import { isInitialized, getConfig } from "#/config/project/project";
-import { getLockfile } from "#/artifact/lockfile/lockfile";
+import { getLockfile } from "#/context";
 import { getPlugin, getAvailableTargets } from "#/sync/manager/manager";
 import { success, error, info, warning, log, newline, colors, spinner } from "#/shared/ui/ui";
 

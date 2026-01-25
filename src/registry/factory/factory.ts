@@ -2,24 +2,34 @@
  * Registry client factory
  *
  * Single decision point for creating registry clients.
- * The factory is the ONLY place that knows about specific client implementations.
+ * Injects dependencies from CLI context.
  */
 
-import type { ResolvedRegistry, RegistryClient } from "#/registry/registry.types";
-import { DefaultRegistryClient } from "#/registry/clients/default/default";
-import { GitLabRegistryClient } from "#/registry/clients/gitlab/gitlab";
+import {
+  type ResolvedRegistry,
+  type RegistryClient,
+  type LocalConfig,
+  type TokenProvider,
+  resolveRegistry as _resolveRegistry,
+  createRegistryClient as _createRegistryClient,
+} from "@grekt-labs/cli-engine";
+import { fs, http, shell, createTokenProvider } from "#/context";
 
 /**
- * Create a registry client for the resolved registry
+ * Resolve a scope to a registry configuration (with dependencies injected)
+ */
+export function resolveRegistry(
+  scope: string,
+  localConfig: LocalConfig | null,
+  projectRoot: string = process.cwd()
+): ResolvedRegistry {
+  const tokens = createTokenProvider(projectRoot);
+  return _resolveRegistry(scope, localConfig, tokens);
+}
+
+/**
+ * Create a registry client for the resolved registry (with dependencies injected)
  */
 export function createRegistryClient(registry: ResolvedRegistry): RegistryClient {
-  switch (registry.type) {
-    case "gitlab":
-      return new GitLabRegistryClient(registry);
-    // case "github":
-    //   return new GitHubRegistryClient(registry); // Future
-    case "default":
-    default:
-      return new DefaultRegistryClient(registry);
-  }
+  return _createRegistryClient(registry, http, fs, shell);
 }

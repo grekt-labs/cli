@@ -1,5 +1,5 @@
 import { checkbox } from "@inquirer/prompts";
-import type { ArtifactInfo } from "#/artifact/scanner/scanner";
+import type { ArtifactInfo } from "#/context";
 
 /**
  * Represents the user's selection of artifact components.

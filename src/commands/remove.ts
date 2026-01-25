@@ -3,8 +3,8 @@ import { existsSync, rmSync, readdirSync, unlinkSync } from "fs";
 import { join } from "path";
 import { confirm } from "@inquirer/prompts";
 import { isInitialized, getConfig, saveConfig } from "#/config/project/project";
-import { getLockfile, saveLockfile } from "#/artifact/lockfile/lockfile";
-import { getSafeFilename } from "#/artifact/naming/naming";
+import { getLockfile, saveLockfile } from "#/context";
+import { getSafeFilename } from "@grekt-labs/cli-engine";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
 import { success, error, info, log, newline, colors } from "#/shared/ui/ui";
 
