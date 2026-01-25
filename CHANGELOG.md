@@ -1,3 +1,10 @@
+# [2.1.0](https://github.com/grekt-labs/cli/compare/v2.0.0...v2.1.0) (2026-01-25)
+
+
+### Features
+
+* force release after CI fixes ([a2426e4](https://github.com/grekt-labs/cli/commit/a2426e439dcbe38e8bc3837e076f6983e1cbf65e))
+
 # [2.0.0](https://github.com/grekt-labs/cli/compare/v1.0.0...v2.0.0) (2026-01-24)
 
 
