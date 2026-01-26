@@ -87,6 +87,12 @@ export const addCommand = new Command("add")
       process.exit(1);
     }
 
+    // Ensure parent directory exists (for scoped artifacts like @scope/name)
+    const parentDir = targetDir.substring(0, targetDir.lastIndexOf("/"));
+    if (!existsSync(parentDir)) {
+      mkdirSync(parentDir, { recursive: true });
+    }
+
     // Move temp dir to final location
     renameSync(tempDir, targetDir);
 
