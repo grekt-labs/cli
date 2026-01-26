@@ -1,3 +1,10 @@
+## [2.3.3](https://github.com/grekt-labs/cli/compare/v2.3.2...v2.3.3) (2026-01-26)
+
+
+### Bug Fixes
+
+* **deps:** update cli-engine to 1.7.0 ([165c1e5](https://github.com/grekt-labs/cli/commit/165c1e5caeed59324ad85e35fccc4f984fee44ef))
+
 ## [2.3.2](https://github.com/grekt-labs/cli/compare/v2.3.1...v2.3.2) (2026-01-26)
 
 
