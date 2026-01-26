@@ -1,3 +1,10 @@
+## [2.3.2](https://github.com/grekt-labs/cli/compare/v2.3.1...v2.3.2) (2026-01-26)
+
+
+### Bug Fixes
+
+* remove legacy registry clients (now using cli-engine) ([311329b](https://github.com/grekt-labs/cli/commit/311329b3cf630351041768d2554f55ed0d931ce7))
+
 ## [2.3.1](https://github.com/grekt-labs/cli/compare/v2.3.0...v2.3.1) (2026-01-26)
 
 
