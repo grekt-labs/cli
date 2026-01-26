@@ -1,3 +1,10 @@
+## [2.3.4](https://github.com/grekt-labs/cli/compare/v2.3.3...v2.3.4) (2026-01-26)
+
+
+### Bug Fixes
+
+* **add:** create parent directory for scoped artifacts ([e17b17c](https://github.com/grekt-labs/cli/commit/e17b17c1039a01e21e307547f50b5c16e8f44d96))
+
 ## [2.3.3](https://github.com/grekt-labs/cli/compare/v2.3.2...v2.3.3) (2026-01-26)
 
 
