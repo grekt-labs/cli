@@ -1,10 +1,30 @@
-import { describe, test } from "bun:test";
+import { describe, test, expect } from "bun:test";
+import {
+  GREKT_YAML,
+  LOCKFILE,
+  GREKT_DIR,
+  ARTIFACTS_DIR,
+  DEFAULT_REGISTRY,
+} from "./paths";
 
 describe("paths", () => {
-  test.todo("GLOBAL_CONFIG_DIR points to ~/.grekt");
-  test.todo("GREKT_YAML is grekt.yaml");
-  test.todo("LOCKFILE is grekt.lock");
-  test.todo("GREKT_DIR is .grekt");
-  test.todo("ARTIFACTS_DIR is .grekt/artifacts");
-  test.todo("DEFAULT_REGISTRY is https://registry.grekt.com");
+  test("GREKT_YAML is grekt.yaml", () => {
+    expect(GREKT_YAML).toBe("grekt.yaml");
+  });
+
+  test("LOCKFILE is grekt.lock", () => {
+    expect(LOCKFILE).toBe("grekt.lock");
+  });
+
+  test("GREKT_DIR is .grekt", () => {
+    expect(GREKT_DIR).toBe(".grekt");
+  });
+
+  test("ARTIFACTS_DIR is .grekt/artifacts", () => {
+    expect(ARTIFACTS_DIR).toBe(".grekt/artifacts");
+  });
+
+  test("DEFAULT_REGISTRY is https://registry.grekt.com", () => {
+    expect(DEFAULT_REGISTRY).toBe("https://registry.grekt.com");
+  });
 });

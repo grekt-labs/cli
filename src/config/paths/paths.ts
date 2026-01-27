@@ -1,4 +1,5 @@
 import { join } from "path";
+import { REGISTRY_URL } from "#/constants";
 
 // Project-level paths (relative to project root)
 export const GREKT_YAML = "grekt.yaml"; // project config: sync targets and artifact declarations
@@ -9,4 +10,4 @@ export const GREKT_DIR = ".grekt";
 export const ARTIFACTS_DIR = join(GREKT_DIR, "artifacts");
 
 // Default registry
-export const DEFAULT_REGISTRY = "https://registry.grekt.com";
+export const DEFAULT_REGISTRY = REGISTRY_URL;
