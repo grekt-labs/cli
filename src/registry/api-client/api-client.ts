@@ -2,9 +2,9 @@ import { mkdirSync, writeFileSync } from "fs";
 import { execSync } from "child_process";
 import type { ArtifactMetadata } from "@grekt-labs/cli-engine";
 import { getSupabaseClient, getSession, SUPABASE_URL } from "#/auth/session/session";
+import { REGISTRY_URL } from "#/constants";
 
-// Registry public URL for tarballs
-const REGISTRY_URL = "https://registry.grekt.com";
+
 
 export interface VersionInfo {
   version: string;
