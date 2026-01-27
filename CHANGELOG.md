@@ -1,3 +1,15 @@
+# [2.4.0](https://github.com/grekt-labs/cli/compare/v2.3.5...v2.4.0) (2026-01-27)
+
+
+### Bug Fixes
+
+* update install URL and make CLI entry executable ([20dd4fc](https://github.com/grekt-labs/cli/commit/20dd4fc00909feb58b6c2437667b3aa4b3874cc8))
+
+
+### Features
+
+* add install script for Linux and macOS ([ed73c5b](https://github.com/grekt-labs/cli/commit/ed73c5bf7d6e8b8acfad3a15cc10fe442b9cdfce))
+
 ## [2.3.5](https://github.com/grekt-labs/cli/compare/v2.3.4...v2.3.5) (2026-01-27)
 
 
