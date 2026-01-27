@@ -7,17 +7,17 @@ CLI for managing AI artifacts (agents, skills, commands) that sync to Claude, Cu
 ### Linux / macOS
 
 ```bash
-curl -fsSL https://grekt.dev/install.sh | sh
+curl -fsSL https://grekt.com/install.sh | sh
 ```
 
 Or with custom options:
 
 ```bash
 # Install specific version
-GREKT_VERSION=2.3.4 curl -fsSL https://grekt.dev/install.sh | sh
+GREKT_VERSION=2.3.4 curl -fsSL https://grekt.com/install.sh | sh
 
 # Custom install directory
-GREKT_INSTALL=/opt/bin curl -fsSL https://grekt.dev/install.sh | sh
+GREKT_INSTALL=/opt/bin curl -fsSL https://grekt.com/install.sh | sh
 ```
 
 ### macOS (Homebrew)
