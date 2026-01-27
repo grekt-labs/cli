@@ -1,0 +1,8 @@
+targets:
+  - claude
+autoSync: false
+artifacts:
+  "@grekt/tools": 1.0.0
+customTargets: {}
+options:
+  autoCheck: false

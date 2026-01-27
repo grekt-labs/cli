@@ -1,0 +1,23 @@
+version: 1
+artifacts:
+  "@grekt/tools":
+    version: 1.0.0
+    integrity: sha256:efd9851b4b074909
+    source: grekt/tools
+    resolved: https://gitlab.com/api/v4/projects/78003034/packages/generic/tools/1.0.0/artifact.tar.gz
+    files:
+      agents/assistant.md: sha256:5f4297e8588d4bf1
+      skills/registry-config.md: sha256:1b8d34392a8ee3e2
+      skills/artifact-format.md: sha256:eb52b24d5e462787
+      skills/troubleshooting.md: sha256:13ef4b308f714bdc
+      grekt.yaml: sha256:bf0852777be005eb
+      commands/publish-checklist.md: sha256:a1b8327b0bcf7450
+      commands/new-artifact.md: sha256:b35346bf355bf001
+    agent: agents/assistant.md
+    skills:
+      - skills/registry-config.md
+      - skills/artifact-format.md
+      - skills/troubleshooting.md
+    commands:
+      - commands/publish-checklist.md
+      - commands/new-artifact.md
