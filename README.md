@@ -2,11 +2,37 @@
 
 CLI for managing AI artifacts (agents, skills, commands) that sync to Claude, Cursor, and other AI tools.
 
-## Requirements
+## Installation
+
+### Linux / macOS
+
+```bash
+curl -fsSL https://grekt.dev/install.sh | sh
+```
+
+Or with custom options:
+
+```bash
+# Install specific version
+GREKT_VERSION=2.3.4 curl -fsSL https://grekt.dev/install.sh | sh
+
+# Custom install directory
+GREKT_INSTALL=/opt/bin curl -fsSL https://grekt.dev/install.sh | sh
+```
+
+### macOS (Homebrew)
+
+```bash
+brew install grekt-labs/tap/grekt
+```
+
+## Development
+
+### Requirements
 
 - [Bun](https://bun.sh) >= 1.0
 
-## Installation (local development)
+### Local installation
 
 ```bash
 cd cli
