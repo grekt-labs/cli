@@ -6,13 +6,12 @@ import { ARTIFACTS_DIR } from "#/config/paths/paths";
 import { parseSource, downloadFromSource } from "#/registry/sources/sources";
 import { getSourceDisplayName } from "#/registry/registry";
 import { scanArtifact, getArtifactId } from "#/context";
-import { hashDirectory, calculateIntegrity, getDirectorySize, formatBytes, estimateTokens } from "#/context";
+import { hashDirectory, calculateIntegrity } from "#/context";
 import { selectComponents, isEmptySelection, isFullSelection } from "#/artifact/selector/selector";
 import { removeUnselectedFiles } from "#/artifact/component-manager/component-manager";
 import { runCheck, displayCompactCheckResults } from "#/artifact/check/check";
 import { success, error, info, log, warning, newline, colors, spinner } from "#/shared/ui/ui";
 
-const CONTEXT_WARNING_THRESHOLD = 10 * 1024; // 10 KB
 
 export const addCommand = new Command("add")
   .description("Add an artifact from registry, GitHub, or GitLab")
@@ -168,14 +167,6 @@ export const addCommand = new Command("add")
       commands: selectedCommands,
     };
     saveLockfile(lockfile, projectRoot);
-
-    // Check artifact size and warn if large
-    const artifactSize = getDirectorySize(targetDir);
-    if (artifactSize > CONTEXT_WARNING_THRESHOLD) {
-      newline();
-      warning(`Artifact is ${formatBytes(artifactSize)} (~${estimateTokens(artifactSize).toLocaleString()} tokens)`);
-      info("Large artifacts may impact AI context. Consider if all content is necessary.");
-    }
 
     newline();
     success(`Installed ${colors.highlight(resolvedArtifactId)}@${artifactInfo.manifest.version}`);
