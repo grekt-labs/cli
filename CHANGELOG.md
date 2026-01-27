@@ -1,3 +1,10 @@
+## [2.3.5](https://github.com/grekt-labs/cli/compare/v2.3.4...v2.3.5) (2026-01-27)
+
+
+### Bug Fixes
+
+* **add:** remove unnecessary large artifact warning ([ea40cf5](https://github.com/grekt-labs/cli/commit/ea40cf55738d3373d63003d09d8442834fd1e2cb))
+
 ## [2.3.4](https://github.com/grekt-labs/cli/compare/v2.3.3...v2.3.4) (2026-01-26)
 
 
