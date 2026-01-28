@@ -1,3 +1,13 @@
+# [4.0.0](https://github.com/grekt-labs/cli/compare/v3.0.1...v4.0.0) (2026-01-28)
+
+
+* feat(versioning)!: implement semver-based version handling ([55a8b69](https://github.com/grekt-labs/cli/commit/55a8b692b4ee615f740ef213534b742f343dd3aa))
+
+
+### BREAKING CHANGES
+
+* Latest version is now highest semver, not most recently published
+
 ## [3.0.1](https://github.com/grekt-labs/cli/compare/v3.0.0...v3.0.1) (2026-01-28)
 
 
