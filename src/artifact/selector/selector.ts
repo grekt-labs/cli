@@ -19,7 +19,7 @@ export async function selectComponents(artifactInfo: ArtifactInfo): Promise<Comp
 
   if (artifactInfo.agent) {
     choices.push({
-      name: `agent: ${artifactInfo.agent.parsed.frontmatter.name}`,
+      name: `agent: ${artifactInfo.agent.parsed.frontmatter["grk-name"]}`,
       value: { type: "agent", path: artifactInfo.agent.path },
       checked: true,
     });
@@ -27,7 +27,7 @@ export async function selectComponents(artifactInfo: ArtifactInfo): Promise<Comp
 
   for (const skill of artifactInfo.skills) {
     choices.push({
-      name: `skill: ${skill.parsed.frontmatter.name}`,
+      name: `skill: ${skill.parsed.frontmatter["grk-name"]}`,
       value: { type: "skill", path: skill.path },
       checked: true,
     });
@@ -35,7 +35,7 @@ export async function selectComponents(artifactInfo: ArtifactInfo): Promise<Comp
 
   for (const cmd of artifactInfo.commands) {
     choices.push({
-      name: `command: ${cmd.parsed.frontmatter.name}`,
+      name: `command: ${cmd.parsed.frontmatter["grk-name"]}`,
       value: { type: "command", path: cmd.path },
       checked: true,
     });

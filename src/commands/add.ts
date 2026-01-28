@@ -177,20 +177,20 @@ export const addCommand = new Command("add")
 
     // Show what was actually installed
     if (selectedAgent) {
-      const agentName = artifactInfo.agent?.parsed.frontmatter.name ?? selectedAgent;
+      const agentName = artifactInfo.agent?.parsed.frontmatter["grk-name"] ?? selectedAgent;
       log(`  ${colors.dim("agent:")} ${agentName}`);
     }
     if (selectedSkills.length > 0) {
       const skillNames = selectedSkills.map((path) => {
         const skill = artifactInfo.skills.find((s) => s.path === path);
-        return skill?.parsed.frontmatter.name ?? path;
+        return skill?.parsed.frontmatter["grk-name"] ?? path;
       });
       log(`  ${colors.dim("skills:")} ${skillNames.join(", ")}`);
     }
     if (selectedCommands.length > 0) {
       const cmdNames = selectedCommands.map((path) => {
         const cmd = artifactInfo.commands.find((c) => c.path === path);
-        return cmd?.parsed.frontmatter.name ?? path;
+        return cmd?.parsed.frontmatter["grk-name"] ?? path;
       });
       log(`  ${colors.dim("commands:")} ${cmdNames.join(", ")}`);
     }
