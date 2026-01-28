@@ -11,6 +11,7 @@ import { selectComponents, isEmptySelection, isFullSelection } from "#/artifact/
 import { removeUnselectedFiles } from "#/artifact/component-manager/component-manager";
 import { runCheck, displayCompactCheckResults } from "#/artifact/check/check";
 import { success, error, info, log, warning, newline, colors, spinner } from "#/shared/ui/ui";
+import { compareSemver } from "@grekt-labs/cli-engine";
 
 
 export const addCommand = new Command("add")
@@ -79,12 +80,32 @@ export const addCommand = new Command("add")
     // Now we know the artifact ID, create final target directory
     const targetDir = `${projectRoot}/${ARTIFACTS_DIR}/${resolvedArtifactId}`;
 
-    // Check if already installed
+    // Check if already installed - update if newer version, skip if same/older
+    const lockfile = getLockfile(projectRoot);
     if (existsSync(targetDir)) {
-      rmSync(tempDir, { recursive: true, force: true });
-      warning(`Artifact ${colors.highlight(resolvedArtifactId)} is already installed`);
-      info("Use 'grekt remove' first to reinstall");
-      process.exit(1);
+      const existing = lockfile.artifacts[resolvedArtifactId];
+      const newVersion = artifactInfo.manifest.version;
+
+      if (existing) {
+        try {
+          const comparison = compareSemver(newVersion, existing.version);
+          if (comparison <= 0) {
+            rmSync(tempDir, { recursive: true, force: true });
+            info(`Already installed: ${colors.highlight(resolvedArtifactId)}@${existing.version}`);
+            if (comparison < 0) {
+              info(`Current version (${existing.version}) is newer than requested (${newVersion})`);
+            }
+            process.exit(0);
+          }
+          // New version is higher - proceed with update
+          log(`Updating ${colors.highlight(resolvedArtifactId)}: ${existing.version} → ${newVersion}`);
+        } catch {
+          // If comparison fails (invalid semver), proceed with replacement
+        }
+      }
+
+      // Remove old version to replace with new
+      rmSync(targetDir, { recursive: true, force: true });
     }
 
     // Ensure parent directory exists (for scoped artifacts like @scope/name)
@@ -143,13 +164,14 @@ export const addCommand = new Command("add")
       config.artifacts[resolvedArtifactId] = artifactInfo.manifest.version;
     } else {
       // Detailed format: version + mode + selected components
-      config.artifacts[resolvedArtifactId] = {
+      const entry: Record<string, unknown> = {
         version: artifactInfo.manifest.version,
-        mode: options.core ? "core" : undefined, // Only set if core, lazy is default
-        agent: selectedAgent ? true : undefined,
-        skills: selectedSkills.length > 0 ? selectedSkills : undefined,
-        commands: selectedCommands.length > 0 ? selectedCommands : undefined,
       };
+      if (options.core) entry.mode = "core";
+      if (selectedAgent) entry.agent = true;
+      if (selectedSkills.length > 0) entry.skills = selectedSkills;
+      if (selectedCommands.length > 0) entry.commands = selectedCommands;
+      config.artifacts[resolvedArtifactId] = entry as typeof config.artifacts[string];
     }
     saveConfig(config, projectRoot);
 
@@ -158,7 +180,6 @@ export const addCommand = new Command("add")
     const integrity = calculateIntegrity(fileHashes);
 
     // Update lockfile with version, checksums, and selected component paths
-    const lockfile = getLockfile(projectRoot);
     lockfile.artifacts[resolvedArtifactId] = {
       version: artifactInfo.manifest.version,
       integrity,

@@ -4,7 +4,7 @@ import { getArtifactMetadata, listVersions } from "#/registry/metadata/metadata"
 import { error, info, log, colors, spinner } from "#/shared/ui/ui";
 
 export const versionsCommand = new Command("versions")
-  .description("List all versions of an artifact (S3 storage only)")
+  .description("List all versions of an artifact (requires S3 credentials)")
   .argument("<artifact>", "Artifact ID (e.g., @author/name)")
   .action(async (artifactId: string) => {
     if (!artifactId.startsWith("@")) {

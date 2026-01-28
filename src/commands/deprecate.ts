@@ -33,7 +33,7 @@ interface DeprecateOptions {
 }
 
 export const deprecateCommand = new Command("deprecate")
-  .description("Deprecate an artifact version")
+  .description("Deprecate an artifact version (API and S3 only, not supported for GitLab/GitHub)")
   .argument("<artifact@version>", "Artifact and version to deprecate (e.g., @author/name@1.0.0)")
   .option("-m, --message <message>", "Deprecation message", "This version is deprecated")
   .option("--s3", "Use S3-compatible storage (legacy mode, env vars only)")
