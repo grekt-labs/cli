@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync, chmodSync } from "fs";
-import { dirname } from "path";
+import { dirname, resolve } from "path";
 import { parse, stringify } from "yaml";
 import {
   ProjectConfigSchema,
@@ -63,10 +63,30 @@ export function isInitialized(projectRoot: string = process.cwd()): boolean {
   return existsSync(`${projectRoot}/${GREKT_YAML}`);
 }
 
+// Walk up directory tree to find .grekt/config.yaml
+function findLocalConfigPath(startDir: string): string | null {
+  let current = resolve(startDir);
+
+  while (true) {
+    const configPath = `${current}/${GREKT_DIR}/${LOCAL_CONFIG_FILE}`;
+    if (existsSync(configPath)) {
+      return configPath;
+    }
+
+    const parent = dirname(current);
+    if (parent === current) {
+      // Reached filesystem root
+      return null;
+    }
+    current = parent;
+  }
+}
+
 // Local config (.grekt/config.yaml) - gitignored, contains registry configs, session, and tokens
+// Walks up directory tree to find config (supports monorepos)
 export function getLocalConfig(projectRoot: string = process.cwd()): LocalConfig | null {
-  const filepath = `${projectRoot}/${GREKT_DIR}/${LOCAL_CONFIG_FILE}`;
-  if (!existsSync(filepath)) {
+  const filepath = findLocalConfigPath(projectRoot);
+  if (!filepath) {
     return null;
   }
   const raw = readYaml(filepath, {});
@@ -79,7 +99,8 @@ export function saveLocalConfig(config: LocalConfig, projectRoot: string = proce
 }
 
 export function getLocalConfigPath(projectRoot: string = process.cwd()): string {
-  return `${projectRoot}/${GREKT_DIR}/${LOCAL_CONFIG_FILE}`;
+  // Return existing config path if found, otherwise default to projectRoot
+  return findLocalConfigPath(projectRoot) ?? `${projectRoot}/${GREKT_DIR}/${LOCAL_CONFIG_FILE}`;
 }
 
 // Generate YAML with helpful comments for self-documentation
