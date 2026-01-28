@@ -84,7 +84,7 @@ export const syncCommand = new Command("sync")
 
       // Preview or sync
       if (options.dryRun) {
-        const preview = plugin.preview(lockfile, projectRoot);
+        const preview = plugin.preview(lockfile, projectRoot, { projectConfig: config });
 
         if (preview.willCreate.length > 0) {
           log(colors.dim("  Would create:"));
@@ -113,6 +113,7 @@ export const syncCommand = new Command("sync")
         const result = await plugin.sync(lockfile, projectRoot, {
           createTarget,
           force: options.force,
+          projectConfig: config,
         });
 
         spin.stop();

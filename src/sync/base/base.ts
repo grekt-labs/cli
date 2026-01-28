@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync, copyFileSync } from "fs";
 import { dirname, join } from "path";
 import type { SyncPlugin, SyncResult, SyncOptions, SyncPreview, FolderPluginConfig, RulesOnlyPluginConfig } from "#/sync/sync.types";
-import type { Lockfile } from "@grekt-labs/cli-engine";
+import type { Lockfile, ProjectConfig, ArtifactMode } from "@grekt-labs/cli-engine";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
 import { getSafeFilename, GREKT_BLOCK_START, GREKT_BLOCK_END } from "@grekt-labs/cli-engine";
 
@@ -19,6 +19,31 @@ export function ensureDir(filepath: string): void {
 // Re-export for backwards compatibility
 export { getSafeFilename } from "@grekt-labs/cli-engine";
 export type { FolderPluginConfig, RulesOnlyPluginConfig } from "@grekt-labs/cli-engine";
+
+/**
+ * Get the sync mode for an artifact from the project config.
+ * Default is "lazy" if not specified.
+ */
+function getArtifactMode(config: ProjectConfig | undefined, artifactId: string): ArtifactMode {
+  if (!config) return "lazy";
+
+  const entry = config.artifacts[artifactId];
+  if (!entry) return "lazy";
+
+  if (typeof entry === "string") {
+    return "lazy"; // Version string = lazy mode
+  }
+
+  return entry.mode ?? "lazy";
+}
+
+/**
+ * Check if an artifact should be synced (copied to target).
+ * Only CORE mode artifacts are copied. LAZY mode artifacts are only in the index.
+ */
+function shouldSyncArtifact(config: ProjectConfig | undefined, artifactId: string): boolean {
+  return getArtifactMode(config, artifactId) === "core";
+}
 
 /**
  * Create a folder-based plugin that syncs agents/skills/commands to subfolders.
@@ -88,8 +113,14 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
         }
       }
 
-      // Sync each artifact
+      // Sync each artifact (only CORE mode artifacts are copied)
       for (const [artifactId, artifact] of Object.entries(lockfile.artifacts)) {
+        // Skip LAZY mode artifacts - they're only in the index
+        if (!shouldSyncArtifact(options.projectConfig, artifactId)) {
+          result.skipped.push(`${artifactId} (lazy mode)`);
+          continue;
+        }
+
         const artifactDir = `${projectRoot}/${ARTIFACTS_DIR}/${artifactId}`;
 
         // Copy agent
@@ -159,7 +190,7 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
       return result;
     },
 
-    preview(lockfile: Lockfile, projectRoot: string): SyncPreview {
+    preview(lockfile: Lockfile, projectRoot: string, options?: SyncOptions): SyncPreview {
       const preview: SyncPreview = { willCreate: [], willUpdate: [], willSkip: [] };
 
       if (!existsSync(`${projectRoot}/${targetDir}`)) {
@@ -167,6 +198,12 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
       }
 
       for (const [artifactId, artifact] of Object.entries(lockfile.artifacts)) {
+        // Skip LAZY mode artifacts - they're only in the index
+        if (!shouldSyncArtifact(options?.projectConfig, artifactId)) {
+          preview.willSkip.push(`${artifactId} (lazy mode)`);
+          continue;
+        }
+
         const artifactDir = `${projectRoot}/${ARTIFACTS_DIR}/${artifactId}`;
 
         if (artifact.agent) {
@@ -281,7 +318,7 @@ export function createRulesOnlyPlugin(config: RulesOnlyPluginConfig): SyncPlugin
       return result;
     },
 
-    preview(_lockfile: Lockfile, projectRoot: string): SyncPreview {
+    preview(_lockfile: Lockfile, projectRoot: string, _options?: SyncOptions): SyncPreview {
       const filepath = `${projectRoot}/${rulesFile}`;
 
       if (!existsSync(filepath)) {
