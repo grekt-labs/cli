@@ -1,3 +1,25 @@
+# [3.0.0](https://github.com/grekt-labs/cli/compare/v2.4.0...v3.0.0) (2026-01-28)
+
+
+* feat(add)!: add --core flag and make LAZY mode default ([259ae0b](https://github.com/grekt-labs/cli/commit/259ae0b08e92e1123a6c153cd26df01819cd9f17))
+
+
+### Features
+
+* **install:** generate artifact index after install ([cfd0620](https://github.com/grekt-labs/cli/commit/cfd062014822b93a3905fa30e398dab54852072d))
+* **publish:** add keywords and component validation ([fa5ee09](https://github.com/grekt-labs/cli/commit/fa5ee09a046447c1a6429c0a9de6f5b8ff566c69))
+* **sync:** implement core/lazy mode filtering ([f52f69a](https://github.com/grekt-labs/cli/commit/f52f69a84b8effd29b4c7c6c5cbd7e3dcace8702))
+
+
+### BREAKING CHANGES
+
+* LAZY mode is now default. Artifacts are no longer
+copied to target directories unless explicitly marked with --core flag.
+Existing installations need to re-add artifacts with --core if they
+require the files to be present in target directories.
+
+- ca
+
 # [2.4.0](https://github.com/grekt-labs/cli/compare/v2.3.5...v2.4.0) (2026-01-27)
 
 
