@@ -1,6 +1,7 @@
 import { describe, test, expect, beforeEach, afterEach } from "bun:test";
 import { existsSync, mkdirSync, rmSync, writeFileSync, readFileSync } from "fs";
 import { join } from "path";
+import { tmpdir } from "os";
 import { stringify } from "yaml";
 import {
   getConfig,
@@ -17,7 +18,8 @@ import {
 import type { ProjectConfig, LocalConfig, StoredSession } from "@grekt-labs/cli-engine";
 
 describe("project", () => {
-  const testDir = join(process.cwd(), ".test-project");
+  // Use system temp to avoid finding .grekt/config.yaml in parent directories
+  const testDir = join(tmpdir(), ".grekt-test-project");
 
   beforeEach(() => {
     if (existsSync(testDir)) {
@@ -132,6 +134,33 @@ describe("project", () => {
       expect(config).not.toBeNull();
       expect(config!.registries!["@myorg"].type).toBe("gitlab");
       expect(config!.tokens!.github).toBe("gh-token");
+    });
+
+    test("walks up directory tree to find config (monorepo support)", () => {
+      // Create parent with config
+      mkdirSync(join(testDir, ".grekt"), { recursive: true });
+      const localConfigData: LocalConfig = {
+        registries: {
+          "@parent": {
+            type: "gitlab",
+            project: "parent/artifacts",
+          },
+        },
+      };
+      writeFileSync(
+        join(testDir, ".grekt", "config.yaml"),
+        stringify(localConfigData)
+      );
+
+      // Create nested subdirectory without config
+      const nestedDir = join(testDir, "packages", "subpackage");
+      mkdirSync(nestedDir, { recursive: true });
+
+      // Should find parent config from nested dir
+      const config = getLocalConfig(nestedDir);
+
+      expect(config).not.toBeNull();
+      expect(config!.registries!["@parent"].type).toBe("gitlab");
     });
   });
 
