@@ -67,6 +67,10 @@ function generateArtifactIndex(projectRoot: string, config: ProjectConfig): void
       if (!scanned) continue;
 
       const mode = getArtifactMode(config, artifactId);
+
+      // Only index LAZY artifacts - CORE artifacts are already in context
+      if (mode === "core") continue;
+
       const keywords = scanned.manifest.keywords ?? [];
 
       inputs.push({
