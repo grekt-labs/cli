@@ -1,3 +1,10 @@
+## [3.0.1](https://github.com/grekt-labs/cli/compare/v3.0.0...v3.0.1) (2026-01-28)
+
+
+### Bug Fixes
+
+* ensure only lazy artifacts in index ([ce23180](https://github.com/grekt-labs/cli/commit/ce2318096212b39fe924d8bc742f914a6a276754))
+
 # [3.0.0](https://github.com/grekt-labs/cli/compare/v2.4.0...v3.0.0) (2026-01-28)
 
 
