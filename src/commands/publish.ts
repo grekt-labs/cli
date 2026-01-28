@@ -5,6 +5,7 @@ import { basename, dirname, join, resolve } from "path";
 import { parse } from "yaml";
 import { setProjectRoot } from "#/auth/session/session";
 import { isInitialized, getLocalConfigPath } from "#/config/project/project";
+import { fs as cliFs } from "#/context";
 import {
   createPublisher,
   getPublisherTypeName,
@@ -13,7 +14,11 @@ import { S3Publisher } from "#/registry/publishers/s3-publisher";
 import { CustomPublisher } from "#/registry/publishers/custom-publisher";
 import { isApiAuthenticated } from "#/registry/publishers/api-publisher";
 import type { PublishContext } from "#/registry/publishers/publisher.types";
-import { success, error, info, log, colors, spinner } from "#/shared/ui/ui";
+import { success, error, info, warning, log, colors, spinner } from "#/shared/ui/ui";
+import { scanArtifact, ArtifactManifestSchema } from "@grekt-labs/cli-engine";
+
+const MIN_KEYWORDS = 3;
+const MAX_KEYWORDS = 5;
 
 interface PublishOptions {
   local?: boolean;
@@ -51,11 +56,74 @@ export const publishCommand = new Command("publish")
       process.exit(1);
     }
 
-    const manifest = parse(readFileSync(manifestPath, "utf-8"));
+    const rawManifest = parse(readFileSync(manifestPath, "utf-8"));
+
+    // Validate manifest schema
+    const manifestResult = ArtifactManifestSchema.safeParse(rawManifest);
+    if (!manifestResult.success) {
+      error("Invalid grekt.yaml manifest");
+      for (const issue of manifestResult.error.issues) {
+        log(`  ${colors.dim(issue.path.join("."))} ${issue.message}`);
+      }
+      process.exit(1);
+    }
+
+    const manifest = manifestResult.data;
     const artifactId = `@${manifest.author}/${manifest.name}`;
     const scope = `@${manifest.author}`;
 
-    log(colors.bold(`\nPublishing ${artifactId}@${manifest.version}...\n`));
+    // Validate keywords (required for publishing)
+    const keywords = manifest.keywords ?? [];
+    if (keywords.length < MIN_KEYWORDS) {
+      error(`Manifest requires at least ${MIN_KEYWORDS} keywords`);
+      info(`Add 'keywords' array to grekt.yaml with ${MIN_KEYWORDS}-${MAX_KEYWORDS} keywords`);
+      log("");
+      log(colors.dim("  Example:"));
+      log(colors.dim("    keywords:"));
+      log(colors.dim("      - git"));
+      log(colors.dim("      - commit"));
+      log(colors.dim("      - automation"));
+      process.exit(1);
+    }
+
+    if (keywords.length > MAX_KEYWORDS) {
+      error(`Manifest has too many keywords (max ${MAX_KEYWORDS})`);
+      info(`Reduce the 'keywords' array to ${MIN_KEYWORDS}-${MAX_KEYWORDS} keywords`);
+      process.exit(1);
+    }
+
+    // Scan artifact for components
+    const scanned = scanArtifact(cliFs, fullPath);
+    if (!scanned) {
+      error("Failed to scan artifact");
+      process.exit(1);
+    }
+
+    // Count valid components
+    const componentCount =
+      (scanned.agent ? 1 : 0) +
+      scanned.skills.length +
+      scanned.commands.length +
+      scanned.mcps.length +
+      scanned.rules.length;
+
+    if (componentCount === 0) {
+      error("Artifact has no valid components");
+      info("Add at least one agent, skill, command, mcp, or rule file");
+      info("Files must have valid frontmatter (type, name, description)");
+      process.exit(1);
+    }
+
+    // Show component summary
+    log(colors.bold(`\nPublishing ${artifactId}@${manifest.version}...`));
+    log(colors.dim(`  Keywords: ${keywords.join(", ")}`));
+    log(colors.dim(`  Components: ${componentCount}`));
+    if (scanned.agent) log(colors.dim(`    - 1 agent`));
+    if (scanned.skills.length > 0) log(colors.dim(`    - ${scanned.skills.length} skill(s)`));
+    if (scanned.commands.length > 0) log(colors.dim(`    - ${scanned.commands.length} command(s)`));
+    if (scanned.mcps.length > 0) log(colors.dim(`    - ${scanned.mcps.length} mcp(s)`));
+    if (scanned.rules.length > 0) log(colors.dim(`    - ${scanned.rules.length} rule(s)`));
+    log("");
 
     // Create tarball
     const tarballName = `${artifactId.replace("/", "-")}.tar.gz`;
