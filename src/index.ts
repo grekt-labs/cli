@@ -9,6 +9,7 @@ import { addCommand } from "#/commands/add";
 import { installCommand } from "#/commands/install";
 import { checkCommand } from "#/commands/check";
 import { removeCommand } from "#/commands/remove";
+import { packCommand } from "#/commands/pack";
 import { publishCommand } from "#/commands/publish";
 import { deprecateCommand } from "#/commands/deprecate";
 import { undeprecateCommand } from "#/commands/undeprecate";
@@ -44,6 +45,7 @@ program.addCommand(checkCommand);
 program.addCommand(removeCommand);
 
 // Registry commands
+program.addCommand(packCommand);
 program.addCommand(publishCommand);
 program.addCommand(deprecateCommand);
 program.addCommand(undeprecateCommand);

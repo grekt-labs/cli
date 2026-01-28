@@ -1,7 +1,6 @@
 import { Command } from "commander";
-import { execSync } from "child_process";
-import { existsSync, readFileSync, unlinkSync } from "fs";
-import { basename, dirname, join, resolve } from "path";
+import { existsSync, readFileSync } from "fs";
+import { join, resolve } from "path";
 import { parse } from "yaml";
 import { setProjectRoot } from "#/auth/session/session";
 import { isInitialized, getLocalConfigPath } from "#/config/project/project";
@@ -14,35 +13,30 @@ import { S3Publisher } from "#/registry/publishers/s3-publisher";
 import { CustomPublisher } from "#/registry/publishers/custom-publisher";
 import { isApiAuthenticated } from "#/registry/publishers/api-publisher";
 import type { PublishContext } from "#/registry/publishers/publisher.types";
-import { success, error, info, warning, log, colors, spinner } from "#/shared/ui/ui";
+import { createTarball, removeTarball } from "#/artifact/tarball/tarball";
+import { success, error, info, log, colors, spinner } from "#/shared/ui/ui";
 import { scanArtifact, ArtifactManifestSchema, isValidSemver } from "@grekt-labs/cli-engine";
 
 const MIN_KEYWORDS = 3;
 const MAX_KEYWORDS = 5;
 
 interface PublishOptions {
-  local?: boolean;
-  output?: string;
   s3?: boolean;
 }
 
 export const publishCommand = new Command("publish")
   .description("Publish an artifact to a registry")
   .argument("<path>", "Path to artifact directory")
-  .option("--local", "Only create tarball locally (no upload)")
-  .option("-o, --output <path>", "Output path for tarball (with --local)")
   .option("--s3", "Use S3-compatible storage (legacy mode, env vars only)")
   .action(async (artifactPath: string, options: PublishOptions) => {
     const fullPath = resolve(artifactPath);
     const projectRoot = process.cwd();
 
-    // Require project initialization
     if (!isInitialized(projectRoot)) {
       error("Not in a grekt project. Run 'grekt init' first.");
       process.exit(1);
     }
 
-    // Set project root for session operations
     setProjectRoot(projectRoot);
 
     if (!existsSync(fullPath)) {
@@ -58,7 +52,6 @@ export const publishCommand = new Command("publish")
 
     const rawManifest = parse(readFileSync(manifestPath, "utf-8"));
 
-    // Validate manifest schema
     const manifestResult = ArtifactManifestSchema.safeParse(rawManifest);
     if (!manifestResult.success) {
       error("Invalid grekt.yaml manifest");
@@ -72,14 +65,12 @@ export const publishCommand = new Command("publish")
     const artifactId = `@${manifest.author}/${manifest.name}`;
     const scope = `@${manifest.author}`;
 
-    // Validate version is valid semver
     if (!isValidSemver(manifest.version)) {
       error(`Invalid version: ${manifest.version}`);
       info("Version must be valid semver (e.g., 1.0.0, 2.1.0-beta.1)");
       process.exit(1);
     }
 
-    // Validate keywords (required for publishing)
     const keywords = manifest.keywords ?? [];
     if (keywords.length < MIN_KEYWORDS) {
       error(`Manifest requires at least ${MIN_KEYWORDS} keywords`);
@@ -99,14 +90,12 @@ export const publishCommand = new Command("publish")
       process.exit(1);
     }
 
-    // Scan artifact for components
     const scanned = scanArtifact(cliFs, fullPath);
     if (!scanned) {
       error("Failed to scan artifact");
       process.exit(1);
     }
 
-    // Count valid components
     const componentCount =
       (scanned.agent ? 1 : 0) +
       scanned.skills.length +
@@ -121,7 +110,6 @@ export const publishCommand = new Command("publish")
       process.exit(1);
     }
 
-    // Show component summary
     log(colors.bold(`\nPublishing ${artifactId}@${manifest.version}...`));
     log(colors.dim(`  Keywords: ${keywords.join(", ")}`));
     log(colors.dim(`  Components: ${componentCount}`));
@@ -132,44 +120,35 @@ export const publishCommand = new Command("publish")
     if (scanned.rules.length > 0) log(colors.dim(`    - ${scanned.rules.length} rule(s)`));
     log("");
 
-    // Create tarball
-    const tarballName = `${artifactId.replace("/", "-")}.tar.gz`;
-    const outputPath = options.output || `/tmp/${tarballName}`;
-    const artifactDir = basename(fullPath);
-    const parentDir = dirname(fullPath);
-
-    execSync(`tar -czf ${outputPath} -C ${parentDir} ${artifactDir}`, {
-      stdio: "pipe",
+    const tarballResult = createTarball({
+      artifactPath: fullPath,
+      artifactId,
+      projectRoot,
     });
 
-    success(`Created tarball: ${tarballName}`);
-
-    // If local only, stop here
-    if (options.local) {
-      log(`\n  Output: ${outputPath}`);
-      info("\nUpload manually to your registry or use without --local to publish");
-      return;
+    if (!tarballResult.success || !tarballResult.path) {
+      error(`Failed to create tarball: ${tarballResult.error}`);
+      process.exit(1);
     }
 
-    // Create appropriate publisher
+    success(`Created tarball: ${tarballResult.filename}`);
+
     const publisher = createPublisher({
       s3: options.s3,
       scope,
       projectRoot,
     });
 
-    // Create publish context
     const ctx: PublishContext = {
       artifactId,
       version: manifest.version,
-      tarballPath: outputPath,
+      tarballPath: tarballResult.path,
       scope,
       projectRoot,
     };
 
-    // Check authentication/credentials before proceeding
     if (publisher instanceof S3Publisher && !publisher.hasCredentials()) {
-      unlinkSync(outputPath);
+      removeTarball(tarballResult.path);
       showS3CredentialsHelp();
       process.exit(1);
     }
@@ -177,7 +156,7 @@ export const publishCommand = new Command("publish")
     if (publisher.type === "api") {
       const authenticated = await isApiAuthenticated();
       if (!authenticated) {
-        unlinkSync(outputPath);
+        removeTarball(tarballResult.path);
         error("Not logged in");
         info("Run 'grekt login' first");
         log("");
@@ -186,7 +165,6 @@ export const publishCommand = new Command("publish")
       }
     }
 
-    // Check if version already exists
     const checkSpin = spinner("Checking if version exists...");
     checkSpin.start();
 
@@ -195,17 +173,15 @@ export const publishCommand = new Command("publish")
       checkSpin.stop();
 
       if (exists) {
-        unlinkSync(outputPath);
+        removeTarball(tarballResult.path);
         error(`Version ${manifest.version} already exists for ${artifactId}`);
         info("Bump the version in grekt.yaml and try again");
         process.exit(1);
       }
     } catch {
       checkSpin.stop();
-      // If we can't check, continue anyway (might be a new artifact)
     }
 
-    // Publish
     const publisherName = getPublisherTypeName(publisher);
     const spin = spinner(`Publishing to ${publisherName}...`);
     spin.start();
@@ -214,10 +190,9 @@ export const publishCommand = new Command("publish")
     spin.stop();
 
     if (!result.success) {
-      unlinkSync(outputPath);
+      removeTarball(tarballResult.path);
       error(`Publish failed: ${result.error}`);
 
-      // Show registry-specific help
       if (publisher instanceof CustomPublisher) {
         const registry = publisher.getRegistry();
         if (registry.type === "gitlab" && !registry.token) {
@@ -228,7 +203,7 @@ export const publishCommand = new Command("publish")
       process.exit(1);
     }
 
-    unlinkSync(outputPath);
+    removeTarball(tarballResult.path);
 
     log("");
     success(`Published ${artifactId}@${manifest.version}`);
@@ -249,7 +224,7 @@ function showS3CredentialsHelp(): void {
   log("  GREKT_STORAGE_BUCKET=...");
   log("  GREKT_STORAGE_PUBLIC_URL=https://... (optional)");
   log("");
-  log(colors.dim("Or use --local to create tarball without uploading"));
+  log(colors.dim("Use 'grekt pack' to create tarball without uploading"));
 }
 
 function showGitLabHelp(scope: string): void {
