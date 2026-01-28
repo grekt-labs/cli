@@ -1,3 +1,11 @@
+# [4.2.0](https://github.com/grekt-labs/cli/compare/v4.1.0...v4.2.0) (2026-01-28)
+
+
+### Features
+
+* **pack:** add grekt pack command ([9f19501](https://github.com/grekt-labs/cli/commit/9f19501a532be1663f8ff2ce5fec3f8328597ec4))
+* **publish:** make path argument optional ([b0f06e5](https://github.com/grekt-labs/cli/commit/b0f06e563487a4428e820112305e9f59b72cd707))
+
 # [4.1.0](https://github.com/grekt-labs/cli/compare/v4.0.0...v4.1.0) (2026-01-28)
 
 
