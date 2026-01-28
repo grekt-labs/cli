@@ -26,7 +26,7 @@ interface PublishOptions {
 
 export const publishCommand = new Command("publish")
   .description("Publish an artifact to a registry")
-  .argument("<path>", "Path to artifact directory")
+  .argument("[path]", "Path to artifact directory (default: current directory)", ".")
   .option("--s3", "Use S3-compatible storage (legacy mode, env vars only)")
   .action(async (artifactPath: string, options: PublishOptions) => {
     const fullPath = resolve(artifactPath);
