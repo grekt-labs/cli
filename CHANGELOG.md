@@ -1,3 +1,10 @@
+# [4.4.0](https://github.com/grekt-labs/cli/compare/v4.3.0...v4.4.0) (2026-01-28)
+
+
+### Features
+
+* **version:** add manual bump support (patch/minor/major) ([a168e04](https://github.com/grekt-labs/cli/commit/a168e0473fbdfddaeae85b7dece0c8eb422d0f01))
+
 # [4.3.0](https://github.com/grekt-labs/cli/compare/v4.2.1...v4.3.0) (2026-01-28)
 
 
