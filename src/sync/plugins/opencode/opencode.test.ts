@@ -2,10 +2,22 @@ import { describe, test, expect, beforeEach, afterEach } from "bun:test";
 import { existsSync, mkdirSync, rmSync } from "fs";
 import { join } from "path";
 import { opencodePlugin } from "./opencode";
+import type { ProjectConfig } from "@grekt-labs/cli-engine";
 
 const PLUGIN_ID = "opencode";
 const PLUGIN_NAME = "OpenCode";
 const TARGET_DIR = ".opencode";
+const TEST_ARTIFACT_ID = "@test/artifact";
+
+const coreProjectConfig: ProjectConfig = {
+  targets: [],
+  autoSync: false,
+  artifacts: {
+    [TEST_ARTIFACT_ID]: { version: "1.0.0", mode: "core" },
+  },
+  customTargets: {},
+  options: { autoCheck: false },
+};
 
 describe("opencodePlugin", () => {
   const testDir = join(process.cwd(), ".test-opencode-plugin");
@@ -42,11 +54,11 @@ describe("opencodePlugin", () => {
       expect(preview.willCreate).toContain(TARGET_DIR);
     });
 
-    test("reports skipped for artifacts with missing source files", () => {
+    test("reports skipped for CORE artifacts with missing source files", () => {
       const lockfile = {
         version: 1,
         artifacts: {
-          "@test/artifact": {
+          [TEST_ARTIFACT_ID]: {
             version: "1.0.0",
             agent: "agent.md",
             skills: [],
@@ -55,9 +67,27 @@ describe("opencodePlugin", () => {
         },
       };
 
-      const preview = opencodePlugin.preview(lockfile, testDir);
+      const preview = opencodePlugin.preview(lockfile, testDir, { projectConfig: coreProjectConfig });
 
       expect(preview.willSkip.some((s) => s.includes("source not found"))).toBe(true);
+    });
+
+    test("reports skipped for LAZY mode artifacts", () => {
+      const lockfile = {
+        version: 1,
+        artifacts: {
+          [TEST_ARTIFACT_ID]: {
+            version: "1.0.0",
+            agent: "agent.md",
+            skills: [],
+            commands: [],
+          },
+        },
+      };
+
+      const preview = opencodePlugin.preview(lockfile, testDir); // No config = lazy
+
+      expect(preview.willSkip.some((s) => s.includes("lazy mode"))).toBe(true);
     });
   });
 
@@ -71,11 +101,34 @@ describe("opencodePlugin", () => {
       expect(existsSync(join(testDir, TARGET_DIR, "commands"))).toBe(true);
     });
 
-    test("skips artifacts when source files missing", async () => {
+    test("skips CORE artifacts when source files missing", async () => {
+      const missingArtifactId = "@test/missing";
       const lockfile = {
         version: 1,
         artifacts: {
-          "@test/missing": {
+          [missingArtifactId]: {
+            version: "1.0.0",
+            agent: "agent.md",
+            skills: [],
+            commands: [],
+          },
+        },
+      };
+      const configWithMissing: ProjectConfig = {
+        ...coreProjectConfig,
+        artifacts: { [missingArtifactId]: { version: "1.0.0", mode: "core" } },
+      };
+
+      const result = await opencodePlugin.sync(lockfile, testDir, { projectConfig: configWithMissing });
+
+      expect(result.skipped.some((s) => s.includes("source not found"))).toBe(true);
+    });
+
+    test("skips LAZY mode artifacts", async () => {
+      const lockfile = {
+        version: 1,
+        artifacts: {
+          [TEST_ARTIFACT_ID]: {
             version: "1.0.0",
             agent: "agent.md",
             skills: [],
@@ -84,9 +137,9 @@ describe("opencodePlugin", () => {
         },
       };
 
-      const result = await opencodePlugin.sync(lockfile, testDir, {});
+      const result = await opencodePlugin.sync(lockfile, testDir, {}); // No config = lazy
 
-      expect(result.skipped.some((s) => s.includes("source not found"))).toBe(true);
+      expect(result.skipped.some((s) => s.includes("lazy mode"))).toBe(true);
     });
 
     test("dryRun does not create directories", async () => {

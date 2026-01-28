@@ -2,10 +2,24 @@ import { describe, test, expect, beforeEach, afterEach } from "bun:test";
 import { existsSync, mkdirSync, rmSync, writeFileSync, readFileSync } from "fs";
 import { join } from "path";
 import { createFolderPlugin, createRulesOnlyPlugin, GREKT_BLOCK_START, GREKT_BLOCK_END } from "./base";
-import type { Lockfile } from "@grekt-labs/cli-engine";
+import type { Lockfile, ProjectConfig } from "@grekt-labs/cli-engine";
 
 const ARTIFACTS_DIR = ".grekt/artifacts";
 const TEST_ARTIFACT_ID = "@scope/artifact";
+
+// Project config with artifact in CORE mode (so it gets copied)
+const testProjectConfig: ProjectConfig = {
+  targets: [],
+  autoSync: false,
+  artifacts: {
+    [TEST_ARTIFACT_ID]: {
+      version: "1.0.0",
+      mode: "core",
+    },
+  },
+  customTargets: {},
+  options: { autoCheck: false },
+};
 
 describe("base", () => {
   const testDir = join(process.cwd(), ".test-sync-base");
@@ -42,7 +56,7 @@ describe("base", () => {
     test("creates full directory structure", async () => {
       const plugin = createTestPlugin();
 
-      await plugin.sync(testLockfile, testDir, {});
+      await plugin.sync(testLockfile, testDir, { projectConfig: testProjectConfig });
 
       expect(existsSync(join(testDir, ".test"))).toBe(true);
       expect(existsSync(join(testDir, ".test/agents"))).toBe(true);
@@ -50,19 +64,32 @@ describe("base", () => {
       expect(existsSync(join(testDir, ".test/commands"))).toBe(true);
     });
 
-    test("copies agent file with artifact-based name", async () => {
+    test("copies agent file with artifact-based name for CORE mode", async () => {
       const plugin = createTestPlugin();
 
-      await plugin.sync(testLockfile, testDir, {});
+      await plugin.sync(testLockfile, testDir, { projectConfig: testProjectConfig });
 
       const expectedFile = join(testDir, ".test/agents/@scope-artifact.md");
       expect(existsSync(expectedFile)).toBe(true);
     });
 
+    test("skips artifact in LAZY mode (default)", async () => {
+      const plugin = createTestPlugin();
+      const lazyConfig: ProjectConfig = {
+        ...testProjectConfig,
+        artifacts: { [TEST_ARTIFACT_ID]: "1.0.0" }, // string = lazy
+      };
+
+      const result = await plugin.sync(testLockfile, testDir, { projectConfig: lazyConfig });
+
+      expect(result.skipped.some((s) => s.includes("lazy mode"))).toBe(true);
+      expect(existsSync(join(testDir, ".test/agents/@scope-artifact.md"))).toBe(false);
+    });
+
     test("reports created files in result", async () => {
       const plugin = createTestPlugin();
 
-      const result = await plugin.sync(testLockfile, testDir, {});
+      const result = await plugin.sync(testLockfile, testDir, { projectConfig: testProjectConfig });
 
       expect(result.created.some((f) => f.includes("agents"))).toBe(true);
     });
@@ -70,18 +97,30 @@ describe("base", () => {
     test("reports updated files on second sync", async () => {
       const plugin = createTestPlugin();
 
-      await plugin.sync(testLockfile, testDir, {});
-      const result = await plugin.sync(testLockfile, testDir, {});
+      await plugin.sync(testLockfile, testDir, { projectConfig: testProjectConfig });
+      const result = await plugin.sync(testLockfile, testDir, { projectConfig: testProjectConfig });
 
       expect(result.updated.some((f) => f.includes("agents"))).toBe(true);
     });
 
-    test("preview shows willCreate before sync", () => {
+    test("preview shows willCreate before sync for CORE mode", () => {
       const plugin = createTestPlugin();
 
-      const preview = plugin.preview(testLockfile, testDir);
+      const preview = plugin.preview(testLockfile, testDir, { projectConfig: testProjectConfig });
 
       expect(preview.willCreate).toContain(".test");
+    });
+
+    test("preview skips LAZY mode artifacts", () => {
+      const plugin = createTestPlugin();
+      const lazyConfig: ProjectConfig = {
+        ...testProjectConfig,
+        artifacts: { [TEST_ARTIFACT_ID]: "1.0.0" },
+      };
+
+      const preview = plugin.preview(testLockfile, testDir, { projectConfig: lazyConfig });
+
+      expect(preview.willSkip.some((s) => s.includes("lazy mode"))).toBe(true);
     });
 
     test("targetExists detects directory presence", () => {
@@ -97,7 +136,7 @@ describe("base", () => {
     test("dryRun returns preview without creating files", async () => {
       const plugin = createTestPlugin();
 
-      const result = await plugin.sync(testLockfile, testDir, { dryRun: true });
+      const result = await plugin.sync(testLockfile, testDir, { dryRun: true, projectConfig: testProjectConfig });
 
       expect(result.created.length).toBeGreaterThan(0);
       expect(existsSync(join(testDir, ".test"))).toBe(false);
