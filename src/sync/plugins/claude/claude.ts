@@ -4,16 +4,13 @@ import type { Lockfile } from "@grekt-labs/cli-engine";
 const TARGET_DIR = ".claude";
 const RULES_FILE = `${TARGET_DIR}/CLAUDE.md`;
 
-function generateRulesContent(lockfile: Lockfile): string {
-  const artifacts = Object.keys(lockfile.artifacts);
-
+/**
+ * Generate minimal bootstrap content for CLAUDE.md.
+ * Points Claude to the artifact index for lazy loading.
+ */
+function generateRulesContent(_lockfile: Lockfile): string {
   let content = `${GREKT_BLOCK_START}\n`;
-  content += `Grekt artifacts installed. See \`grekt.yaml\` for details.\n`;
-
-  if (artifacts.length > 0) {
-    content += `\nArtifacts: ${artifacts.join(", ")}\n`;
-  }
-
+  content += `Tools available in \`.grekt/index\`\n`;
   content += `${GREKT_BLOCK_END}`;
   return content;
 }
