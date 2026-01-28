@@ -17,7 +17,8 @@ export const addCommand = new Command("add")
   .description("Add an artifact from registry, GitHub, or GitLab")
   .argument("<source>", "Artifact source (e.g., @grekt/code-reviewer, github:user/repo, gitlab:host/user/repo)")
   .option("-c, --choose", "Choose which components to install")
-  .action(async (sourceArg: string, options: { choose?: boolean }) => {
+  .option("--core", "Mark artifact as CORE (copied to target on sync, not just indexed)")
+  .action(async (sourceArg: string, options: { choose?: boolean; core?: boolean }) => {
     const projectRoot = process.cwd();
 
     if (!isInitialized(projectRoot)) {
@@ -136,13 +137,15 @@ export const addCommand = new Command("add")
     const currentSelection = { agent: selectedAgent, skills: selectedSkills, commands: selectedCommands };
     const allSelected = isFullSelection(artifactInfo, currentSelection);
 
-    if (allSelected) {
-      // Simple format: just version
+    // Use simple format only if all selected AND not core mode
+    if (allSelected && !options.core) {
+      // Simple format: just version (LAZY mode by default)
       config.artifacts[resolvedArtifactId] = artifactInfo.manifest.version;
     } else {
-      // Detailed format: version + selected components
+      // Detailed format: version + mode + selected components
       config.artifacts[resolvedArtifactId] = {
         version: artifactInfo.manifest.version,
+        mode: options.core ? "core" : undefined, // Only set if core, lazy is default
         agent: selectedAgent ? true : undefined,
         skills: selectedSkills.length > 0 ? selectedSkills : undefined,
         commands: selectedCommands.length > 0 ? selectedCommands : undefined,
@@ -169,7 +172,8 @@ export const addCommand = new Command("add")
     saveLockfile(lockfile, projectRoot);
 
     newline();
-    success(`Installed ${colors.highlight(resolvedArtifactId)}@${artifactInfo.manifest.version}`);
+    const modeLabel = options.core ? ` ${colors.dim("(core)")}` : "";
+    success(`Installed ${colors.highlight(resolvedArtifactId)}@${artifactInfo.manifest.version}${modeLabel}`);
 
     // Show what was actually installed
     if (selectedAgent) {
