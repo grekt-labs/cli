@@ -10,7 +10,7 @@ describe("version", () => {
   test("command has correct name and description", async () => {
     const { versionCommand } = await import("./version");
     expect(versionCommand.name()).toBe("version");
-    expect(versionCommand.description()).toContain("semantic");
+    expect(versionCommand.description()).toContain("version");
   });
 
   test("command accepts --dry-run option", async () => {
