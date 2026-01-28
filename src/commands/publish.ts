@@ -1,10 +1,6 @@
 import { Command } from "commander";
-import { existsSync, readFileSync } from "fs";
-import { join, resolve } from "path";
-import { parse } from "yaml";
 import { setProjectRoot } from "#/auth/session/session";
-import { isInitialized, getLocalConfigPath } from "#/config/project/project";
-import { fs as cliFs } from "#/context";
+import { getLocalConfigPath } from "#/config/project/project";
 import {
   createPublisher,
   getPublisherTypeName,
@@ -14,8 +10,8 @@ import { CustomPublisher } from "#/registry/publishers/custom-publisher";
 import { isApiAuthenticated } from "#/registry/publishers/api-publisher";
 import type { PublishContext } from "#/registry/publishers/publisher.types";
 import { createTarball, removeTarball } from "#/artifact/tarball/tarball";
+import { validateArtifact } from "#/artifact/validation/validation";
 import { success, error, info, log, colors, spinner } from "#/shared/ui/ui";
-import { scanArtifact, ArtifactManifestSchema, isValidSemver } from "@grekt-labs/cli-engine";
 
 const MIN_KEYWORDS = 3;
 const MAX_KEYWORDS = 5;
@@ -24,105 +20,72 @@ interface PublishOptions {
   s3?: boolean;
 }
 
+function logComponentSummary(
+  artifactId: string,
+  version: string,
+  keywords: string[],
+  scanned: { agent?: unknown; skills: unknown[]; commands: unknown[]; mcps: unknown[]; rules: unknown[] },
+  componentCount: number
+): void {
+  log(colors.bold(`\nPublishing ${artifactId}@${version}...`));
+  log(colors.dim(`  Keywords: ${keywords.join(", ")}`));
+  log(colors.dim(`  Components: ${componentCount}`));
+  if (scanned.agent) log(colors.dim(`    - 1 agent`));
+  if (scanned.skills.length > 0) log(colors.dim(`    - ${scanned.skills.length} skill(s)`));
+  if (scanned.commands.length > 0) log(colors.dim(`    - ${scanned.commands.length} command(s)`));
+  if (scanned.mcps.length > 0) log(colors.dim(`    - ${scanned.mcps.length} mcp(s)`));
+  if (scanned.rules.length > 0) log(colors.dim(`    - ${scanned.rules.length} rule(s)`));
+  log("");
+}
+
+function showKeywordsExample(): void {
+  log("");
+  log(colors.dim("  Example:"));
+  log(colors.dim("    keywords:"));
+  log(colors.dim("      - git"));
+  log(colors.dim("      - commit"));
+  log(colors.dim("      - automation"));
+}
+
 export const publishCommand = new Command("publish")
   .description("Publish an artifact to a registry")
   .argument("[path]", "Path to artifact directory (default: current directory)", ".")
   .option("--s3", "Use S3-compatible storage (legacy mode, env vars only)")
   .action(async (artifactPath: string, options: PublishOptions) => {
-    const fullPath = resolve(artifactPath);
     const projectRoot = process.cwd();
 
-    if (!isInitialized(projectRoot)) {
-      error("Not in a grekt project. Run 'grekt init' first.");
-      process.exit(1);
-    }
+    const result = validateArtifact(artifactPath, projectRoot, {
+      requireKeywords: { min: MIN_KEYWORDS, max: MAX_KEYWORDS },
+    });
 
-    setProjectRoot(projectRoot);
-
-    if (!existsSync(fullPath)) {
-      error(`Artifact not found: ${fullPath}`);
-      process.exit(1);
-    }
-
-    const manifestPath = join(fullPath, "grekt.yaml");
-    if (!existsSync(manifestPath)) {
-      error(`Missing grekt.yaml in ${fullPath}`);
-      process.exit(1);
-    }
-
-    const rawManifest = parse(readFileSync(manifestPath, "utf-8"));
-
-    const manifestResult = ArtifactManifestSchema.safeParse(rawManifest);
-    if (!manifestResult.success) {
-      error("Invalid grekt.yaml manifest");
-      for (const issue of manifestResult.error.issues) {
-        log(`  ${colors.dim(issue.path.join("."))} ${issue.message}`);
+    if (!result.success) {
+      error(result.error.message);
+      if (result.error.details) {
+        for (const detail of result.error.details) {
+          info(detail);
+        }
+      }
+      if (result.error.type === "keywords") {
+        showKeywordsExample();
       }
       process.exit(1);
     }
 
-    const manifest = manifestResult.data;
-    const artifactId = `@${manifest.author}/${manifest.name}`;
-    const scope = `@${manifest.author}`;
+    const { artifact } = result;
 
-    if (!isValidSemver(manifest.version)) {
-      error(`Invalid version: ${manifest.version}`);
-      info("Version must be valid semver (e.g., 1.0.0, 2.1.0-beta.1)");
-      process.exit(1);
-    }
+    setProjectRoot(projectRoot);
 
-    const keywords = manifest.keywords ?? [];
-    if (keywords.length < MIN_KEYWORDS) {
-      error(`Manifest requires at least ${MIN_KEYWORDS} keywords`);
-      info(`Add 'keywords' array to grekt.yaml with ${MIN_KEYWORDS}-${MAX_KEYWORDS} keywords`);
-      log("");
-      log(colors.dim("  Example:"));
-      log(colors.dim("    keywords:"));
-      log(colors.dim("      - git"));
-      log(colors.dim("      - commit"));
-      log(colors.dim("      - automation"));
-      process.exit(1);
-    }
-
-    if (keywords.length > MAX_KEYWORDS) {
-      error(`Manifest has too many keywords (max ${MAX_KEYWORDS})`);
-      info(`Reduce the 'keywords' array to ${MIN_KEYWORDS}-${MAX_KEYWORDS} keywords`);
-      process.exit(1);
-    }
-
-    const scanned = scanArtifact(cliFs, fullPath);
-    if (!scanned) {
-      error("Failed to scan artifact");
-      process.exit(1);
-    }
-
-    const componentCount =
-      (scanned.agent ? 1 : 0) +
-      scanned.skills.length +
-      scanned.commands.length +
-      scanned.mcps.length +
-      scanned.rules.length;
-
-    if (componentCount === 0) {
-      error("Artifact has no valid components");
-      info("Add at least one agent, skill, command, mcp, or rule file");
-      info("Files must have valid frontmatter (type, name, description)");
-      process.exit(1);
-    }
-
-    log(colors.bold(`\nPublishing ${artifactId}@${manifest.version}...`));
-    log(colors.dim(`  Keywords: ${keywords.join(", ")}`));
-    log(colors.dim(`  Components: ${componentCount}`));
-    if (scanned.agent) log(colors.dim(`    - 1 agent`));
-    if (scanned.skills.length > 0) log(colors.dim(`    - ${scanned.skills.length} skill(s)`));
-    if (scanned.commands.length > 0) log(colors.dim(`    - ${scanned.commands.length} command(s)`));
-    if (scanned.mcps.length > 0) log(colors.dim(`    - ${scanned.mcps.length} mcp(s)`));
-    if (scanned.rules.length > 0) log(colors.dim(`    - ${scanned.rules.length} rule(s)`));
-    log("");
+    logComponentSummary(
+      artifact.artifactId,
+      artifact.manifest.version,
+      artifact.manifest.keywords ?? [],
+      artifact.scanned,
+      artifact.componentCount
+    );
 
     const tarballResult = createTarball({
-      artifactPath: fullPath,
-      artifactId,
+      artifactPath: artifact.fullPath,
+      artifactId: artifact.artifactId,
       projectRoot,
     });
 
@@ -135,15 +98,15 @@ export const publishCommand = new Command("publish")
 
     const publisher = createPublisher({
       s3: options.s3,
-      scope,
+      scope: artifact.scope,
       projectRoot,
     });
 
     const ctx: PublishContext = {
-      artifactId,
-      version: manifest.version,
+      artifactId: artifact.artifactId,
+      version: artifact.manifest.version,
       tarballPath: tarballResult.path,
-      scope,
+      scope: artifact.scope,
       projectRoot,
     };
 
@@ -174,7 +137,7 @@ export const publishCommand = new Command("publish")
 
       if (exists) {
         removeTarball(tarballResult.path);
-        error(`Version ${manifest.version} already exists for ${artifactId}`);
+        error(`Version ${artifact.manifest.version} already exists for ${artifact.artifactId}`);
         info("Bump the version in grekt.yaml and try again");
         process.exit(1);
       }
@@ -186,17 +149,17 @@ export const publishCommand = new Command("publish")
     const spin = spinner(`Publishing to ${publisherName}...`);
     spin.start();
 
-    const result = await publisher.publish(ctx);
+    const publishResult = await publisher.publish(ctx);
     spin.stop();
 
-    if (!result.success) {
+    if (!publishResult.success) {
       removeTarball(tarballResult.path);
-      error(`Publish failed: ${result.error}`);
+      error(`Publish failed: ${publishResult.error}`);
 
       if (publisher instanceof CustomPublisher) {
         const registry = publisher.getRegistry();
         if (registry.type === "gitlab" && !registry.token) {
-          showGitLabHelp(scope);
+          showGitLabHelp(artifact.scope);
         }
       }
 
@@ -206,11 +169,11 @@ export const publishCommand = new Command("publish")
     removeTarball(tarballResult.path);
 
     log("");
-    success(`Published ${artifactId}@${manifest.version}`);
-    if (result.url) {
-      log(`  URL: ${result.url}`);
+    success(`Published ${artifact.artifactId}@${artifact.manifest.version}`);
+    if (publishResult.url) {
+      log(`  URL: ${publishResult.url}`);
     }
-    log(`\n  Install with: grekt add ${artifactId}@${manifest.version}\n`);
+    log(`\n  Install with: grekt add ${artifact.artifactId}@${artifact.manifest.version}\n`);
   });
 
 function showS3CredentialsHelp(): void {
