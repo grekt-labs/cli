@@ -31,7 +31,7 @@ interface UndeprecateOptions {
 }
 
 export const undeprecateCommand = new Command("undeprecate")
-  .description("Remove deprecation from an artifact version")
+  .description("Remove deprecation from an artifact version (API and S3 only, not supported for GitLab/GitHub)")
   .argument("<artifact@version>", "Artifact and version to undeprecate (e.g., @author/name@1.0.0)")
   .option("--s3", "Use S3-compatible storage (legacy mode, env vars only)")
   .action(async (artifactVersion: string, options: UndeprecateOptions) => {

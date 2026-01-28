@@ -1,6 +1,7 @@
 import { mkdirSync, writeFileSync } from "fs";
 import { execSync } from "child_process";
 import type { ArtifactMetadata } from "@grekt-labs/cli-engine";
+import { sortVersionsDesc, getHighestVersion } from "@grekt-labs/cli-engine";
 import { getSupabaseClient, getSession, SUPABASE_URL } from "#/auth/session/session";
 import { REGISTRY_URL } from "#/constants";
 
@@ -63,13 +64,13 @@ export class RegistryClient {
       const { data: versions, error: versionsError } = await supabase
         .from("versions")
         .select("*")
-        .eq("artifact_id", artifactId)
-        .order("published_at", { ascending: false });
+        .eq("artifact_id", artifactId);
 
       if (versionsError) return null;
 
-      // Find latest version (first one, since ordered by published_at desc)
-      const latest = versions?.[0]?.version || "";
+      // Find latest version by semver (highest version, not most recent publish)
+      const versionStrings = (versions || []).map(v => v.version);
+      const latest = getHighestVersion(versionStrings) || "";
 
       // Build deprecated record
       const deprecated: Record<string, string> = {};
@@ -79,12 +80,17 @@ export class RegistryClient {
         }
       }
 
+      // Find most recent update timestamp
+      const sortedByDate = [...(versions || [])].sort(
+        (a, b) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime()
+      );
+
       return {
         name: artifact.id,
         latest,
         deprecated,
         createdAt: artifact.created_at,
-        updatedAt: versions?.[0]?.published_at || artifact.created_at,
+        updatedAt: sortedByDate[0]?.published_at || artifact.created_at,
       };
     } catch {
       return null;
@@ -92,7 +98,7 @@ export class RegistryClient {
   }
 
   /**
-   * Get all versions for an artifact
+   * Get all versions for an artifact (sorted by semver descending)
    */
   async getVersions(artifactId: string): Promise<VersionInfo[]> {
     try {
@@ -101,16 +107,24 @@ export class RegistryClient {
       const { data: versions, error } = await supabase
         .from("versions")
         .select("version, deprecated_message, published_at")
-        .eq("artifact_id", artifactId)
-        .order("published_at", { ascending: false });
+        .eq("artifact_id", artifactId);
 
       if (error || !versions) return [];
 
-      return versions.map((v) => ({
-        version: v.version,
-        deprecated: v.deprecated_message || undefined,
-        createdAt: v.published_at,
-      }));
+      // Build version info map
+      const versionMap = new Map<string, VersionInfo>();
+      for (const v of versions) {
+        versionMap.set(v.version, {
+          version: v.version,
+          deprecated: v.deprecated_message || undefined,
+          createdAt: v.published_at,
+        });
+      }
+
+      // Sort by semver descending (highest version first)
+      const sortedVersions = sortVersionsDesc(versions.map(v => v.version));
+
+      return sortedVersions.map(version => versionMap.get(version)!);
     } catch {
       return [];
     }

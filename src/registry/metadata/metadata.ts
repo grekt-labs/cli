@@ -6,7 +6,7 @@ import {
   ListObjectsV2Command,
 } from "@aws-sdk/client-s3";
 import type { S3Credentials, ArtifactMetadata } from "@grekt-labs/cli-engine";
-import { ArtifactMetadataSchema } from "@grekt-labs/cli-engine";
+import { ArtifactMetadataSchema, sortVersionsDesc } from "@grekt-labs/cli-engine";
 
 function createS3Client(credentials: S3Credentials): S3Client {
   return new S3Client({
@@ -164,13 +164,6 @@ export async function listVersions(
     ?.filter((v): v is string => Boolean(v))
     ?? [];
 
-  return versions.sort((a, b) => {
-    const partsA = a.split('.').map(n => parseInt(n, 10) || 0);
-    const partsB = b.split('.').map(n => parseInt(n, 10) || 0);
-    for (let i = 0; i < Math.max(partsA.length, partsB.length); i++) {
-      const diff = (partsB[i] || 0) - (partsA[i] || 0);
-      if (diff !== 0) return diff;
-    }
-    return 0;
-  });
+  // Sort by semver descending (highest version first)
+  return sortVersionsDesc(versions);
 }

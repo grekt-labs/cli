@@ -15,7 +15,7 @@ import { CustomPublisher } from "#/registry/publishers/custom-publisher";
 import { isApiAuthenticated } from "#/registry/publishers/api-publisher";
 import type { PublishContext } from "#/registry/publishers/publisher.types";
 import { success, error, info, warning, log, colors, spinner } from "#/shared/ui/ui";
-import { scanArtifact, ArtifactManifestSchema } from "@grekt-labs/cli-engine";
+import { scanArtifact, ArtifactManifestSchema, isValidSemver } from "@grekt-labs/cli-engine";
 
 const MIN_KEYWORDS = 3;
 const MAX_KEYWORDS = 5;
@@ -71,6 +71,13 @@ export const publishCommand = new Command("publish")
     const manifest = manifestResult.data;
     const artifactId = `@${manifest.author}/${manifest.name}`;
     const scope = `@${manifest.author}`;
+
+    // Validate version is valid semver
+    if (!isValidSemver(manifest.version)) {
+      error(`Invalid version: ${manifest.version}`);
+      info("Version must be valid semver (e.g., 1.0.0, 2.1.0-beta.1)");
+      process.exit(1);
+    }
 
     // Validate keywords (required for publishing)
     const keywords = manifest.keywords ?? [];
