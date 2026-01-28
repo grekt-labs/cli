@@ -1,3 +1,10 @@
+# [4.1.0](https://github.com/grekt-labs/cli/compare/v4.0.0...v4.1.0) (2026-01-28)
+
+
+### Features
+
+* **version:** add grekt version command ([a2f4fce](https://github.com/grekt-labs/cli/commit/a2f4fceec0de85c163a2248428ac5d2d4bde31ef))
+
 # [4.0.0](https://github.com/grekt-labs/cli/compare/v3.0.1...v4.0.0) (2026-01-28)
 
 
