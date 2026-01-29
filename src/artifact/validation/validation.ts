@@ -4,11 +4,33 @@ import { parse } from "yaml";
 import { isInitialized } from "#/config/project/project";
 import { fs as cliFs } from "#/context";
 import { scanArtifact, ArtifactManifestSchema, isValidSemver } from "@grekt-labs/cli-engine";
+import type { InvalidFile } from "@grekt-labs/cli-engine";
 import type {
   ValidatedArtifact,
   ValidationOptions,
   ValidationResult,
 } from "./validation.types";
+
+function formatInvalidFileMessage(file: InvalidFile): string {
+  const prefix = `  ${file.path}:`;
+
+  switch (file.reason) {
+    case "no-frontmatter":
+      return `${prefix} missing frontmatter`;
+    case "invalid-frontmatter":
+      return `${prefix} invalid frontmatter format`;
+    case "missing-type":
+      return `${prefix} missing grk-type`;
+    case "missing-name":
+      return `${prefix} missing grk-name`;
+    case "missing-description":
+      return `${prefix} missing grk-description`;
+    case "invalid-json":
+      return `${prefix} invalid JSON`;
+    case "invalid-type-for-format":
+      return `${prefix} JSON files only support mcp or rule types`;
+  }
+}
 
 export function validateArtifact(
   artifactPath: string,
@@ -123,15 +145,23 @@ export function validateArtifact(
     scanned.rules.length;
 
   if (componentCount === 0) {
+    const details: string[] = [];
+
+    if (scanned.invalidFiles.length > 0) {
+      details.push("Invalid files found:");
+      for (const file of scanned.invalidFiles) {
+        details.push(formatInvalidFileMessage(file));
+      }
+    } else {
+      details.push("No .md or .json files found in artifact directory");
+    }
+
     return {
       success: false,
       error: {
         type: "no-components",
         message: "Artifact has no valid components",
-        details: [
-          "Add at least one agent, skill, command, mcp, or rule file",
-          "Files must have valid frontmatter (type, name, description)",
-        ],
+        details,
       },
     };
   }
