@@ -46,21 +46,29 @@ export function removeUnselectedFiles(
 
 /**
  * Recursively remove empty directories within a directory.
+ * Failures are silently ignored since empty directory cleanup is best-effort.
  */
 export function cleanEmptyDirs(dir: string): void {
-  const entries = readdirSync(dir, { withFileTypes: true });
+  try {
+    const entries = readdirSync(dir, { withFileTypes: true });
 
-  for (const entry of entries) {
-    if (entry.isDirectory()) {
-      const subdir = join(dir, entry.name);
-      cleanEmptyDirs(subdir);
+    for (const entry of entries) {
+      if (entry.isDirectory()) {
+        const subdir = join(dir, entry.name);
+        cleanEmptyDirs(subdir);
 
-      // Check if directory is now empty
-      const remaining = readdirSync(subdir);
-      if (remaining.length === 0) {
-        rmSync(subdir);
+        try {
+          const remaining = readdirSync(subdir);
+          if (remaining.length === 0) {
+            rmSync(subdir, { recursive: true });
+          }
+        } catch {
+          // Directory may have been removed or is inaccessible, skip it
+        }
       }
     }
+  } catch {
+    // Directory may not exist or is inaccessible, skip it
   }
 }
 
