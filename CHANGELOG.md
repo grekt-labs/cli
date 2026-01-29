@@ -1,3 +1,10 @@
+## [4.8.1](https://github.com/grekt-labs/cli/compare/v4.8.0...v4.8.1) (2026-01-29)
+
+
+### Bug Fixes
+
+* trigger release ([5e00fe6](https://github.com/grekt-labs/cli/commit/5e00fe62ed92c15cbbc37b6558e0c5d596bac747))
+
 # [4.8.0](https://github.com/grekt-labs/cli/compare/v4.7.0...v4.8.0) (2026-01-29)
 
 
