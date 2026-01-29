@@ -4,6 +4,7 @@ import { isInitialized, getConfig, saveConfig } from "#/config/project/project";
 import { getLockfile } from "#/context";
 import { getPlugin, getAvailableTargets, getPluginChoices } from "#/sync/manager/manager";
 import { success, error, info, warning, log, newline, colors, spinner } from "#/shared/ui/ui";
+import { withPromptHandler } from "#/shared/prompts/prompts";
 import type { CustomTarget } from "@grekt-labs/cli-engine";
 
 const OTHER_TARGET_VALUE = "__other__";
@@ -15,13 +16,14 @@ export const syncCommand = new Command("sync")
   .option("-t, --target <targets>", "Comma-separated list of targets")
   .option("-n, --new", "Configure new sync targets interactively")
   .action(async (options: { dryRun?: boolean; force?: boolean; target?: string; new?: boolean }) => {
-    const projectRoot = process.cwd();
+    await withPromptHandler(async () => {
+      const projectRoot = process.cwd();
 
-    if (!isInitialized(projectRoot)) {
-      error("grekt is not initialized in this directory");
-      info("Run 'grekt init' first");
-      process.exit(1);
-    }
+      if (!isInitialized(projectRoot)) {
+        error("grekt is not initialized in this directory");
+        info("Run 'grekt init' first");
+        process.exit(1);
+      }
 
     let config = getConfig(projectRoot);
     const lockfile = getLockfile(projectRoot);
@@ -219,4 +221,5 @@ export const syncCommand = new Command("sync")
     } else {
       success("Sync complete!");
     }
+    });
   });

@@ -8,6 +8,7 @@ import { getSafeFilename } from "@grekt-labs/cli-engine";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
 import { generateArtifactIndex } from "#/artifact/index/index";
 import { success, error, info, log, newline, colors } from "#/shared/ui/ui";
+import { withPromptHandler } from "#/shared/prompts/prompts";
 
 // Claude target paths
 const CLAUDE_DIR = ".claude";
@@ -21,13 +22,14 @@ export const removeCommand = new Command("remove")
   .argument("<artifact>", "Artifact ID to remove (e.g., @grekt/code-reviewer)")
   .option("-f, --force", "Skip confirmation prompt")
   .action(async (artifactId: string, options: { force?: boolean }) => {
-    const projectRoot = process.cwd();
+    await withPromptHandler(async () => {
+      const projectRoot = process.cwd();
 
-    if (!isInitialized(projectRoot)) {
-      error("grekt is not initialized in this directory");
-      info("Run 'grekt init' first");
-      process.exit(1);
-    }
+      if (!isInitialized(projectRoot)) {
+        error("grekt is not initialized in this directory");
+        info("Run 'grekt init' first");
+        process.exit(1);
+      }
 
     const config = getConfig(projectRoot);
     const lockfile = getLockfile(projectRoot);
@@ -139,6 +141,7 @@ export const removeCommand = new Command("remove")
 
     newline();
     info("Run 'grekt sync' to update CLAUDE.md");
+    });
   });
 
 /**
