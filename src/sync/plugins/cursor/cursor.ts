@@ -2,9 +2,8 @@ import { createRulesOnlyPlugin, GREKT_BLOCK_START, GREKT_BLOCK_END } from "#/syn
 
 function generateRulesContent(): string {
   return `${GREKT_BLOCK_START}
-This project uses grekt. Configuration in \`grekt.yaml\`.
-
-If the user uses a command (e.g., /review), check \`grekt.lock\` to see if it exists and execute the instructions from the corresponding file.
+This project uses grekt for AI artifact management.
+Index location: .grekt/index
 ${GREKT_BLOCK_END}`;
 }
 

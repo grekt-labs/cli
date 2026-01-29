@@ -24,8 +24,8 @@ function createCustomPlugin(id: string, config: CustomTarget): SyncPlugin {
     rulesFile: config.rulesFile,
     generateRulesContent: () => {
       return `${GREKT_BLOCK_START}
-Grekt artifacts installed. See \`grekt.yaml\` for details.
-Run \`grekt list\` to see installed artifacts.
+This project uses grekt for AI artifact management.
+Index location: .grekt/index
 ${GREKT_BLOCK_END}`;
     },
   });
