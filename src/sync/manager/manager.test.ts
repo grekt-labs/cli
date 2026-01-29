@@ -28,7 +28,7 @@ describe("manager", () => {
 
     test("creates plugin from customTargets config", () => {
       const customTargets = {
-        myCustom: { name: "My Custom", rulesFile: ".myrules" },
+        myCustom: { name: "My Custom", contextEntryPoint: ".myrules" },
       };
 
       const plugin = getPlugin("myCustom", customTargets);
@@ -40,7 +40,7 @@ describe("manager", () => {
 
     test("prefers built-in over custom with same id", () => {
       const customTargets = {
-        claude: { name: "Fake Claude", rulesFile: ".fake" },
+        claude: { name: "Fake Claude", contextEntryPoint: ".fake" },
       };
 
       const plugin = getPlugin("claude", customTargets);

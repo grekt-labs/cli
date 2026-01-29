@@ -70,7 +70,7 @@ describe("cursorPlugin", () => {
       expect(existsSync(join(testDir, RULES_FILE))).toBe(false);
     });
 
-    test("appends managed block to existing content", async () => {
+    test("prepends managed block to existing content", async () => {
       const existingContent = "# My Rules";
       writeFileSync(join(testDir, RULES_FILE), existingContent);
 
@@ -80,10 +80,11 @@ describe("cursorPlugin", () => {
       expect(content).toContain(existingContent);
       expect(content).toContain(GREKT_BLOCK_START);
       expect(content).toContain(GREKT_BLOCK_END);
+      expect(content.startsWith(GREKT_BLOCK_START)).toBe(true);
     });
 
     test("replaces existing managed block preserving surrounding content", async () => {
-      const existingContent = `Header\n${GREKT_BLOCK_START}\nOLD\n${GREKT_BLOCK_END}\nFooter`;
+      const existingContent = `Header\n${GREKT_BLOCK_START}OLD${GREKT_BLOCK_END}\nFooter`;
       writeFileSync(join(testDir, RULES_FILE), existingContent);
 
       await cursorPlugin.sync({ version: 1, artifacts: {} }, testDir, {});

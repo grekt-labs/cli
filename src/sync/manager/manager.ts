@@ -3,7 +3,7 @@ import type { CustomTarget } from "@grekt-labs/cli-engine";
 import { claudePlugin } from "#/sync/plugins/claude/claude";
 import { cursorPlugin } from "#/sync/plugins/cursor/cursor";
 import { opencodePlugin } from "#/sync/plugins/opencode/opencode";
-import { createRulesOnlyPlugin, GREKT_BLOCK_START, GREKT_BLOCK_END } from "#/sync/base/base";
+import { createRulesOnlyPlugin, generateDefaultBlockContent } from "#/sync/base/base";
 
 const builtInPlugins: Record<string, SyncPlugin> = {
   claude: claudePlugin,
@@ -21,13 +21,8 @@ function createCustomPlugin(id: string, config: CustomTarget): SyncPlugin {
   return createRulesOnlyPlugin({
     id,
     name: config.name,
-    rulesFile: config.rulesFile,
-    generateRulesContent: () => {
-      return `${GREKT_BLOCK_START}
-This project uses grekt for AI artifact management.
-Index location: .grekt/index
-${GREKT_BLOCK_END}`;
-    },
+    contextEntryPoint: config.contextEntryPoint,
+    generateRulesContent: generateDefaultBlockContent,
   });
 }
 

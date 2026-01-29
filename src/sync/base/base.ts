@@ -3,10 +3,10 @@ import { dirname, join } from "path";
 import type { SyncPlugin, SyncResult, SyncOptions, SyncPreview, FolderPluginConfig, RulesOnlyPluginConfig } from "#/sync/sync.types";
 import type { Lockfile, ProjectConfig, ArtifactMode } from "@grekt-labs/cli-engine";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
-import { getSafeFilename, GREKT_BLOCK_START, GREKT_BLOCK_END } from "@grekt-labs/cli-engine";
+import { getSafeFilename, GREKT_BLOCK_START, GREKT_BLOCK_END, generateDefaultBlockContent } from "@grekt-labs/cli-engine";
 
-// Re-export constants for backwards compatibility
-export { GREKT_BLOCK_START, GREKT_BLOCK_END } from "@grekt-labs/cli-engine";
+// Re-export for external use
+export { GREKT_BLOCK_START, GREKT_BLOCK_END, generateDefaultBlockContent } from "@grekt-labs/cli-engine";
 
 // Utility functions
 export function ensureDir(filepath: string): void {
@@ -50,22 +50,22 @@ function shouldSyncArtifact(config: ProjectConfig | undefined, artifactId: strin
  * Optionally updates a rules file (like CLAUDE.md).
  */
 export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
-  const { id, name, targetDir, rulesFile, generateRulesContent } = config;
+  const { id, name, targetDir, contextEntryPoint, generateRulesContent } = config;
 
-  const AGENTS_DIR = join(targetDir, "agents");
-  const SKILLS_DIR = join(targetDir, "skills");
-  const COMMANDS_DIR = join(targetDir, "commands");
+  const AGENT_DIR = config.paths?.agent ?? join(targetDir, "agents");
+  const SKILL_DIR = config.paths?.skill ?? join(targetDir, "skills");
+  const COMMAND_DIR = config.paths?.command ?? join(targetDir, "commands");
 
-  function updateRulesFile(projectRoot: string, lockfile: Lockfile, result: SyncResult): void {
-    if (!rulesFile || !generateRulesContent) return;
+  function updateContextEntryPoint(projectRoot: string, lockfile: Lockfile, result: SyncResult): void {
+    if (!contextEntryPoint || !generateRulesContent) return;
 
-    const filepath = `${projectRoot}/${rulesFile}`;
+    const filepath = `${projectRoot}/${contextEntryPoint}`;
     const managedBlock = generateRulesContent(lockfile);
 
     if (!existsSync(filepath)) {
       ensureDir(filepath);
       writeFileSync(filepath, managedBlock, "utf-8");
-      result.created.push(rulesFile);
+      result.created.push(contextEntryPoint);
       return;
     }
 
@@ -76,11 +76,11 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
     if (startIndex !== -1 && endIndex !== -1) {
       content = content.slice(0, startIndex) + managedBlock + content.slice(endIndex + GREKT_BLOCK_END.length);
     } else {
-      content = content.trimEnd() + "\n\n" + managedBlock;
+      content = managedBlock + "\n" + content.trimStart();
     }
 
     writeFileSync(filepath, content, "utf-8");
-    result.updated.push(rulesFile);
+    result.updated.push(contextEntryPoint);
   }
 
   return {
@@ -105,7 +105,7 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
       }
 
       // Create target directories
-      const dirs = [targetDir, AGENTS_DIR, SKILLS_DIR, COMMANDS_DIR];
+      const dirs = [targetDir, AGENT_DIR, SKILL_DIR, COMMAND_DIR];
       for (const dir of dirs) {
         const fullPath = `${projectRoot}/${dir}`;
         if (!existsSync(fullPath)) {
@@ -127,16 +127,16 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
         if (artifact.agent) {
           const source = join(artifactDir, artifact.agent);
           const targetName = `${artifactId.replace("/", "-")}.md`;
-          const target = `${projectRoot}/${AGENTS_DIR}/${targetName}`;
+          const target = `${projectRoot}/${AGENT_DIR}/${targetName}`;
 
           if (existsSync(source)) {
             ensureDir(target);
             const existed = existsSync(target);
             copyFileSync(source, target);
             if (existed) {
-              result.updated.push(`${AGENTS_DIR}/${targetName}`);
+              result.updated.push(`${AGENT_DIR}/${targetName}`);
             } else {
-              result.created.push(`${AGENTS_DIR}/${targetName}`);
+              result.created.push(`${AGENT_DIR}/${targetName}`);
             }
           } else {
             result.skipped.push(`${artifactId}/agent (source not found)`);
@@ -147,16 +147,16 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
         for (const skillPath of artifact.skills) {
           const source = join(artifactDir, skillPath);
           const skillName = getSafeFilename(artifactId, skillPath);
-          const target = `${projectRoot}/${SKILLS_DIR}/${skillName}`;
+          const target = `${projectRoot}/${SKILL_DIR}/${skillName}`;
 
           if (existsSync(source)) {
             ensureDir(target);
             const existed = existsSync(target);
             copyFileSync(source, target);
             if (existed) {
-              result.updated.push(`${SKILLS_DIR}/${skillName}`);
+              result.updated.push(`${SKILL_DIR}/${skillName}`);
             } else {
-              result.created.push(`${SKILLS_DIR}/${skillName}`);
+              result.created.push(`${SKILL_DIR}/${skillName}`);
             }
           } else {
             result.skipped.push(`${artifactId}/${skillPath} (source not found)`);
@@ -167,16 +167,16 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
         for (const cmdPath of artifact.commands) {
           const source = join(artifactDir, cmdPath);
           const cmdName = getSafeFilename(artifactId, cmdPath);
-          const target = `${projectRoot}/${COMMANDS_DIR}/${cmdName}`;
+          const target = `${projectRoot}/${COMMAND_DIR}/${cmdName}`;
 
           if (existsSync(source)) {
             ensureDir(target);
             const existed = existsSync(target);
             copyFileSync(source, target);
             if (existed) {
-              result.updated.push(`${COMMANDS_DIR}/${cmdName}`);
+              result.updated.push(`${COMMAND_DIR}/${cmdName}`);
             } else {
-              result.created.push(`${COMMANDS_DIR}/${cmdName}`);
+              result.created.push(`${COMMAND_DIR}/${cmdName}`);
             }
           } else {
             result.skipped.push(`${artifactId}/${cmdPath} (source not found)`);
@@ -184,8 +184,8 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
         }
       }
 
-      // Update rules file if configured
-      updateRulesFile(projectRoot, lockfile, result);
+      // Update context entry point if configured
+      updateContextEntryPoint(projectRoot, lockfile, result);
 
       return result;
     },
@@ -209,52 +209,52 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
         if (artifact.agent) {
           const source = join(artifactDir, artifact.agent);
           const targetName = `${artifactId.replace("/", "-")}.md`;
-          const target = `${projectRoot}/${AGENTS_DIR}/${targetName}`;
+          const target = `${projectRoot}/${AGENT_DIR}/${targetName}`;
 
           if (!existsSync(source)) {
             preview.willSkip.push(`${artifactId}/agent (source not found)`);
           } else if (existsSync(target)) {
-            preview.willUpdate.push(`${AGENTS_DIR}/${targetName}`);
+            preview.willUpdate.push(`${AGENT_DIR}/${targetName}`);
           } else {
-            preview.willCreate.push(`${AGENTS_DIR}/${targetName}`);
+            preview.willCreate.push(`${AGENT_DIR}/${targetName}`);
           }
         }
 
         for (const skillPath of artifact.skills) {
           const source = join(artifactDir, skillPath);
           const skillName = getSafeFilename(artifactId, skillPath);
-          const target = `${projectRoot}/${SKILLS_DIR}/${skillName}`;
+          const target = `${projectRoot}/${SKILL_DIR}/${skillName}`;
 
           if (!existsSync(source)) {
             preview.willSkip.push(`${artifactId}/${skillPath} (source not found)`);
           } else if (existsSync(target)) {
-            preview.willUpdate.push(`${SKILLS_DIR}/${skillName}`);
+            preview.willUpdate.push(`${SKILL_DIR}/${skillName}`);
           } else {
-            preview.willCreate.push(`${SKILLS_DIR}/${skillName}`);
+            preview.willCreate.push(`${SKILL_DIR}/${skillName}`);
           }
         }
 
         for (const cmdPath of artifact.commands) {
           const source = join(artifactDir, cmdPath);
           const cmdName = getSafeFilename(artifactId, cmdPath);
-          const target = `${projectRoot}/${COMMANDS_DIR}/${cmdName}`;
+          const target = `${projectRoot}/${COMMAND_DIR}/${cmdName}`;
 
           if (!existsSync(source)) {
             preview.willSkip.push(`${artifactId}/${cmdPath} (source not found)`);
           } else if (existsSync(target)) {
-            preview.willUpdate.push(`${COMMANDS_DIR}/${cmdName}`);
+            preview.willUpdate.push(`${COMMAND_DIR}/${cmdName}`);
           } else {
-            preview.willCreate.push(`${COMMANDS_DIR}/${cmdName}`);
+            preview.willCreate.push(`${COMMAND_DIR}/${cmdName}`);
           }
         }
       }
 
-      // Rules file preview
-      if (rulesFile) {
-        if (!existsSync(`${projectRoot}/${rulesFile}`)) {
-          preview.willCreate.push(rulesFile);
+      // Context entry point preview
+      if (contextEntryPoint) {
+        if (!existsSync(`${projectRoot}/${contextEntryPoint}`)) {
+          preview.willCreate.push(contextEntryPoint);
         } else {
-          preview.willUpdate.push(rulesFile);
+          preview.willUpdate.push(contextEntryPoint);
         }
       }
 
@@ -264,18 +264,18 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
 }
 
 /**
- * Create a rules-only plugin that only updates a rules file (no folder sync).
+ * Create a rules-only plugin that only updates a context entry point file (no folder sync).
  */
 export function createRulesOnlyPlugin(config: RulesOnlyPluginConfig): SyncPlugin {
-  const { id, name, rulesFile, generateRulesContent } = config;
+  const { id, name, contextEntryPoint, generateRulesContent } = config;
 
   return {
     id,
     name,
-    targetFile: rulesFile,
+    targetFile: contextEntryPoint,
 
     targetExists(projectRoot: string): boolean {
-      return existsSync(`${projectRoot}/${rulesFile}`);
+      return existsSync(`${projectRoot}/${contextEntryPoint}`);
     },
 
     async sync(lockfile: Lockfile, projectRoot: string, options: SyncOptions): Promise<SyncResult> {
@@ -290,16 +290,16 @@ export function createRulesOnlyPlugin(config: RulesOnlyPluginConfig): SyncPlugin
         };
       }
 
-      const filepath = `${projectRoot}/${rulesFile}`;
+      const filepath = `${projectRoot}/${contextEntryPoint}`;
       const managedBlock = generateRulesContent(lockfile);
 
       if (!existsSync(filepath)) {
         if (!options.createTarget) {
-          result.skipped.push(`${rulesFile} (file doesn't exist)`);
+          result.skipped.push(`${contextEntryPoint} (file doesn't exist)`);
           return result;
         }
         writeFileSync(filepath, managedBlock, "utf-8");
-        result.created.push(rulesFile);
+        result.created.push(contextEntryPoint);
         return result;
       }
 
@@ -310,20 +310,20 @@ export function createRulesOnlyPlugin(config: RulesOnlyPluginConfig): SyncPlugin
       if (startIndex !== -1 && endIndex !== -1) {
         content = content.slice(0, startIndex) + managedBlock + content.slice(endIndex + GREKT_BLOCK_END.length);
       } else {
-        content = content.trimEnd() + "\n\n" + managedBlock;
+        content = managedBlock + "\n" + content.trimStart();
       }
 
       writeFileSync(filepath, content, "utf-8");
-      result.updated.push(rulesFile);
+      result.updated.push(contextEntryPoint);
       return result;
     },
 
     preview(_lockfile: Lockfile, projectRoot: string, _options?: SyncOptions): SyncPreview {
-      const filepath = `${projectRoot}/${rulesFile}`;
+      const filepath = `${projectRoot}/${contextEntryPoint}`;
 
       if (!existsSync(filepath)) {
         return {
-          willCreate: [rulesFile],
+          willCreate: [contextEntryPoint],
           willUpdate: [],
           willSkip: [],
         };
@@ -331,7 +331,7 @@ export function createRulesOnlyPlugin(config: RulesOnlyPluginConfig): SyncPlugin
 
       return {
         willCreate: [],
-        willUpdate: [rulesFile],
+        willUpdate: [contextEntryPoint],
         willSkip: [],
       };
     },

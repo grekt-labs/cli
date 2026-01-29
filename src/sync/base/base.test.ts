@@ -144,15 +144,15 @@ describe("base", () => {
   });
 
   describe("createRulesOnlyPlugin", () => {
-    const createTestPlugin = (rulesFile = "RULES.md") =>
+    const createTestPlugin = (contextEntryPoint = "RULES.md") =>
       createRulesOnlyPlugin({
         id: "test",
         name: "Test",
-        rulesFile,
-        generateRulesContent: () => `${GREKT_BLOCK_START}\nMANAGED\n${GREKT_BLOCK_END}`,
+        contextEntryPoint,
+        generateRulesContent: () => `${GREKT_BLOCK_START}MANAGED${GREKT_BLOCK_END}`,
       });
 
-    test("appends managed block to existing file", async () => {
+    test("prepends managed block to existing file", async () => {
       writeFileSync(join(testDir, "RULES.md"), "# Header\n");
       const plugin = createTestPlugin();
 
@@ -161,10 +161,11 @@ describe("base", () => {
       const content = readFileSync(join(testDir, "RULES.md"), "utf-8");
       expect(content).toContain("# Header");
       expect(content).toContain("MANAGED");
+      expect(content.startsWith(GREKT_BLOCK_START)).toBe(true);
     });
 
     test("replaces existing managed block", async () => {
-      const initial = `Before\n${GREKT_BLOCK_START}\nOLD\n${GREKT_BLOCK_END}\nAfter`;
+      const initial = `Before\n${GREKT_BLOCK_START}OLD${GREKT_BLOCK_END}\nAfter`;
       writeFileSync(join(testDir, "RULES.md"), initial);
       const plugin = createTestPlugin();
 

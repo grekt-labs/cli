@@ -6,7 +6,7 @@
       "name": "grekt",
       "dependencies": {
         "@aws-sdk/client-s3": "^3.971.0",
-        "@grekt-labs/cli-engine": "3.5.0",
+        "@grekt-labs/cli-engine": "3.7.1",
         "@inquirer/prompts": "^7.2.0",
         "@supabase/supabase-js": "^2.91.0",
         "chalk": "^5.4.1",
@@ -123,7 +123,7 @@
 
     "@colors/colors": ["@colors/colors@1.5.0", "", {}, "sha512-ooWCrlZP11i8GImSjTHYHLkvFDP48nS4+204nGb1RiX/WXYHmJA2III9/e2DWVabCESdW7hBAEzHRqUn9OUVvQ=="],
 
-    "@grekt-labs/cli-engine": ["@grekt-labs/cli-engine@3.5.0", "https://npm.pkg.github.com/download/@grekt-labs/cli-engine/3.5.0/c9ebcd6351d6b6464032b81753967b30f14690e7", { "dependencies": { "gray-matter": "^4.0.3", "semver": "^7.7.3", "yaml": "^2.6.1", "zod": "^3.24.1" } }, "sha512-xTzUtfpDBvnaKhURaZgOhu8s4haqoW1ftWPdBOp9t5DkHly83tOiY1Hy5fgW1aa1NXttTABwPxvkRlhWR66DjA=="],
+    "@grekt-labs/cli-engine": ["@grekt-labs/cli-engine@3.7.1", "https://npm.pkg.github.com/download/@grekt-labs/cli-engine/3.7.1/efe052ea9756a9adf5f633a78f249dd0c1e46212", { "dependencies": { "gray-matter": "^4.0.3", "semver": "^7.7.3", "yaml": "^2.6.1", "zod": "^3.24.1" } }, "sha512-PK4FZGL4HVzp5Kfz9SGdVMMFuenJZxGQMCIJutSmS5BfvzkVCaj7xlU9+RqvRX/Q7cwk/bvWiOPu3Ot5X5m4nQ=="],
 
     "@inquirer/ansi": ["@inquirer/ansi@1.0.2", "", {}, "sha512-S8qNSZiYzFd0wAcyG5AXCvUHC5Sr7xpZ9wZ2py9XR88jUz8wooStVx5M6dRzczbBWjic9NP7+rY0Xi7qqK/aMQ=="],
 
@@ -868,6 +868,8 @@
     "crypto-random-string/type-fest": ["type-fest@1.4.0", "", {}, "sha512-yGSza74xk0UG8k+pLh5oeoYirvIiWo5t0/o3zHHAO2tRDiZcxWP7fywNlXhqb6/r6sWvwi+RsyQMWhVLe4BVuA=="],
 
     "env-ci/execa": ["execa@8.0.1", "", { "dependencies": { "cross-spawn": "^7.0.3", "get-stream": "^8.0.1", "human-signals": "^5.0.0", "is-stream": "^3.0.0", "merge-stream": "^2.0.0", "npm-run-path": "^5.1.0", "onetime": "^6.0.0", "signal-exit": "^4.1.0", "strip-final-newline": "^3.0.0" } }, "sha512-VyhnebXciFV2DESc+p6B+y0LjSm0krU4OgJN44qFAhBY0TJ+1V61tYD2+wHusZ6F9n5K+vl8k0sTy7PEfV4qpg=="],
+
+    "fdir/picomatch": ["picomatch@4.0.3", "", {}, "sha512-5gTmgEY/sqK6gFXLIsQNH19lWb4ebPDLA4SdLP7dsWkIXHWlG66oPuVvXSGFPppYZz8ZDZq0dYYrbHfBCVUb1Q=="],
 
     "import-fresh/resolve-from": ["resolve-from@4.0.0", "", {}, "sha512-pb/MYmXstAkysRFx8piNI1tGFNQIFA3vkE3Gq4EuA1dF6gHp/+vgZqsCGJapvy8N3Q+4o7FwvquPJcnZ7RYy4g=="],
 

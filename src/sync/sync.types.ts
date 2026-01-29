@@ -8,4 +8,4 @@ export type {
   RulesOnlyPluginConfig,
 } from "@grekt-labs/cli-engine";
 
-export { GREKT_BLOCK_START, GREKT_BLOCK_END } from "@grekt-labs/cli-engine";
+export { GREKT_BLOCK_START, GREKT_BLOCK_END, generateDefaultBlockContent } from "@grekt-labs/cli-engine";

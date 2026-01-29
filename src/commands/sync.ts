@@ -74,14 +74,14 @@ export const syncCommand = new Command("sync")
           validate: (value) => (value.trim() ? true : "Name is required"),
         });
 
-        const rulesFile = await input({
-          message: "Rules file path (e.g., .my-ai-rules.md):",
-          validate: (value) => (value.trim() ? true : "Rules file path is required"),
+        const contextEntryPoint = await input({
+          message: "Context entry point (e.g., .my-ai/instructions.md):",
+          validate: (value) => (value.trim() ? true : "Context entry point is required"),
         });
 
         customTargets[customId] = {
           name: customName,
-          rulesFile,
+          contextEntryPoint,
         };
 
         // Replace __other__ with the custom ID
