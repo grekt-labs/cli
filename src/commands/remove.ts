@@ -6,6 +6,7 @@ import { isInitialized, getConfig, saveConfig } from "#/config/project/project";
 import { getLockfile, saveLockfile } from "#/context";
 import { getSafeFilename } from "@grekt-labs/cli-engine";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
+import { generateArtifactIndex } from "#/artifact/index/index";
 import { success, error, info, log, newline, colors } from "#/shared/ui/ui";
 
 // Claude target paths
@@ -125,6 +126,9 @@ export const removeCommand = new Command("remove")
     // Update lockfile
     delete lockfile.artifacts[artifactId];
     saveLockfile(lockfile, projectRoot);
+
+    // Regenerate artifact index
+    generateArtifactIndex(projectRoot, config);
 
     newline();
     success(`Removed ${colors.highlight(artifactId)}`);
