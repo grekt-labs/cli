@@ -1,5 +1,12 @@
 import { ExitPromptError } from "@inquirer/core";
-import { newline, info } from "#/shared/ui/ui";
+import { input, confirm } from "@inquirer/prompts";
+import { newline, info, log, colors } from "#/shared/ui/ui";
+import type { CustomTarget } from "@grekt-labs/cli-engine";
+
+export interface PromptCustomTargetResult {
+  id: string;
+  config: CustomTarget;
+}
 
 /**
  * Wrap an async function that uses interactive prompts.
@@ -17,4 +24,67 @@ export async function withPromptHandler<T>(fn: () => Promise<T>): Promise<T> {
     }
     throw error;
   }
+}
+
+/**
+ * Prompt user to configure a custom sync target.
+ * Returns the target ID and configuration.
+ */
+export async function promptCustomTarget(
+  builtInIds: string[]
+): Promise<PromptCustomTargetResult> {
+  newline();
+  log(colors.bold("Configure custom target:"));
+  newline();
+
+  const id = await input({
+    message: "Target ID (e.g., my-ai):",
+    validate: (value) => {
+      if (!value.trim()) return "ID is required";
+      if (!/^[a-z0-9-]+$/.test(value)) return "ID must be lowercase alphanumeric with dashes";
+      if (builtInIds.includes(value)) return "ID conflicts with built-in target";
+      return true;
+    },
+  });
+
+  const name = await input({
+    message: "Display name (e.g., My AI Tool):",
+    validate: (value) => (value.trim() ? true : "Name is required"),
+  });
+
+  const contextEntryPoint = await input({
+    message: "Context entry point (e.g., .my-ai/instructions.md):",
+    validate: (value) => (value.trim() ? true : "Context entry point is required"),
+  });
+
+  const config: CustomTarget = {
+    name,
+    contextEntryPoint,
+  };
+
+  const configurePaths = await confirm({
+    message: "Configure custom paths for CORE artifacts (agents/skills/commands)?",
+    default: false,
+  });
+
+  if (configurePaths) {
+    const agent = await input({
+      message: "Agents path (e.g., .my-ai/agents):",
+      validate: (value) => (value.trim() ? true : "Path is required"),
+    });
+
+    const skill = await input({
+      message: "Skills path (e.g., .my-ai/skills):",
+      validate: (value) => (value.trim() ? true : "Path is required"),
+    });
+
+    const command = await input({
+      message: "Commands path (e.g., .my-ai/commands):",
+      validate: (value) => (value.trim() ? true : "Path is required"),
+    });
+
+    config.paths = { agent, skill, command };
+  }
+
+  return { id, config };
 }

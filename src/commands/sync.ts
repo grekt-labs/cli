@@ -1,10 +1,10 @@
 import { Command } from "commander";
-import { confirm, checkbox, input } from "@inquirer/prompts";
+import { confirm, checkbox } from "@inquirer/prompts";
 import { isInitialized, getConfig, saveConfig } from "#/config/project/project";
 import { getLockfile } from "#/context";
 import { getPlugin, getAvailableTargets, getPluginChoices } from "#/sync/manager/manager";
 import { success, error, info, warning, log, newline, colors, spinner } from "#/shared/ui/ui";
-import { withPromptHandler } from "#/shared/prompts/prompts";
+import { withPromptHandler, promptCustomTarget } from "#/shared/prompts/prompts";
 import type { CustomTarget } from "@grekt-labs/cli-engine";
 
 const OTHER_TARGET_VALUE = "__other__";
@@ -55,34 +55,10 @@ export const syncCommand = new Command("sync")
 
       // Handle "Other" selection
       if (selected.includes(OTHER_TARGET_VALUE)) {
-        newline();
-        log(colors.bold("Configure custom target:"));
-        newline();
+        const builtInIds = pluginChoices.map((p) => p.value);
+        const { id: customId, config: customTarget } = await promptCustomTarget(builtInIds);
 
-        const customId = await input({
-          message: "Target ID (e.g., my-ai):",
-          validate: (value) => {
-            if (!value.trim()) return "ID is required";
-            if (!/^[a-z0-9-]+$/.test(value)) return "ID must be lowercase alphanumeric with dashes";
-            if (pluginChoices.some((p) => p.value === value)) return "ID conflicts with built-in target";
-            return true;
-          },
-        });
-
-        const customName = await input({
-          message: "Display name (e.g., My AI Tool):",
-          validate: (value) => (value.trim() ? true : "Name is required"),
-        });
-
-        const contextEntryPoint = await input({
-          message: "Context entry point (e.g., .my-ai/instructions.md):",
-          validate: (value) => (value.trim() ? true : "Context entry point is required"),
-        });
-
-        customTargets[customId] = {
-          name: customName,
-          contextEntryPoint,
-        };
+        customTargets[customId] = customTarget;
 
         // Replace __other__ with the custom ID
         const newTargets = selected.filter((t) => t !== OTHER_TARGET_VALUE);

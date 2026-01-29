@@ -1,9 +1,10 @@
+import { dirname } from "path";
 import type { SyncPlugin } from "#/sync/sync.types";
 import type { CustomTarget } from "@grekt-labs/cli-engine";
 import { claudePlugin } from "#/sync/plugins/claude/claude";
 import { cursorPlugin } from "#/sync/plugins/cursor/cursor";
 import { opencodePlugin } from "#/sync/plugins/opencode/opencode";
-import { createRulesOnlyPlugin, generateDefaultBlockContent } from "#/sync/base/base";
+import { createRulesOnlyPlugin, createFolderPlugin, generateDefaultBlockContent } from "#/sync/base/base";
 
 const builtInPlugins: Record<string, SyncPlugin> = {
   claude: claudePlugin,
@@ -15,9 +16,22 @@ const builtInPlugins: Record<string, SyncPlugin> = {
 const plugins: Map<string, SyncPlugin> = new Map(Object.entries(builtInPlugins));
 
 /**
- * Create a plugin for a custom target
+ * Create a plugin for a custom target.
+ * Uses FolderPlugin when paths are defined (copies CORE artifacts),
+ * otherwise uses RulesOnlyPlugin (only updates context entry point).
  */
 function createCustomPlugin(id: string, config: CustomTarget): SyncPlugin {
+  if (config.paths) {
+    return createFolderPlugin({
+      id,
+      name: config.name,
+      targetDir: dirname(config.contextEntryPoint),
+      contextEntryPoint: config.contextEntryPoint,
+      paths: config.paths,
+      generateRulesContent: generateDefaultBlockContent,
+    });
+  }
+
   return createRulesOnlyPlugin({
     id,
     name: config.name,
