@@ -1,3 +1,10 @@
+# [4.8.0](https://github.com/grekt-labs/cli/compare/v4.7.0...v4.8.0) (2026-01-29)
+
+
+### Features
+
+* **publish:** show detailed errors for invalid artifact files ([9843845](https://github.com/grekt-labs/cli/commit/98438457a1cd4a17f85edbd5a22d700973ae9e9d))
+
 # [4.7.0](https://github.com/grekt-labs/cli/compare/v4.6.1...v4.7.0) (2026-01-29)
 
 
