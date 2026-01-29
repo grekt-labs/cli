@@ -47,6 +47,18 @@ function showKeywordsExample(): void {
   log(colors.dim("      - automation"));
 }
 
+function showFrontmatterExample(): void {
+  log("");
+  log(colors.dim("  Example frontmatter for .md files:"));
+  log(colors.dim("    ---"));
+  log(colors.dim("    grk-type: skill"));
+  log(colors.dim("    grk-name: My Skill"));
+  log(colors.dim("    grk-description: What this skill does"));
+  log(colors.dim("    ---"));
+  log("");
+  log(colors.dim("  Valid types: agent, skill, command, mcp, rule"));
+}
+
 export const publishCommand = new Command("publish")
   .description("Publish an artifact to a registry")
   .argument("[path]", "Path to artifact directory (default: current directory)", ".")
@@ -67,6 +79,9 @@ export const publishCommand = new Command("publish")
       }
       if (result.error.type === "keywords") {
         showKeywordsExample();
+      }
+      if (result.error.type === "no-components") {
+        showFrontmatterExample();
       }
       process.exit(1);
     }

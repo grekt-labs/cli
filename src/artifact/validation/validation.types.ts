@@ -1,10 +1,10 @@
-import type { ArtifactManifest, ScannedArtifact } from "@grekt-labs/cli-engine";
+import type { ArtifactManifest, ArtifactInfo } from "@grekt-labs/cli-engine";
 
 export interface ValidatedArtifact {
   manifest: ArtifactManifest;
   artifactId: string;
   scope: string;
-  scanned: ScannedArtifact;
+  scanned: ArtifactInfo;
   componentCount: number;
   fullPath: string;
 }
