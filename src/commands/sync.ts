@@ -1,16 +1,20 @@
 import { Command } from "commander";
-import { confirm } from "@inquirer/prompts";
-import { isInitialized, getConfig } from "#/config/project/project";
+import { confirm, checkbox, input } from "@inquirer/prompts";
+import { isInitialized, getConfig, saveConfig } from "#/config/project/project";
 import { getLockfile } from "#/context";
-import { getPlugin, getAvailableTargets } from "#/sync/manager/manager";
+import { getPlugin, getAvailableTargets, getPluginChoices } from "#/sync/manager/manager";
 import { success, error, info, warning, log, newline, colors, spinner } from "#/shared/ui/ui";
+import type { CustomTarget } from "@grekt-labs/cli-engine";
+
+const OTHER_TARGET_VALUE = "__other__";
 
 export const syncCommand = new Command("sync")
   .description("Sync artifacts to AI tools")
   .option("--dry-run", "Preview changes without applying them")
   .option("-f, --force", "Skip confirmation prompts")
   .option("-t, --target <targets>", "Comma-separated list of targets")
-  .action(async (options: { dryRun?: boolean; force?: boolean; target?: string }) => {
+  .option("-n, --new", "Configure new sync targets interactively")
+  .action(async (options: { dryRun?: boolean; force?: boolean; target?: string; new?: boolean }) => {
     const projectRoot = process.cwd();
 
     if (!isInitialized(projectRoot)) {
@@ -19,8 +23,85 @@ export const syncCommand = new Command("sync")
       process.exit(1);
     }
 
-    const config = getConfig(projectRoot);
+    let config = getConfig(projectRoot);
     const lockfile = getLockfile(projectRoot);
+
+    // Interactive target configuration with --new
+    if (options.new) {
+      const pluginChoices = getPluginChoices();
+      const currentTargets = new Set(config.targets);
+
+      const choices = [
+        ...pluginChoices.map((choice) => ({
+          ...choice,
+          checked: currentTargets.has(choice.value),
+        })),
+        {
+          name: "Other (custom)",
+          value: OTHER_TARGET_VALUE,
+          checked: false,
+        },
+      ];
+
+      newline();
+      const selected = await checkbox<string>({
+        message: "Select AI tools to sync with:",
+        choices,
+      });
+
+      const customTargets: Record<string, CustomTarget> = { ...config.customTargets };
+
+      // Handle "Other" selection
+      if (selected.includes(OTHER_TARGET_VALUE)) {
+        newline();
+        log(colors.bold("Configure custom target:"));
+        newline();
+
+        const customId = await input({
+          message: "Target ID (e.g., my-ai):",
+          validate: (value) => {
+            if (!value.trim()) return "ID is required";
+            if (!/^[a-z0-9-]+$/.test(value)) return "ID must be lowercase alphanumeric with dashes";
+            if (pluginChoices.some((p) => p.value === value)) return "ID conflicts with built-in target";
+            return true;
+          },
+        });
+
+        const customName = await input({
+          message: "Display name (e.g., My AI Tool):",
+          validate: (value) => (value.trim() ? true : "Name is required"),
+        });
+
+        const rulesFile = await input({
+          message: "Rules file path (e.g., .my-ai-rules.md):",
+          validate: (value) => (value.trim() ? true : "Rules file path is required"),
+        });
+
+        customTargets[customId] = {
+          name: customName,
+          rulesFile,
+        };
+
+        // Replace __other__ with the custom ID
+        const newTargets = selected.filter((t) => t !== OTHER_TARGET_VALUE);
+        newTargets.push(customId);
+        config.targets = newTargets;
+      } else {
+        config.targets = selected;
+      }
+
+      config.customTargets = customTargets;
+      saveConfig(config, projectRoot);
+
+      if (config.targets.length === 0) {
+        info("No targets selected");
+        return;
+      }
+
+      newline();
+      success(`Targets updated: ${config.targets.join(", ")}`);
+      newline();
+    }
 
     // Determine targets
     let targets: string[] = config.targets;
@@ -31,7 +112,7 @@ export const syncCommand = new Command("sync")
     if (targets.length === 0) {
       warning("No sync targets configured");
       info(`Available targets: ${getAvailableTargets().join(", ")}`);
-      info("Run 'grekt init' to configure targets or use --target flag");
+      info("Run 'grekt sync --new' to configure targets or use --target flag");
       return;
     }
 
