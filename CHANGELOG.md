@@ -1,3 +1,10 @@
+## [4.8.2](https://github.com/grekt-labs/cli/compare/v4.8.1...v4.8.2) (2026-01-29)
+
+
+### Bug Fixes
+
+* show artifacts dir prompt ([8837b95](https://github.com/grekt-labs/cli/commit/8837b9555f8e119ff69e68c32e3e06f4aac2b178))
+
 ## [4.8.1](https://github.com/grekt-labs/cli/compare/v4.8.0...v4.8.1) (2026-01-29)
 
 
