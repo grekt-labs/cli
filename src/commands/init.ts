@@ -8,6 +8,7 @@ import { getPluginChoices, getDefaultTarget } from "#/sync/manager/manager";
 import { createEmptyIndex } from "#/artifact/index/index";
 import { GREKT_YAML, GREKT_DIR, ARTIFACTS_DIR, INDEX_FILE } from "#/config/paths/paths";
 import { success, info, warning, newline, log, colors } from "#/shared/ui/ui";
+import { withPromptHandler } from "#/shared/prompts/prompts";
 import type { CustomTarget, ProjectConfig } from "@grekt-labs/cli-engine";
 
 const OTHER_TARGET_VALUE = "__other__";
@@ -17,16 +18,17 @@ export const initCommand = new Command("init")
   .option("-y, --yes", "Skip prompts and use defaults")
   .option("-a, --artifact", "Initialize as publishable artifact (includes manifest fields)")
   .action(async (options: { yes?: boolean; artifact?: boolean }) => {
-    const projectRoot = process.cwd();
+    await withPromptHandler(async () => {
+      const projectRoot = process.cwd();
 
-    // Check if already initialized
-    if (isInitialized(projectRoot)) {
-      warning("grekt is already initialized in this directory");
-      return;
-    }
+      // Check if already initialized
+      if (isInitialized(projectRoot)) {
+        warning("grekt is already initialized in this directory");
+        return;
+      }
 
-    info("Initializing grekt...");
-    newline();
+      info("Initializing grekt...");
+      newline();
 
     // Manifest fields (for --artifact mode)
     let manifestFields: Partial<ProjectConfig> = {};
@@ -200,4 +202,5 @@ export const initCommand = new Command("init")
       info(`Sync targets: ${targets.join(", ")}`);
       info("Run 'grekt add <artifact>' to install your first artifact");
     }
+    });
   });
