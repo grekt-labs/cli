@@ -10,6 +10,7 @@ export const colors = {
   dim: chalk.dim,
   bold: chalk.bold,
   highlight: chalk.cyan,
+  brand: chalk.hex("#10ab8d"),
 };
 
 // Symbols
