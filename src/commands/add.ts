@@ -186,6 +186,7 @@ export const addCommand = new Command("add")
       integrity,
       source: source.raw,
       resolved: downloadResult.resolved, // Full URL, immutable after write
+      mode: options.core ? "core" : "lazy",
       files: fileHashes,
       agent: selectedAgent,
       skills: selectedSkills,

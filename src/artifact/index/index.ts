@@ -1,7 +1,7 @@
 import { existsSync, writeFileSync } from "fs";
 import { join } from "path";
 import { ARTIFACTS_DIR, INDEX_FILE } from "#/config/paths/paths";
-import { fs as cliFs } from "#/context";
+import { fs as cliFs, getLockfile } from "#/context";
 import {
   scanArtifact,
   generateIndex,
@@ -9,29 +9,42 @@ import {
   type IndexGeneratorInput,
   type ArtifactMode,
   type ProjectConfig,
+  type Lockfile,
 } from "@grekt-labs/cli-engine";
 
 /**
- * Get the sync mode for an artifact from the project config.
- * Default is "lazy" if not specified.
+ * Get the sync mode for an artifact.
+ * Priority: lockfile > config > default (lazy)
  */
-function getArtifactMode(config: ProjectConfig, artifactId: string): ArtifactMode {
-  const entry = config.artifacts[artifactId];
-  if (!entry) return "lazy";
+function getArtifactMode(
+  lockfile: Lockfile,
+  config: ProjectConfig,
+  artifactId: string
+): ArtifactMode {
+  // First check lockfile (source of truth for installed artifacts)
+  const lockEntry = lockfile.artifacts[artifactId];
+  if (lockEntry?.mode) {
+    return lockEntry.mode;
+  }
 
-  if (typeof entry === "string") {
+  // Fall back to config
+  const configEntry = config.artifacts[artifactId];
+  if (!configEntry) return "lazy";
+
+  if (typeof configEntry === "string") {
     return "lazy"; // Version string = lazy mode
   }
 
-  return entry.mode ?? "lazy";
+  return configEntry.mode ?? "lazy";
 }
 
 /**
  * Scan all installed artifacts and generate the index file.
- * Only LAZY artifacts are indexed - CORE artifacts are already in AI context.
+ * Includes ALL artifacts (CORE and LAZY) for observability.
  */
 export function generateArtifactIndex(projectRoot: string, config: ProjectConfig): void {
   const artifactsDir = join(projectRoot, ARTIFACTS_DIR);
+  const lockfile = getLockfile(projectRoot);
   const inputs: IndexGeneratorInput[] = [];
 
   // Only scan if artifacts directory exists
@@ -56,11 +69,7 @@ export function generateArtifactIndex(projectRoot: string, config: ProjectConfig
 
         if (!scanned) continue;
 
-        const mode = getArtifactMode(config, artifactId);
-
-        // Only index LAZY artifacts - CORE artifacts are already in context
-        if (mode === "core") continue;
-
+        const mode = getArtifactMode(lockfile, config, artifactId);
         const keywords = scanned.manifest.keywords ?? [];
 
         inputs.push({
@@ -80,8 +89,9 @@ export function generateArtifactIndex(projectRoot: string, config: ProjectConfig
   }
 
   // Generate and write the index (even if empty)
+  // Include terminology for AIs that need term translation
   const index = generateIndex(inputs);
-  const serialized = serializeIndex(index);
+  const serialized = serializeIndex(index, { includeTerminology: true });
   const indexPath = join(projectRoot, INDEX_FILE);
 
   writeFileSync(indexPath, serialized, "utf-8");
@@ -93,7 +103,7 @@ export function generateArtifactIndex(projectRoot: string, config: ProjectConfig
  */
 export function createEmptyIndex(projectRoot: string): void {
   const index = generateIndex([]);
-  const serialized = serializeIndex(index);
+  const serialized = serializeIndex(index, { includeTerminology: true });
   const indexPath = join(projectRoot, INDEX_FILE);
 
   writeFileSync(indexPath, serialized, "utf-8");
