@@ -47,14 +47,11 @@ export const initCommand = new Command("init")
         },
       });
 
-      const author = await input({
-        message: "Author (e.g., @username):",
-        validate: (value) => {
-          if (!value.trim()) return "Author is required";
-          if (!value.startsWith("@")) return "Author must start with @";
-          return true;
-        },
+      const authorInput = await input({
+        message: "Author (e.g., grekt):",
+        validate: (value) => (value.trim() ? true : "Author is required"),
       });
+      const author = authorInput.startsWith("@") ? authorInput : `@${authorInput}`;
 
       const version = await input({
         message: "Version:",
