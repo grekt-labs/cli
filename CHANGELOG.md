@@ -1,3 +1,10 @@
+## [4.6.1](https://github.com/grekt-labs/cli/compare/v4.6.0...v4.6.1) (2026-01-29)
+
+
+### Bug Fixes
+
+* **init:** auto-add @ prefix to author if missing ([03af2b6](https://github.com/grekt-labs/cli/commit/03af2b6a4667ad3ccdbbb430b15e9bd2fb1e25af))
+
 # [4.6.0](https://github.com/grekt-labs/cli/compare/v4.5.0...v4.6.0) (2026-01-29)
 
 
