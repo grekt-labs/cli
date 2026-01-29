@@ -1,3 +1,10 @@
+## [4.4.3](https://github.com/grekt-labs/cli/compare/v4.4.2...v4.4.3) (2026-01-29)
+
+
+### Bug Fixes
+
+* remove unwanted error ([1af77c9](https://github.com/grekt-labs/cli/commit/1af77c9d41f5be0340bb667c60b61f835bdac7a1))
+
 ## [4.4.2](https://github.com/grekt-labs/cli/compare/v4.4.1...v4.4.2) (2026-01-29)
 
 
