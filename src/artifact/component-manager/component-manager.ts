@@ -71,17 +71,3 @@ export function cleanEmptyDirs(dir: string): void {
     // Directory may not exist or is inaccessible, skip it
   }
 }
-
-/**
- * Remove a single directory if it's empty.
- */
-export function removeIfEmpty(dir: string): boolean {
-  if (existsSync(dir)) {
-    const files = readdirSync(dir);
-    if (files.length === 0) {
-      rmSync(dir, { recursive: true });
-      return true;
-    }
-  }
-  return false;
-}
