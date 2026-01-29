@@ -9,10 +9,10 @@ const RULES_FILE = `${TARGET_DIR}/CLAUDE.md`;
  * Points Claude to the artifact index for lazy loading.
  */
 function generateRulesContent(_lockfile: Lockfile): string {
-  let content = `${GREKT_BLOCK_START}\n`;
-  content += `Tools available in \`.grekt/index\`\n`;
-  content += `${GREKT_BLOCK_END}`;
-  return content;
+  return `${GREKT_BLOCK_START}
+This project uses grekt for AI artifact management.
+Index location: .grekt/index
+${GREKT_BLOCK_END}`;
 }
 
 export const claudePlugin = createFolderPlugin({
