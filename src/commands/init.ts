@@ -9,6 +9,7 @@ import { createEmptyIndex } from "#/artifact/index/index";
 import { GREKT_YAML, GREKT_DIR, ARTIFACTS_DIR, INDEX_FILE } from "#/config/paths/paths";
 import { success, info, warning, newline, log, colors } from "#/shared/ui/ui";
 import { withPromptHandler } from "#/shared/prompts/prompts";
+import { ASCII_LOGO } from "#/constants";
 import type { CustomTarget, ProjectConfig } from "@grekt-labs/cli-engine";
 
 const OTHER_TARGET_VALUE = "__other__";
@@ -20,6 +21,9 @@ export const initCommand = new Command("init")
   .action(async (options: { yes?: boolean; artifact?: boolean }) => {
     await withPromptHandler(async () => {
       const projectRoot = process.cwd();
+
+      // Show logo
+      log(colors.brand(ASCII_LOGO));
 
       // Check if already initialized
       if (isInitialized(projectRoot)) {

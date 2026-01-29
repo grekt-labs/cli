@@ -20,6 +20,8 @@ import { versionCommand } from "#/commands/version";
 import { loginCommand } from "#/commands/login";
 import { logoutCommand } from "#/commands/logout";
 import { whoamiCommand } from "#/commands/whoami";
+import { ASCII_LOGO } from "#/constants";
+import { colors } from "#/shared/ui/ui";
 import pkg from "../package.json";
 
 const program = new Command();
@@ -27,7 +29,8 @@ const program = new Command();
 program
   .name(pkg.name)
   .description(pkg.description)
-  .version(pkg.version);
+  .version(pkg.version)
+  .addHelpText("beforeAll", colors.brand(ASCII_LOGO));
 
 // Auth commands
 program.addCommand(loginCommand);
