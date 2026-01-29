@@ -1,3 +1,12 @@
+## [4.4.1](https://github.com/grekt-labs/cli/compare/v4.4.0...v4.4.1) (2026-01-29)
+
+
+### Bug Fixes
+
+* restore semantic-release for CLI releases ([1015c6d](https://github.com/grekt-labs/cli/commit/1015c6d25aa35c2ed44b30873a4a705dac3242e6))
+* trigger release ([382aae5](https://github.com/grekt-labs/cli/commit/382aae5510a311ebe6ff6abee04813c2cbf80b4d))
+* **version:** run multi-semantic-release as subprocess ([b6dfe28](https://github.com/grekt-labs/cli/commit/b6dfe287d30fa8442524db960330729f5b02f474))
+
 # [4.4.0](https://github.com/grekt-labs/cli/compare/v4.3.0...v4.4.0) (2026-01-28)
 
 
