@@ -1,3 +1,10 @@
+# [4.6.0](https://github.com/grekt-labs/cli/compare/v4.5.0...v4.6.0) (2026-01-29)
+
+
+### Features
+
+* **init:** add --artifact flag for publishable artifacts ([cf60e41](https://github.com/grekt-labs/cli/commit/cf60e41ee971c0cffd93882a4e10ff37abd68cb6))
+
 # [4.5.0](https://github.com/grekt-labs/cli/compare/v4.4.3...v4.5.0) (2026-01-29)
 
 
