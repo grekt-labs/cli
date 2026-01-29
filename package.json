@@ -1,6 +1,6 @@
 {
   "name": "grekt",
-  "version": "4.4.1",
+  "version": "4.4.2",
   "description": "CLI for managing AI artifacts (agents, skills, commands)",
   "type": "module",
   "bin": {

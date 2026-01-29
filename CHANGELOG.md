@@ -1,3 +1,10 @@
+## [4.4.2](https://github.com/grekt-labs/cli/compare/v4.4.1...v4.4.2) (2026-01-29)
+
+
+### Bug Fixes
+
+* undo conventional commits detector ([b81f657](https://github.com/grekt-labs/cli/commit/b81f6576aaaeedc15b7092f9ddbdec73fbdf64b8))
+
 ## [4.4.1](https://github.com/grekt-labs/cli/compare/v4.4.0...v4.4.1) (2026-01-29)
 
 
