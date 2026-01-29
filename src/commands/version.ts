@@ -170,10 +170,11 @@ function manualBump(
 
     results.push({
       artifactPath,
-      artifactName: cached.name,
-      currentVersion: cached.version,
+      artifactId: cached.name,
+      previousVersion: cached.version,
       newVersion,
-      commits: [],
+      releaseType: bumpType,
+      commits: 0,
     });
   }
 

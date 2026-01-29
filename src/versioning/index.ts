@@ -1,8 +1,9 @@
 /**
  * Versioning module
  *
- * Abstraction for semantic version calculation.
+ * Lightweight conventional commits analyzer.
+ * No external dependencies - bundles without issues.
  */
 
 export * from "./calculator.types";
-export * from "./semantic-release-calculator";
+export * from "./conventional-commits-calculator";
