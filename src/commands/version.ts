@@ -4,14 +4,11 @@ import { join, resolve } from "path";
 import { parse as parseYaml } from "yaml";
 import {
   ArtifactManifestSchema,
-  formatVersionResults,
   getArtifactIdFromManifest,
   bumpVersion,
   type BumpType,
-  type VersionResult,
 } from "@grekt-labs/cli-engine";
-import { createVersionCalculator } from "#/versioning";
-import { success, error, info, log, colors, spinner } from "#/shared/ui/ui";
+import { success, error, info, log, colors } from "#/shared/ui/ui";
 
 const MANIFEST_FILE = "grekt.yaml";
 const BUMP_TYPES = ["patch", "minor", "major"] as const;
@@ -25,20 +22,15 @@ function isBumpType(value: string): value is BumpType {
 }
 
 export const versionCommand = new Command("version")
-  .description("Bump artifact versions manually or automatically via conventional commits")
-  .argument("[bump]", "Bump type (patch, minor, major) or path to artifact")
-  .argument("[path]", "Path to artifact (if first arg is bump type)")
+  .description("Bump artifact versions (patch, minor, major)")
+  .argument("<bump>", "Bump type: patch, minor, or major")
+  .argument("[path]", "Path to artifact or directory containing artifacts", ".")
   .option("--dry-run", "Show what would happen without applying changes")
-  .action(async (firstArg: string | undefined, secondArg: string | undefined, options: VersionCommandOptions) => {
-    // Parse arguments: could be (bumpType, path), (path), or ()
-    let bumpType: BumpType | undefined;
-    let targetPath: string;
-
-    if (firstArg && isBumpType(firstArg)) {
-      bumpType = firstArg;
-      targetPath = secondArg ?? ".";
-    } else {
-      targetPath = firstArg ?? ".";
+  .action(async (bump: string, targetPath: string, options: VersionCommandOptions) => {
+    if (!isBumpType(bump)) {
+      error(`Invalid bump type: ${bump}`);
+      info("Use: patch, minor, or major");
+      process.exit(1);
     }
 
     const absolutePath = resolve(targetPath);
@@ -64,8 +56,7 @@ export const versionCommand = new Command("version")
     }
     log("");
 
-    // Load manifests
-    const manifests = new Map<string, { name: string; version: string; raw: string }>();
+    let updated = 0;
 
     for (const artifactPath of artifactPaths) {
       const manifestPath = join(artifactPath, MANIFEST_FILE);
@@ -74,112 +65,28 @@ export const versionCommand = new Command("version")
       const manifest = ArtifactManifestSchema.parse(parsed);
       const artifactId = getArtifactIdFromManifest(manifest);
 
-      manifests.set(artifactPath, {
-        name: artifactId,
-        version: manifest.version,
-        raw: manifestContent,
-      });
-    }
+      const newVersion = bumpVersion(manifest.version, bump);
 
-    let versionResults: VersionResult[];
+      log(`  ${artifactId}: ${manifest.version} → ${newVersion}`);
 
-    if (bumpType) {
-      // Manual bump
-      versionResults = manualBump(artifactPaths, manifests, bumpType);
-    } else {
-      // Auto from conventional commits
-      const spin = spinner("Analyzing commits...");
-      spin.start();
-
-      try {
-        const calculator = createVersionCalculator();
-        versionResults = await calculator.calculate(
-          artifactPaths,
-          manifests,
-          { dryRun: options.dryRun }
+      if (!options.dryRun) {
+        const updatedContent = manifestContent.replace(
+          /^version:\s*["']?[\d.]+[-\w.]*["']?/m,
+          `version: "${newVersion}"`
         );
-        spin.stop();
-      } catch (err) {
-        spin.stop();
-        error(err instanceof Error ? err.message : "Version calculation failed");
-        log("");
-        info("Tip: Use 'grekt version patch|minor|major' for manual bumps");
-        process.exit(1);
-      }
-
-      // Check if no versions were calculated
-      const hasChanges = versionResults.some(r => r.newVersion);
-      if (!hasChanges) {
-        info("No version changes detected from commits");
-        log("");
-        info("Tip: Use 'grekt version patch|minor|major' for manual bumps");
-        process.exit(0);
+        writeFileSync(manifestPath, updatedContent);
+        updated++;
       }
     }
 
-    // Display results
-    const lines = formatVersionResults(versionResults);
-    for (const line of lines) {
-      log(`  ${line}`);
-    }
     log("");
 
-    // Apply changes (if not dry-run)
-    if (!options.dryRun) {
-      let updated = 0;
-      for (const result of versionResults) {
-        if (result.newVersion) {
-          const cached = manifests.get(result.artifactPath);
-          if (cached) {
-            const manifestPath = join(result.artifactPath, MANIFEST_FILE);
-
-            // Update version in the raw YAML to preserve formatting
-            const updatedContent = cached.raw.replace(
-              /^version:\s*["']?[\d.]+[-\w.]*["']?/m,
-              `version: "${result.newVersion}"`
-            );
-            writeFileSync(manifestPath, updatedContent);
-            updated++;
-          }
-        }
-      }
-
-      if (updated > 0) {
-        success(`Updated ${updated} artifact(s)`);
-      } else {
-        info("No artifacts needed updates");
-      }
+    if (options.dryRun) {
+      info("Dry run complete");
+    } else if (updated > 0) {
+      success(`Updated ${updated} artifact(s)`);
     }
   });
-
-/**
- * Manual version bump for all artifacts
- */
-function manualBump(
-  artifactPaths: string[],
-  manifests: Map<string, { name: string; version: string }>,
-  bumpType: BumpType
-): VersionResult[] {
-  const results: VersionResult[] = [];
-
-  for (const artifactPath of artifactPaths) {
-    const cached = manifests.get(artifactPath);
-    if (!cached) continue;
-
-    const newVersion = bumpVersion(cached.version, bumpType);
-
-    results.push({
-      artifactPath,
-      artifactId: cached.name,
-      previousVersion: cached.version,
-      newVersion,
-      releaseType: bumpType,
-      commits: 0,
-    });
-  }
-
-  return results;
-}
 
 /**
  * Find all directories containing grekt.yaml
