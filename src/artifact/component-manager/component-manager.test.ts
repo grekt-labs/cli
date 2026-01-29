@@ -1,7 +1,7 @@
 import { describe, test, expect, beforeEach, afterEach } from "bun:test";
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "fs";
 import { join } from "path";
-import { removeUnselectedFiles, cleanEmptyDirs, removeIfEmpty } from "./component-manager";
+import { removeUnselectedFiles, cleanEmptyDirs } from "./component-manager";
 import type { ArtifactInfo } from "#/context";
 import type { ComponentSelection } from "#/artifact/selector/selector";
 
@@ -134,35 +134,6 @@ describe("component-manager", () => {
 
       expect(existsSync(join(testDir, "non-empty"))).toBe(true);
       expect(existsSync(join(testDir, "non-empty/file.txt"))).toBe(true);
-    });
-  });
-
-  describe("removeIfEmpty", () => {
-    test("removes empty directory", () => {
-      const emptyDir = join(testDir, "empty");
-      mkdirSync(emptyDir, { recursive: true });
-
-      const result = removeIfEmpty(emptyDir);
-
-      expect(result).toBe(true);
-      expect(existsSync(emptyDir)).toBe(false);
-    });
-
-    test("does nothing for non-empty directory", () => {
-      const nonEmptyDir = join(testDir, "non-empty");
-      mkdirSync(nonEmptyDir, { recursive: true });
-      writeFileSync(join(nonEmptyDir, "file.txt"), "content");
-
-      const result = removeIfEmpty(nonEmptyDir);
-
-      expect(result).toBe(false);
-      expect(existsSync(nonEmptyDir)).toBe(true);
-    });
-
-    test("returns false for non-existent directory", () => {
-      const result = removeIfEmpty(join(testDir, "does-not-exist"));
-
-      expect(result).toBe(false);
     });
   });
 });

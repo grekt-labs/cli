@@ -3,12 +3,12 @@ import { execSync } from "child_process";
 import { tmpdir } from "os";
 import { join } from "path";
 
-export interface DownloadOptions {
+interface DownloadOptions {
   headers?: Record<string, string>;
   stripComponents?: number;
 }
 
-export interface TarballDownloadResult {
+interface TarballDownloadResult {
   success: boolean;
   error?: string;
 }
@@ -73,54 +73,4 @@ export async function downloadAndExtractTarball(
       rmSync(tempTarball, { force: true });
     }
   }
-}
-
-/**
- * Build GitHub API tarball URL for a repository.
- */
-export function buildGitHubTarballUrl(owner: string, repo: string, ref: string = "HEAD"): string {
-  return `https://api.github.com/repos/${owner}/${repo}/tarball/${ref}`;
-}
-
-/**
- * Build GitLab API archive URL for a project.
- */
-export function buildGitLabArchiveUrl(
-  host: string,
-  projectPath: string,
-  ref: string = "main"
-): string {
-  const encodedProject = encodeURIComponent(projectPath);
-  return `https://${host}/api/v4/projects/${encodedProject}/repository/archive.tar.gz?sha=${ref}`;
-}
-
-/**
- * Get headers for GitHub API requests.
- */
-export function getGitHubHeaders(token?: string): Record<string, string> {
-  const headers: Record<string, string> = {
-    Accept: "application/vnd.github+json",
-    "User-Agent": "grekt-cli",
-  };
-
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-
-  return headers;
-}
-
-/**
- * Get headers for GitLab API requests.
- */
-export function getGitLabHeaders(token?: string): Record<string, string> {
-  const headers: Record<string, string> = {
-    "User-Agent": "grekt-cli",
-  };
-
-  if (token) {
-    headers["PRIVATE-TOKEN"] = token;
-  }
-
-  return headers;
 }
