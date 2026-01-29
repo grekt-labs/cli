@@ -4,7 +4,8 @@ import { checkbox, input } from "@inquirer/prompts";
 import { isInitialized, saveConfig } from "#/config/project/project";
 import { saveLockfile, createEmptyLockfile } from "#/context";
 import { getPluginChoices, getDefaultTarget } from "#/sync/manager/manager";
-import { GREKT_YAML, GREKT_DIR, ARTIFACTS_DIR } from "#/config/paths/paths";
+import { createEmptyIndex } from "#/artifact/index/index";
+import { GREKT_YAML, GREKT_DIR, ARTIFACTS_DIR, INDEX_FILE } from "#/config/paths/paths";
 import { success, info, warning, newline, log, colors } from "#/shared/ui/ui";
 import type { CustomTarget } from "@grekt-labs/cli-engine";
 
@@ -114,10 +115,14 @@ export const initCommand = new Command("init")
     const lockfile = createEmptyLockfile();
     saveLockfile(lockfile, projectRoot);
 
+    // Create empty index
+    createEmptyIndex(projectRoot);
+
     newline();
     success(`Created ${GREKT_YAML}`);
     success(`Created ${GREKT_DIR}/`);
     success("Created grekt.lock");
+    success(`Created ${INDEX_FILE}`);
     newline();
     success("grekt initialized successfully!");
     newline();

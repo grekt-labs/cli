@@ -8,6 +8,7 @@ export const LOCKFILE = "grekt.lock"; // pinned versions, integrity hashes, reso
 // Hidden directory for artifacts (gitignored, stores downloaded artifacts)
 export const GREKT_DIR = ".grekt";
 export const ARTIFACTS_DIR = join(GREKT_DIR, "artifacts");
+export const INDEX_FILE = join(GREKT_DIR, "index");
 
 // Default registry
 export const DEFAULT_REGISTRY = REGISTRY_URL;

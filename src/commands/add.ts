@@ -10,6 +10,7 @@ import { hashDirectory, calculateIntegrity } from "#/context";
 import { selectComponents, isEmptySelection, isFullSelection } from "#/artifact/selector/selector";
 import { removeUnselectedFiles } from "#/artifact/component-manager/component-manager";
 import { runCheck, displayCompactCheckResults } from "#/artifact/check/check";
+import { generateArtifactIndex } from "#/artifact/index/index";
 import { success, error, info, log, warning, newline, colors, spinner } from "#/shared/ui/ui";
 import { compareSemver } from "@grekt-labs/cli-engine";
 
@@ -191,6 +192,9 @@ export const addCommand = new Command("add")
       commands: selectedCommands,
     };
     saveLockfile(lockfile, projectRoot);
+
+    // Regenerate artifact index
+    generateArtifactIndex(projectRoot, config);
 
     newline();
     const modeLabel = options.core ? ` ${colors.dim("(core)")}` : "";

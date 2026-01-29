@@ -1,100 +1,14 @@
 import { Command } from "commander";
-import { existsSync, mkdirSync, rmSync, writeFileSync } from "fs";
-import { join } from "path";
+import { existsSync, mkdirSync, rmSync } from "fs";
 import { isInitialized, getConfig } from "#/config/project/project";
-import { getLockfile, lockfileExists, fs as cliFs } from "#/context";
-import { ARTIFACTS_DIR, GREKT_DIR } from "#/config/paths/paths";
+import { getLockfile, lockfileExists } from "#/context";
+import { ARTIFACTS_DIR } from "#/config/paths/paths";
 import { parseSource, downloadFromSource } from "#/registry/sources/sources";
 import { downloadAndExtractTarball } from "#/registry/download/download";
 import { verifyIntegrity } from "#/context";
 import { runCheck, displayCompactCheckResults } from "#/artifact/check/check";
+import { generateArtifactIndex } from "#/artifact/index/index";
 import { success, error, info, warning, log, newline, colors, spinner } from "#/shared/ui/ui";
-import {
-  scanArtifact,
-  generateIndex,
-  serializeIndex,
-  type IndexGeneratorInput,
-  type ArtifactMode,
-  type ProjectConfig,
-  type ArtifactEntry,
-} from "@grekt-labs/cli-engine";
-
-// Index file path
-const INDEX_FILE = "index";
-
-/**
- * Get the sync mode for an artifact from the project config.
- * Default is "lazy" if not specified.
- */
-function getArtifactMode(config: ProjectConfig, artifactId: string): ArtifactMode {
-  const entry = config.artifacts[artifactId];
-  if (!entry) return "lazy";
-
-  if (typeof entry === "string") {
-    return "lazy"; // Version string = lazy mode
-  }
-
-  return entry.mode ?? "lazy";
-}
-
-/**
- * Scan all installed artifacts and generate the index file.
- */
-function generateArtifactIndex(projectRoot: string, config: ProjectConfig): void {
-  const artifactsDir = join(projectRoot, ARTIFACTS_DIR);
-  if (!existsSync(artifactsDir)) return;
-
-  const inputs: IndexGeneratorInput[] = [];
-
-  // Get all artifact directories
-  const scopes = cliFs.readdir(artifactsDir);
-  for (const scope of scopes) {
-    if (!scope.startsWith("@")) continue;
-
-    const scopeDir = join(artifactsDir, scope);
-    const stat = cliFs.stat(scopeDir);
-    if (!stat.isDirectory) continue;
-
-    const names = cliFs.readdir(scopeDir);
-    for (const name of names) {
-      const artifactDir = join(scopeDir, name);
-      const artifactStat = cliFs.stat(artifactDir);
-      if (!artifactStat.isDirectory) continue;
-
-      const artifactId = `${scope}/${name}`;
-      const scanned = scanArtifact(cliFs, artifactDir);
-
-      if (!scanned) continue;
-
-      const mode = getArtifactMode(config, artifactId);
-
-      // Only index LAZY artifacts - CORE artifacts are already in context
-      if (mode === "core") continue;
-
-      const keywords = scanned.manifest.keywords ?? [];
-
-      inputs.push({
-        artifactId,
-        keywords,
-        mode,
-        components: {
-          agents: scanned.agent ? [scanned.agent.path] : [],
-          skills: scanned.skills.map((s) => s.path),
-          commands: scanned.commands.map((c) => c.path),
-          mcps: scanned.mcps.map((m) => m.path),
-          rules: scanned.rules.map((r) => r.path),
-        },
-      });
-    }
-  }
-
-  // Generate and write the index
-  const index = generateIndex(inputs);
-  const serialized = serializeIndex(index);
-  const indexPath = join(projectRoot, GREKT_DIR, INDEX_FILE);
-
-  writeFileSync(indexPath, serialized, "utf-8");
-}
 
 export const installCommand = new Command("install")
   .alias("i")
