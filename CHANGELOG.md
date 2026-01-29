@@ -1,3 +1,10 @@
+# [4.7.0](https://github.com/grekt-labs/cli/compare/v4.6.1...v4.7.0) (2026-01-29)
+
+
+### Features
+
+* **prompts:** add graceful exit handler for Ctrl+C ([b0e016b](https://github.com/grekt-labs/cli/commit/b0e016bed0f01bd4c8a6641e885eb0faf8e90576))
+
 ## [4.6.1](https://github.com/grekt-labs/cli/compare/v4.6.0...v4.6.1) (2026-01-29)
 
 
