@@ -1,3 +1,12 @@
+# [4.5.0](https://github.com/grekt-labs/cli/compare/v4.4.3...v4.5.0) (2026-01-29)
+
+
+### Features
+
+* **sync:** add shared index generation module ([a1ffd5b](https://github.com/grekt-labs/cli/commit/a1ffd5b0a2e89d864424a1d55e48c93e37734d48))
+* **sync:** implement SYNC strategy with XML bootstrap format ([02ae7e4](https://github.com/grekt-labs/cli/commit/02ae7e42f0f46e7f287d1acbf65cb6f77225da7d))
+* **sync:** improve artifact mode handling and add interactive target config ([4e41721](https://github.com/grekt-labs/cli/commit/4e417217b1efb4d990cbec1ce9715604f35ebd9b))
+
 ## [4.4.3](https://github.com/grekt-labs/cli/compare/v4.4.2...v4.4.3) (2026-01-29)
 
 
