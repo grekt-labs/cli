@@ -1,7 +1,10 @@
 import { ExitPromptError } from "@inquirer/core";
 import { input, confirm } from "@inquirer/prompts";
 import { newline, info, log, colors } from "#/shared/ui/ui";
-import type { CustomTarget } from "@grekt-labs/cli-engine";
+import { CATEGORIES, getCategoriesForFormat, type CustomTarget, type ComponentPaths, type Category } from "@grekt-labs/cli-engine";
+
+// Syncable categories (MD-based only)
+const SYNCABLE_CATEGORIES = getCategoriesForFormat("md");
 
 export interface PromptCustomTargetResult {
   id: string;
@@ -62,28 +65,24 @@ export async function promptCustomTarget(
     contextEntryPoint,
   };
 
+  const categoryList = SYNCABLE_CATEGORIES.join("/");
   const configurePaths = await confirm({
-    message: "Configure custom paths for CORE artifacts (agents/skills/commands)?",
+    message: `Configure custom paths for CORE artifacts (${categoryList})?`,
     default: false,
   });
 
   if (configurePaths) {
-    const agent = await input({
-      message: "Agents path (e.g., .my-ai/agents):",
-      validate: (value) => (value.trim() ? true : "Path is required"),
-    });
+    const paths: Partial<ComponentPaths> = {};
 
-    const skill = await input({
-      message: "Skills path (e.g., .my-ai/skills):",
-      validate: (value) => (value.trim() ? true : "Path is required"),
-    });
+    for (const category of SYNCABLE_CATEGORIES) {
+      const categoryPath = await input({
+        message: `${category.charAt(0).toUpperCase() + category.slice(1)} path (e.g., .my-ai/${category}):`,
+        validate: (value) => (value.trim() ? true : "Path is required"),
+      });
+      paths[category] = categoryPath;
+    }
 
-    const command = await input({
-      message: "Commands path (e.g., .my-ai/commands):",
-      validate: (value) => (value.trim() ? true : "Path is required"),
-    });
-
-    config.paths = { agent, skill, command };
+    config.paths = paths;
   }
 
   return { id, config };

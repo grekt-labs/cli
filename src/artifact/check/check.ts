@@ -2,11 +2,18 @@ import { existsSync, readFileSync } from "fs";
 import { basename, join } from "path";
 import { getLockfile, getSafeFilename } from "#/context";
 import { getConfig } from "#/config/project/project";
-import { getSyncPaths, SYNC_CATEGORY_MAP } from "#/sync/manager/manager";
+import { getSyncPaths } from "#/sync/manager/manager";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
 import { verifyIntegrity, getDirectorySize, formatBytes, estimateTokens } from "#/context";
 import { success, warning, log, newline, colors, symbols } from "#/shared/ui/ui";
-import type { Lockfile, ProjectConfig, ArtifactMode } from "@grekt-labs/cli-engine";
+import {
+  type Lockfile,
+  type ProjectConfig,
+  type ArtifactMode,
+  CATEGORIES,
+  isUniqueCategory,
+  type Category,
+} from "@grekt-labs/cli-engine";
 
 const CONTEXT_WARNING_THRESHOLD = 10 * 1024; // 10 KB
 
@@ -32,7 +39,7 @@ export interface CheckResult {
 
 interface CollisionInfo {
   filename: string;
-  type: "skill" | "command";
+  category: Category;
   artifacts: string[];
 }
 
@@ -47,38 +54,28 @@ export interface CheckSummary {
 }
 
 function detectCollisions(lockfile: Lockfile): CollisionInfo[] {
-  const skillFiles = new Map<string, string[]>();
-  const commandFiles = new Map<string, string[]>();
-
-  for (const [artifactId, artifact] of Object.entries(lockfile.artifacts)) {
-    for (const skillPath of artifact.skills) {
-      const filename = basename(skillPath);
-      if (!skillFiles.has(filename)) {
-        skillFiles.set(filename, []);
-      }
-      skillFiles.get(filename)!.push(`${artifactId}/${skillPath}`);
-    }
-
-    for (const cmdPath of artifact.commands) {
-      const filename = basename(cmdPath);
-      if (!commandFiles.has(filename)) {
-        commandFiles.set(filename, []);
-      }
-      commandFiles.get(filename)!.push(`${artifactId}/${cmdPath}`);
-    }
-  }
-
   const collisions: CollisionInfo[] = [];
 
-  for (const [filename, artifacts] of skillFiles) {
-    if (artifacts.length > 1) {
-      collisions.push({ filename, type: "skill", artifacts });
-    }
-  }
+  // Check for filename collisions in non-unique categories
+  for (const category of CATEGORIES) {
+    if (isUniqueCategory(category)) continue;
 
-  for (const [filename, artifacts] of commandFiles) {
-    if (artifacts.length > 1) {
-      collisions.push({ filename, type: "command", artifacts });
+    const fileMap = new Map<string, string[]>();
+
+    for (const [artifactId, artifact] of Object.entries(lockfile.artifacts)) {
+      for (const filePath of artifact[category]) {
+        const filename = basename(filePath);
+        if (!fileMap.has(filename)) {
+          fileMap.set(filename, []);
+        }
+        fileMap.get(filename)!.push(`${artifactId}/${filePath}`);
+      }
+    }
+
+    for (const [filename, artifacts] of fileMap) {
+      if (artifacts.length > 1) {
+        collisions.push({ filename, category, artifacts });
+      }
     }
   }
 
@@ -149,18 +146,15 @@ export function runCheck(projectRoot: string): CheckSummary {
           }
         };
 
-        for (const [category, targetDir] of Object.entries(syncPaths)) {
-          const mapping = SYNC_CATEGORY_MAP[category as keyof typeof SYNC_CATEGORY_MAP];
-          if (!mapping) continue;
+        for (const category of CATEGORIES) {
+          const targetDir = syncPaths[category];
+          if (!targetDir) continue;
 
-          const items = lockEntry[mapping.lockKey as keyof typeof lockEntry];
-          if (!items) continue;
+          const items = lockEntry[category];
+          if (!items || items.length === 0) continue;
 
-          const paths = Array.isArray(items) ? items : [items];
-          for (const filePath of paths) {
-            if (typeof filePath !== "string") continue;
-
-            const targetName = mapping.isAgent
+          for (const filePath of items) {
+            const targetName = isUniqueCategory(category)
               ? `${artifactId.replace("/", "-")}.md`
               : getSafeFilename(artifactId, filePath);
 
@@ -220,7 +214,7 @@ export function displayCheckResults(summary: CheckSummary, lockfile: Lockfile): 
   if (summary.collisions.length > 0) {
     log(`${summary.collisions.length} filename overlap(s) found ${colors.dim("(resolved by namespacing)")}`);
     for (const overlap of summary.collisions) {
-      log(`  ${colors.dim("•")} ${overlap.type}s/${overlap.filename}: ${overlap.artifacts.length} artifacts`);
+      log(`  ${colors.dim("•")} ${overlap.category}/${overlap.filename}: ${overlap.artifacts.length} artifacts`);
     }
   } else {
     log(`${symbols.success} No filename overlaps`);

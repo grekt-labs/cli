@@ -60,9 +60,11 @@ describe("opencodePlugin", () => {
         artifacts: {
           [TEST_ARTIFACT_ID]: {
             version: "1.0.0",
-            agent: "agent.md",
+            agents: ["agent.md"],
             skills: [],
             commands: [],
+            mcps: [],
+            rules: [],
           },
         },
       };
@@ -78,9 +80,11 @@ describe("opencodePlugin", () => {
         artifacts: {
           [TEST_ARTIFACT_ID]: {
             version: "1.0.0",
-            agent: "agent.md",
+            agents: ["agent.md"],
             skills: [],
             commands: [],
+            mcps: [],
+            rules: [],
           },
         },
       };
@@ -108,9 +112,11 @@ describe("opencodePlugin", () => {
         artifacts: {
           [missingArtifactId]: {
             version: "1.0.0",
-            agent: "agent.md",
+            agents: ["agent.md"],
             skills: [],
             commands: [],
+            mcps: [],
+            rules: [],
           },
         },
       };
@@ -130,9 +136,11 @@ describe("opencodePlugin", () => {
         artifacts: {
           [TEST_ARTIFACT_ID]: {
             version: "1.0.0",
-            agent: "agent.md",
+            agents: ["agent.md"],
             skills: [],
             commands: [],
+            mcps: [],
+            rules: [],
           },
         },
       };

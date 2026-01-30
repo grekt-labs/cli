@@ -2,6 +2,7 @@ import { existsSync, unlinkSync, readdirSync, rmSync } from "fs";
 import { join } from "path";
 import type { ArtifactInfo } from "#/context";
 import type { ComponentSelection } from "#/artifact/selector/selector";
+import { CATEGORIES } from "@grekt-labs/cli-engine";
 
 /**
  * Remove unselected component files from artifact directory.
@@ -12,30 +13,13 @@ export function removeUnselectedFiles(
   artifactInfo: ArtifactInfo,
   selection: ComponentSelection
 ): void {
-  // Remove unselected agent
-  if (artifactInfo.agent && !selection.agent) {
-    const agentPath = join(artifactDir, artifactInfo.agent.path);
-    if (existsSync(agentPath)) {
-      unlinkSync(agentPath);
-    }
-  }
-
-  // Remove unselected skills
-  for (const skill of artifactInfo.skills) {
-    if (!selection.skills.includes(skill.path)) {
-      const skillPath = join(artifactDir, skill.path);
-      if (existsSync(skillPath)) {
-        unlinkSync(skillPath);
-      }
-    }
-  }
-
-  // Remove unselected commands
-  for (const cmd of artifactInfo.commands) {
-    if (!selection.commands.includes(cmd.path)) {
-      const cmdPath = join(artifactDir, cmd.path);
-      if (existsSync(cmdPath)) {
-        unlinkSync(cmdPath);
+  for (const category of CATEGORIES) {
+    for (const file of artifactInfo[category]) {
+      if (!selection[category].includes(file.path)) {
+        const filePath = join(artifactDir, file.path);
+        if (existsSync(filePath)) {
+          unlinkSync(filePath);
+        }
       }
     }
   }

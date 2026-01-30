@@ -1,14 +1,19 @@
 import { checkbox } from "@inquirer/prompts";
 import { withPromptHandler } from "#/shared/prompts/prompts";
 import type { ArtifactInfo } from "#/context";
+import { CATEGORIES, CATEGORY_CONFIG, createCategoryRecord, type Category } from "@grekt-labs/cli-engine";
 
 /**
  * Represents the user's selection of artifact components.
+ * Each category maps to an array of selected file paths.
  */
-export interface ComponentSelection {
-  agent: string | undefined;
-  skills: string[];
-  commands: string[];
+export type ComponentSelection = Record<Category, string[]>;
+
+/**
+ * Create an empty component selection.
+ */
+export function createEmptySelection(): ComponentSelection {
+  return createCategoryRecord<string[]>(() => []);
 }
 
 /**
@@ -17,30 +22,19 @@ export interface ComponentSelection {
  */
 export async function selectComponents(artifactInfo: ArtifactInfo): Promise<ComponentSelection> {
   return withPromptHandler(async () => {
-    const choices: Array<{ name: string; value: { type: string; path: string }; checked: boolean }> = [];
+    const choices: Array<{ name: string; value: { category: Category; path: string }; checked: boolean }> = [];
 
-    if (artifactInfo.agent) {
-      choices.push({
-        name: `agent: ${artifactInfo.agent.parsed.frontmatter["grk-name"]}`,
-        value: { type: "agent", path: artifactInfo.agent.path },
-        checked: true,
-      });
-    }
+    for (const category of CATEGORIES) {
+      const files = artifactInfo[category];
+      const singular = CATEGORY_CONFIG[category].singular;
 
-    for (const skill of artifactInfo.skills) {
-      choices.push({
-        name: `skill: ${skill.parsed.frontmatter["grk-name"]}`,
-        value: { type: "skill", path: skill.path },
-        checked: true,
-      });
-    }
-
-    for (const cmd of artifactInfo.commands) {
-      choices.push({
-        name: `command: ${cmd.parsed.frontmatter["grk-name"]}`,
-        value: { type: "command", path: cmd.path },
-        checked: true,
-      });
+      for (const file of files) {
+        choices.push({
+          name: `${singular}: ${file.parsed.frontmatter["grk-name"]}`,
+          value: { category, path: file.path },
+          checked: true,
+        });
+      }
     }
 
     const selected = await checkbox({
@@ -48,20 +42,10 @@ export async function selectComponents(artifactInfo: ArtifactInfo): Promise<Comp
       choices,
     });
 
-    const result: ComponentSelection = {
-      agent: undefined,
-      skills: [],
-      commands: [],
-    };
+    const result = createEmptySelection();
 
     for (const item of selected) {
-      if (item.type === "agent") {
-        result.agent = item.path;
-      } else if (item.type === "skill") {
-        result.skills.push(item.path);
-      } else if (item.type === "command") {
-        result.commands.push(item.path);
-      }
+      result[item.category].push(item.path);
     }
 
     return result;
@@ -72,15 +56,14 @@ export async function selectComponents(artifactInfo: ArtifactInfo): Promise<Comp
  * Check if all components in the artifact were selected.
  */
 export function isFullSelection(artifactInfo: ArtifactInfo, selection: ComponentSelection): boolean {
-  const allAgent = artifactInfo.agent ? selection.agent === artifactInfo.agent.path : true;
-  const allSkills = selection.skills.length === artifactInfo.skills.length;
-  const allCommands = selection.commands.length === artifactInfo.commands.length;
-  return allAgent && allSkills && allCommands;
+  return CATEGORIES.every(
+    (category) => selection[category].length === artifactInfo[category].length
+  );
 }
 
 /**
  * Check if no components were selected.
  */
 export function isEmptySelection(selection: ComponentSelection): boolean {
-  return !selection.agent && selection.skills.length === 0 && selection.commands.length === 0;
+  return CATEGORIES.every((category) => selection[category].length === 0);
 }
