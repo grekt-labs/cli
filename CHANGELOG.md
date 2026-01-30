@@ -1,3 +1,10 @@
+# [4.9.0](https://github.com/grekt-labs/cli/compare/v4.8.4...v4.9.0) (2026-01-30)
+
+
+### Features
+
+* trigger release ([59a0a4e](https://github.com/grekt-labs/cli/commit/59a0a4e5b1e4d2617dfac0ccb8661366b216d015))
+
 ## [4.8.4](https://github.com/grekt-labs/cli/compare/v4.8.3...v4.8.4) (2026-01-30)
 
 
