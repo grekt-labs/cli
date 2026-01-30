@@ -166,8 +166,9 @@ export function validateArtifact(
     };
   }
 
-  const artifactId = `@${manifest.author}/${manifest.name}`;
-  const scope = `@${manifest.author}`;
+  const authorName = manifest.author.startsWith("@") ? manifest.author.slice(1) : manifest.author;
+  const artifactId = `@${authorName}/${manifest.name}`;
+  const scope = `@${authorName}`;
 
   return {
     success: true,
