@@ -57,7 +57,7 @@ export const initCommand = new Command("init")
         message: "Author (e.g., grekt):",
         validate: (value) => (value.trim() ? true : "Author is required"),
       });
-      const author = authorInput.startsWith("@") ? authorInput : `@${authorInput}`;
+      const author = authorInput.startsWith("@") ? authorInput.slice(1) : authorInput;
 
       const version = await input({
         message: "Version:",
@@ -174,7 +174,7 @@ export const initCommand = new Command("init")
     if (options.artifact) {
       success("Artifact initialized successfully!");
       newline();
-      info(`Artifact: ${manifestFields.author}/${manifestFields.name}@${manifestFields.version}`);
+      info(`Artifact: @${manifestFields.author}/${manifestFields.name}@${manifestFields.version}`);
       info("Run 'grekt publish' when ready to publish");
     } else {
       success("grekt initialized successfully!");
