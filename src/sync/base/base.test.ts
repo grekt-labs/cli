@@ -66,12 +66,12 @@ describe("base", () => {
       expect(existsSync(join(testDir, ".test/commands"))).toBe(true);
     });
 
-    test("copies agent file with artifact-based name for CORE mode", async () => {
+    test("copies agent file with safe name for CORE mode", async () => {
       const plugin = createTestPlugin();
 
       await plugin.sync(testLockfile, testDir, { projectConfig: testProjectConfig });
 
-      const expectedFile = join(testDir, ".test/agents/@scope-artifact.md");
+      const expectedFile = join(testDir, ".test/agents/scope-artifact_agent.md");
       expect(existsSync(expectedFile)).toBe(true);
     });
 
@@ -85,7 +85,7 @@ describe("base", () => {
       const result = await plugin.sync(testLockfile, testDir, { projectConfig: lazyConfig });
 
       expect(result.skipped.some((s) => s.includes("lazy mode"))).toBe(true);
-      expect(existsSync(join(testDir, ".test/agents/@scope-artifact.md"))).toBe(false);
+      expect(existsSync(join(testDir, ".test/agents/scope-artifact_agent.md"))).toBe(false);
     });
 
     test("reports created files in result", async () => {

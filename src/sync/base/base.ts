@@ -8,7 +8,6 @@ import {
   type Category,
   CATEGORIES,
   CATEGORY_CONFIG,
-  isUniqueCategory,
   getCategoriesForFormat,
 } from "@grekt-labs/cli-engine";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
@@ -97,10 +96,8 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
   }
 
   // Get target filename for a component
-  function getTargetName(artifactId: string, category: Category, filePath: string): string {
-    return isUniqueCategory(category)
-      ? `${artifactId.replace("/", "-")}.md`
-      : getSafeFilename(artifactId, filePath);
+  function getTargetName(artifactId: string, _category: Category, filePath: string): string {
+    return getSafeFilename(artifactId, filePath);
   }
 
   return {

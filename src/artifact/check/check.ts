@@ -11,7 +11,6 @@ import {
   type ProjectConfig,
   type ArtifactMode,
   CATEGORIES,
-  isUniqueCategory,
   type Category,
 } from "@grekt-labs/cli-engine";
 
@@ -56,10 +55,8 @@ export interface CheckSummary {
 function detectCollisions(lockfile: Lockfile): CollisionInfo[] {
   const collisions: CollisionInfo[] = [];
 
-  // Check for filename collisions in non-unique categories
+  // Check for filename collisions in all categories
   for (const category of CATEGORIES) {
-    if (isUniqueCategory(category)) continue;
-
     const fileMap = new Map<string, string[]>();
 
     for (const [artifactId, artifact] of Object.entries(lockfile.artifacts)) {
@@ -154,10 +151,7 @@ export function runCheck(projectRoot: string): CheckSummary {
           if (!items || items.length === 0) continue;
 
           for (const filePath of items) {
-            const targetName = isUniqueCategory(category)
-              ? `${artifactId.replace("/", "-")}.md`
-              : getSafeFilename(artifactId, filePath);
-
+            const targetName = getSafeFilename(artifactId, filePath);
             checkSyncedFile(join(artifactDir, filePath), targetDir, targetName);
           }
         }

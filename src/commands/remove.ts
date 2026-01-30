@@ -4,7 +4,7 @@ import { join } from "path";
 import { confirm } from "@inquirer/prompts";
 import { isInitialized, getConfig, saveConfig } from "#/config/project/project";
 import { getLockfile, saveLockfile } from "#/context";
-import { getSafeFilename, CATEGORIES, CATEGORY_CONFIG, isUniqueCategory, type Category } from "@grekt-labs/cli-engine";
+import { getSafeFilename, CATEGORIES, CATEGORY_CONFIG, type Category } from "@grekt-labs/cli-engine";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
 import { generateArtifactIndex } from "#/artifact/index/index";
 import { success, error, info, log, newline, colors } from "#/shared/ui/ui";
@@ -94,10 +94,7 @@ export const removeCommand = new Command("remove")
         if (!paths || paths.length === 0) continue;
 
         for (const filePath of paths) {
-          // Unique categories use artifactId-based naming, others use getSafeFilename
-          const targetName = isUniqueCategory(category)
-            ? `${artifactId.replace("/", "-")}.md`
-            : getSafeFilename(artifactId, filePath);
+          const targetName = getSafeFilename(artifactId, filePath);
 
           const targetPath = `${projectRoot}/${categoryDir}/${targetName}`;
           if (existsSync(targetPath)) {
