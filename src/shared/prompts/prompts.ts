@@ -1,10 +1,7 @@
 import { ExitPromptError } from "@inquirer/core";
 import { input, confirm } from "@inquirer/prompts";
 import { newline, info, log, colors } from "#/shared/ui/ui";
-import { CATEGORIES, getCategoriesForFormat, type CustomTarget, type ComponentPaths, type Category } from "@grekt-labs/cli-engine";
-
-// Syncable categories (MD-based only)
-const SYNCABLE_CATEGORIES = getCategoriesForFormat("md");
+import { CATEGORIES, type CustomTarget, type ComponentPaths, type Category } from "@grekt-labs/cli-engine";
 
 export interface PromptCustomTargetResult {
   id: string;
@@ -65,16 +62,16 @@ export async function promptCustomTarget(
     contextEntryPoint,
   };
 
-  const categoryList = SYNCABLE_CATEGORIES.join("/");
+  const categoryList = CATEGORIES.join("/");
   const configurePaths = await confirm({
-    message: `Configure custom paths for CORE artifacts (${categoryList})?`,
+    message: `Configure custom paths for artifacts (${categoryList})?`,
     default: false,
   });
 
   if (configurePaths) {
     const paths: Partial<ComponentPaths> = {};
 
-    for (const category of SYNCABLE_CATEGORIES) {
+    for (const category of CATEGORIES) {
       const categoryPath = await input({
         message: `${category.charAt(0).toUpperCase() + category.slice(1)} path (e.g., .my-ai/${category}):`,
         validate: (value) => (value.trim() ? true : "Path is required"),

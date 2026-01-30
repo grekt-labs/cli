@@ -1,6 +1,6 @@
 # grekt
 
-CLI for managing AI artifacts (agents, skills, commands) that sync to Claude, Cursor, and other AI tools.
+AI tools versioned, synced, and shared across tools and teams.
 
 ## Installation
 
