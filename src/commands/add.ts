@@ -12,7 +12,7 @@ import { removeUnselectedFiles } from "#/artifact/component-manager/component-ma
 import { runCheck, displayCompactCheckResults } from "#/artifact/check/check";
 import { generateArtifactIndex } from "#/artifact/index/index";
 import { success, error, info, log, warning, newline, colors, spinner } from "#/shared/ui/ui";
-import { compareSemver, CATEGORIES, CATEGORY_CONFIG, type Category } from "@grekt-labs/cli-engine";
+import { compareSemver, CATEGORIES, type Category } from "@grekt-labs/cli-engine";
 
 
 export const addCommand = new Command("add")
@@ -165,8 +165,7 @@ export const addCommand = new Command("add")
       // Add selected components by category
       for (const category of CATEGORIES) {
         if (selection[category].length > 0) {
-          // For unique categories (agents), use boolean; for others, use array
-          entry[category] = CATEGORY_CONFIG[category].isUnique ? true : selection[category];
+          entry[category] = selection[category];
         }
       }
       config.artifacts[resolvedArtifactId] = entry as typeof config.artifacts[string];
