@@ -1,3 +1,10 @@
+## [4.8.3](https://github.com/grekt-labs/cli/compare/v4.8.2...v4.8.3) (2026-01-30)
+
+
+### Bug Fixes
+
+* check synced files for core mode artifacts ([a6663d3](https://github.com/grekt-labs/cli/commit/a6663d3289557f6891a4d4ee946ac0a52aa56b75))
+
 ## [4.8.2](https://github.com/grekt-labs/cli/compare/v4.8.1...v4.8.2) (2026-01-29)
 
 
