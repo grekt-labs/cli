@@ -1,10 +1,61 @@
-import { dirname } from "path";
+import { dirname, join } from "path";
 import type { SyncPlugin } from "#/sync/sync.types";
-import type { CustomTarget } from "@grekt-labs/cli-engine";
+import type { CustomTarget, FolderPluginConfig, RulesOnlyPluginConfig } from "@grekt-labs/cli-engine";
 import { claudePlugin } from "#/sync/plugins/claude/claude";
 import { cursorPlugin } from "#/sync/plugins/cursor/cursor";
 import { opencodePlugin } from "#/sync/plugins/opencode/opencode";
 import { createRulesOnlyPlugin, createFolderPlugin, generateDefaultBlockContent } from "#/sync/base/base";
+
+export interface SyncPaths {
+  agents: string;
+  skills: string;
+  commands: string;
+}
+
+export interface CategoryMapping {
+  lockKey: string;
+  isAgent: boolean;
+}
+
+export const SYNC_CATEGORY_MAP: Record<keyof SyncPaths, CategoryMapping> = {
+  agents: { lockKey: "agent", isAgent: true },
+  skills: { lockKey: "skills", isAgent: false },
+  commands: { lockKey: "commands", isAgent: false },
+};
+
+type PluginConfig =
+  | { type: "folder"; config: FolderPluginConfig }
+  | { type: "rulesOnly"; config: RulesOnlyPluginConfig };
+
+const builtInConfigs: Record<string, PluginConfig> = {
+  claude: {
+    type: "folder",
+    config: {
+      id: "claude",
+      name: "Claude",
+      targetDir: ".claude",
+      contextEntryPoint: ".claude/CLAUDE.md",
+      generateRulesContent: generateDefaultBlockContent,
+    },
+  },
+  cursor: {
+    type: "rulesOnly",
+    config: {
+      id: "cursor",
+      name: "Cursor",
+      contextEntryPoint: ".cursorrules",
+      generateRulesContent: generateDefaultBlockContent,
+    },
+  },
+  opencode: {
+    type: "folder",
+    config: {
+      id: "opencode",
+      name: "OpenCode",
+      targetDir: ".opencode",
+    },
+  },
+};
 
 const builtInPlugins: Record<string, SyncPlugin> = {
   claude: claudePlugin,
@@ -118,6 +169,39 @@ export function validateTargets(targets: string[]): string[] {
     throw new Error(`Invalid targets: ${invalid.join(", ")}. Available: ${available.join(", ")}`);
   }
   return targets;
+}
+
+/**
+ * Get sync paths for a target (where files are copied to).
+ * Returns null if target doesn't copy files (RulesOnlyPlugin).
+ */
+export function getSyncPaths(target: string, customTargets?: Record<string, CustomTarget>): SyncPaths | null {
+  // Check built-in plugins
+  const builtIn = builtInConfigs[target];
+  if (builtIn) {
+    if (builtIn.type === "rulesOnly") return null;
+
+    const { targetDir, paths } = builtIn.config;
+    return {
+      agents: paths?.agent ?? join(targetDir, "agents"),
+      skills: paths?.skill ?? join(targetDir, "skills"),
+      commands: paths?.command ?? join(targetDir, "commands"),
+    };
+  }
+
+  // Check custom targets
+  const customTarget = customTargets?.[target];
+  if (!customTarget) return null;
+
+  // Custom targets without paths are RulesOnlyPlugin
+  if (!customTarget.paths) return null;
+
+  const baseDir = dirname(customTarget.contextEntryPoint);
+  return {
+    agents: customTarget.paths.agent ?? join(baseDir, "agents"),
+    skills: customTarget.paths.skill ?? join(baseDir, "skills"),
+    commands: customTarget.paths.command ?? join(baseDir, "commands"),
+  };
 }
 
 // Re-export types

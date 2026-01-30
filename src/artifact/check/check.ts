@@ -1,12 +1,28 @@
-import { existsSync } from "fs";
-import { basename } from "path";
-import { getLockfile } from "#/context";
+import { existsSync, readFileSync } from "fs";
+import { basename, join } from "path";
+import { getLockfile, getSafeFilename } from "#/context";
+import { getConfig } from "#/config/project/project";
+import { getSyncPaths, SYNC_CATEGORY_MAP } from "#/sync/manager/manager";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
 import { verifyIntegrity, getDirectorySize, formatBytes, estimateTokens } from "#/context";
 import { success, warning, log, newline, colors, symbols } from "#/shared/ui/ui";
-import type { Lockfile } from "@grekt-labs/cli-engine";
+import type { Lockfile, ProjectConfig, ArtifactMode } from "@grekt-labs/cli-engine";
 
 const CONTEXT_WARNING_THRESHOLD = 10 * 1024; // 10 KB
+
+function getArtifactMode(config: ProjectConfig, artifactId: string): ArtifactMode {
+  const entry = config.artifacts[artifactId];
+  if (!entry) return "lazy";
+  if (typeof entry === "string") return "lazy";
+  return entry.mode ?? "lazy";
+}
+
+function filesAreEqual(path1: string, path2: string): boolean {
+  if (!existsSync(path1) || !existsSync(path2)) return false;
+  const content1 = readFileSync(path1);
+  const content2 = readFileSync(path2);
+  return content1.equals(content2);
+}
 
 export interface CheckResult {
   artifactId: string;
@@ -74,6 +90,7 @@ function detectCollisions(lockfile: Lockfile): CollisionInfo[] {
  */
 export function runCheck(projectRoot: string): CheckSummary {
   const lockfile = getLockfile(projectRoot);
+  const config = getConfig(projectRoot);
   const artifactIds = Object.keys(lockfile.artifacts);
 
   const results: CheckResult[] = [];
@@ -108,6 +125,47 @@ export function runCheck(projectRoot: string): CheckSummary {
 
         for (const mod of integrity.modifiedFiles) {
           result.issues.push(`Modified: ${mod.path}`);
+        }
+      }
+    }
+
+    // Check synced files for CORE mode artifacts
+    const mode = getArtifactMode(config, artifactId);
+    if (mode === "core" && lockEntry && config.targets.length > 0) {
+      for (const target of config.targets) {
+        const syncPaths = getSyncPaths(target, config.customTargets);
+        if (!syncPaths) continue;
+
+        const checkSyncedFile = (sourcePath: string, targetDir: string, targetName: string): void => {
+          const targetPath = `${projectRoot}/${targetDir}/${targetName}`;
+          if (existsSync(targetPath)) {
+            if (!filesAreEqual(sourcePath, targetPath)) {
+              result.status = "drift";
+              result.issues.push(`Synced modified (${target}): ${targetDir}/${targetName}`);
+            }
+          } else {
+            result.status = "drift";
+            result.issues.push(`Synced missing (${target}): ${targetDir}/${targetName}`);
+          }
+        };
+
+        for (const [category, targetDir] of Object.entries(syncPaths)) {
+          const mapping = SYNC_CATEGORY_MAP[category as keyof typeof SYNC_CATEGORY_MAP];
+          if (!mapping) continue;
+
+          const items = lockEntry[mapping.lockKey as keyof typeof lockEntry];
+          if (!items) continue;
+
+          const paths = Array.isArray(items) ? items : [items];
+          for (const filePath of paths) {
+            if (typeof filePath !== "string") continue;
+
+            const targetName = mapping.isAgent
+              ? `${artifactId.replace("/", "-")}.md`
+              : getSafeFilename(artifactId, filePath);
+
+            checkSyncedFile(join(artifactDir, filePath), targetDir, targetName);
+          }
         }
       }
     }
