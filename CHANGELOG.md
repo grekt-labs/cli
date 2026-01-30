@@ -1,3 +1,10 @@
+# [4.10.0](https://github.com/grekt-labs/cli/compare/v4.9.0...v4.10.0) (2026-01-30)
+
+
+### Features
+
+* release ([14c331a](https://github.com/grekt-labs/cli/commit/14c331af9c0ba61f9373dbfb23659eb2ffd6d8ae))
+
 # [4.9.0](https://github.com/grekt-labs/cli/compare/v4.8.4...v4.9.0) (2026-01-30)
 
 
