@@ -1,3 +1,10 @@
+## [4.10.1](https://github.com/grekt-labs/cli/compare/v4.10.0...v4.10.1) (2026-01-30)
+
+
+### Bug Fixes
+
+* update description and include all categories in custom target prompts ([5e0dd4b](https://github.com/grekt-labs/cli/commit/5e0dd4b333323146c1796f2843b10b96a96c2127))
+
 # [4.10.0](https://github.com/grekt-labs/cli/compare/v4.9.0...v4.10.0) (2026-01-30)
 
 
