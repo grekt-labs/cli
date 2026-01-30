@@ -1,3 +1,10 @@
+## [4.8.4](https://github.com/grekt-labs/cli/compare/v4.8.3...v4.8.4) (2026-01-30)
+
+
+### Bug Fixes
+
+* normalize author scope to prevent double @ in artifactId ([caa3480](https://github.com/grekt-labs/cli/commit/caa348015b1e2d485cd98dc87d0b8d7472f4c004))
+
 ## [4.8.3](https://github.com/grekt-labs/cli/compare/v4.8.2...v4.8.3) (2026-01-30)
 
 
