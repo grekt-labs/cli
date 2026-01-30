@@ -7,12 +7,12 @@ import { parseSource, downloadFromSource } from "#/registry/sources/sources";
 import { getSourceDisplayName } from "#/registry/registry";
 import { scanArtifact, getArtifactId } from "#/context";
 import { hashDirectory, calculateIntegrity } from "#/context";
-import { selectComponents, isEmptySelection, isFullSelection } from "#/artifact/selector/selector";
+import { selectComponents, isEmptySelection, isFullSelection, createEmptySelection, type ComponentSelection } from "#/artifact/selector/selector";
 import { removeUnselectedFiles } from "#/artifact/component-manager/component-manager";
 import { runCheck, displayCompactCheckResults } from "#/artifact/check/check";
 import { generateArtifactIndex } from "#/artifact/index/index";
 import { success, error, info, log, warning, newline, colors, spinner } from "#/shared/ui/ui";
-import { compareSemver } from "@grekt-labs/cli-engine";
+import { compareSemver, CATEGORIES, CATEGORY_CONFIG, type Category } from "@grekt-labs/cli-engine";
 
 
 export const addCommand = new Command("add")
@@ -118,24 +118,22 @@ export const addCommand = new Command("add")
     // Move temp dir to final location
     renameSync(tempDir, targetDir);
 
-    // Determine which components to install
-    let selectedAgent = artifactInfo.agent?.path;
-    let selectedSkills = artifactInfo.skills.map((s) => s.path);
-    let selectedCommands = artifactInfo.commands.map((c) => c.path);
+    // Determine which components to install (default: all)
+    let selection: ComponentSelection = createEmptySelection();
+    for (const category of CATEGORIES) {
+      selection[category] = artifactInfo[category].map((f) => f.path);
+    }
 
     // If --choose flag, let user select components
     if (options.choose) {
-      const hasComponents = artifactInfo.agent || artifactInfo.skills.length > 0 || artifactInfo.commands.length > 0;
+      const hasComponents = CATEGORIES.some((cat) => artifactInfo[cat].length > 0);
 
       if (hasComponents) {
         newline();
         log(`${colors.highlight(resolvedArtifactId)}@${artifactInfo.manifest.version}`);
         newline();
 
-        const selection = await selectComponents(artifactInfo);
-        selectedAgent = selection.agent;
-        selectedSkills = selection.skills;
-        selectedCommands = selection.commands;
+        selection = await selectComponents(artifactInfo);
 
         if (isEmptySelection(selection)) {
           warning("No components selected");
@@ -144,11 +142,7 @@ export const addCommand = new Command("add")
         }
 
         // Remove unselected files from artifact directory
-        removeUnselectedFiles(targetDir, artifactInfo, {
-          agent: selectedAgent,
-          skills: selectedSkills,
-          commands: selectedCommands,
-        });
+        removeUnselectedFiles(targetDir, artifactInfo, selection);
       }
     }
 
@@ -156,8 +150,7 @@ export const addCommand = new Command("add")
     const config = getConfig(projectRoot);
 
     // Check if all components were selected (no --choose or all selected)
-    const currentSelection = { agent: selectedAgent, skills: selectedSkills, commands: selectedCommands };
-    const allSelected = isFullSelection(artifactInfo, currentSelection);
+    const allSelected = isFullSelection(artifactInfo, selection);
 
     // Use simple format only if all selected AND not core mode
     if (allSelected && !options.core) {
@@ -169,9 +162,13 @@ export const addCommand = new Command("add")
         version: artifactInfo.manifest.version,
       };
       if (options.core) entry.mode = "core";
-      if (selectedAgent) entry.agent = true;
-      if (selectedSkills.length > 0) entry.skills = selectedSkills;
-      if (selectedCommands.length > 0) entry.commands = selectedCommands;
+      // Add selected components by category
+      for (const category of CATEGORIES) {
+        if (selection[category].length > 0) {
+          // For unique categories (agents), use boolean; for others, use array
+          entry[category] = CATEGORY_CONFIG[category].isUnique ? true : selection[category];
+        }
+      }
       config.artifacts[resolvedArtifactId] = entry as typeof config.artifacts[string];
     }
     saveConfig(config, projectRoot);
@@ -188,9 +185,7 @@ export const addCommand = new Command("add")
       resolved: downloadResult.resolved, // Full URL, immutable after write
       mode: options.core ? "core" : "lazy",
       files: fileHashes,
-      agent: selectedAgent,
-      skills: selectedSkills,
-      commands: selectedCommands,
+      ...selection, // Spread all category selections (agents, skills, commands, mcps, rules)
     };
     saveLockfile(lockfile, projectRoot);
 
@@ -202,23 +197,15 @@ export const addCommand = new Command("add")
     success(`Installed ${colors.highlight(resolvedArtifactId)}@${artifactInfo.manifest.version}${modeLabel}`);
 
     // Show what was actually installed
-    if (selectedAgent) {
-      const agentName = artifactInfo.agent?.parsed.frontmatter["grk-name"] ?? selectedAgent;
-      log(`  ${colors.dim("agent:")} ${agentName}`);
-    }
-    if (selectedSkills.length > 0) {
-      const skillNames = selectedSkills.map((path) => {
-        const skill = artifactInfo.skills.find((s) => s.path === path);
-        return skill?.parsed.frontmatter["grk-name"] ?? path;
+    for (const category of CATEGORIES) {
+      const selectedPaths = selection[category];
+      if (selectedPaths.length === 0) continue;
+
+      const names = selectedPaths.map((path) => {
+        const file = artifactInfo[category].find((f) => f.path === path);
+        return file?.parsed.frontmatter["grk-name"] ?? path;
       });
-      log(`  ${colors.dim("skills:")} ${skillNames.join(", ")}`);
-    }
-    if (selectedCommands.length > 0) {
-      const cmdNames = selectedCommands.map((path) => {
-        const cmd = artifactInfo.commands.find((c) => c.path === path);
-        return cmd?.parsed.frontmatter["grk-name"] ?? path;
-      });
-      log(`  ${colors.dim("commands:")} ${cmdNames.join(", ")}`);
+      log(`  ${colors.dim(`${category}:`)} ${names.join(", ")}`);
     }
 
     newline();

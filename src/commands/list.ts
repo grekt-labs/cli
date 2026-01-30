@@ -5,6 +5,7 @@ import { getLockfile } from "#/context";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
 import { getDirectorySize, formatBytes, estimateTokens } from "#/context";
 import { error, info, log, colors, newline } from "#/shared/ui/ui";
+import { CATEGORIES } from "@grekt-labs/cli-engine";
 
 export const listCommand = new Command("list")
   .alias("ls")
@@ -51,16 +52,11 @@ export const listCommand = new Command("list")
 
       log(`  ${colors.highlight(name)}${colors.dim(`@${artifact.version}`)}  ${colors.dim(sizeStr)}`);
 
-      if (artifact.agent) {
-        log(`    ${colors.dim("agent:")} ${artifact.agent}`);
-      }
-
-      if (artifact.skills.length > 0) {
-        log(`    ${colors.dim("skills:")} ${artifact.skills.join(", ")}`);
-      }
-
-      if (artifact.commands.length > 0) {
-        log(`    ${colors.dim("commands:")} ${artifact.commands.join(", ")}`);
+      for (const category of CATEGORIES) {
+        const paths = artifact[category];
+        if (paths && paths.length > 0) {
+          log(`    ${colors.dim(`${category}:`)} ${paths.join(", ")}`);
+        }
       }
 
       newline();

@@ -3,7 +3,7 @@ import { join, resolve } from "path";
 import { parse } from "yaml";
 import { isInitialized } from "#/config/project/project";
 import { fs as cliFs } from "#/context";
-import { scanArtifact, ArtifactManifestSchema, isValidSemver } from "@grekt-labs/cli-engine";
+import { scanArtifact, ArtifactManifestSchema, isValidSemver, CATEGORIES } from "@grekt-labs/cli-engine";
 import type { InvalidFile } from "@grekt-labs/cli-engine";
 import type {
   ValidatedArtifact,
@@ -137,12 +137,10 @@ export function validateArtifact(
     };
   }
 
-  const componentCount =
-    (scanned.agent ? 1 : 0) +
-    scanned.skills.length +
-    scanned.commands.length +
-    scanned.mcps.length +
-    scanned.rules.length;
+  const componentCount = CATEGORIES.reduce(
+    (count, category) => count + scanned[category].length,
+    0
+  );
 
   if (componentCount === 0) {
     const details: string[] = [];

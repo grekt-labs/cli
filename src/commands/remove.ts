@@ -4,17 +4,21 @@ import { join } from "path";
 import { confirm } from "@inquirer/prompts";
 import { isInitialized, getConfig, saveConfig } from "#/config/project/project";
 import { getLockfile, saveLockfile } from "#/context";
-import { getSafeFilename } from "@grekt-labs/cli-engine";
+import { getSafeFilename, CATEGORIES, CATEGORY_CONFIG, isUniqueCategory, type Category } from "@grekt-labs/cli-engine";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
 import { generateArtifactIndex } from "#/artifact/index/index";
 import { success, error, info, log, newline, colors } from "#/shared/ui/ui";
 import { withPromptHandler } from "#/shared/prompts/prompts";
 
-// Claude target paths
+// Claude target paths (TODO: should use sync manager for all targets)
 const CLAUDE_DIR = ".claude";
-const CLAUDE_AGENTS_DIR = join(CLAUDE_DIR, "agents");
-const CLAUDE_SKILLS_DIR = join(CLAUDE_DIR, "skills");
-const CLAUDE_COMMANDS_DIR = join(CLAUDE_DIR, "commands");
+const CLAUDE_CATEGORY_DIRS: Record<Category, string> = {
+  agents: join(CLAUDE_DIR, "agents"),
+  skills: join(CLAUDE_DIR, "skills"),
+  commands: join(CLAUDE_DIR, "commands"),
+  mcps: join(CLAUDE_DIR, "mcps"),
+  rules: join(CLAUDE_DIR, "rules"),
+};
 
 export const removeCommand = new Command("remove")
   .alias("rm")
@@ -50,14 +54,11 @@ export const removeCommand = new Command("remove")
     newline();
     log(`  ${colors.highlight(artifactId)}@${colors.dim(artifact.version)}`);
 
-    if (artifact.agent) {
-      log(`    ${colors.dim("agent:")} ${artifact.agent}`);
-    }
-    if (artifact.skills.length > 0) {
-      log(`    ${colors.dim("skills:")} ${artifact.skills.join(", ")}`);
-    }
-    if (artifact.commands.length > 0) {
-      log(`    ${colors.dim("commands:")} ${artifact.commands.join(", ")}`);
+    for (const category of CATEGORIES) {
+      const paths = artifact[category];
+      if (paths && paths.length > 0) {
+        log(`    ${colors.dim(`${category}:`)} ${paths.join(", ")}`);
+      }
     }
 
     newline();
@@ -86,39 +87,28 @@ export const removeCommand = new Command("remove")
     // Remove synced files from .claude/
     const claudeDir = `${projectRoot}/${CLAUDE_DIR}`;
     if (existsSync(claudeDir)) {
-      // Remove agent file
-      if (artifact.agent) {
-        const agentTarget = `${projectRoot}/${CLAUDE_AGENTS_DIR}/${artifactId.replace("/", "-")}.md`;
-        if (existsSync(agentTarget)) {
-          unlinkSync(agentTarget);
-          removed.push(`${CLAUDE_AGENTS_DIR}/${artifactId.replace("/", "-")}.md`);
-        }
-      }
+      for (const category of CATEGORIES) {
+        const categoryDir = CLAUDE_CATEGORY_DIRS[category];
+        const paths = artifact[category];
 
-      // Remove skill files (namespaced)
-      for (const skillPath of artifact.skills) {
-        const skillName = getSafeFilename(artifactId, skillPath);
-        const skillTarget = `${projectRoot}/${CLAUDE_SKILLS_DIR}/${skillName}`;
-        if (existsSync(skillTarget)) {
-          unlinkSync(skillTarget);
-          removed.push(`${CLAUDE_SKILLS_DIR}/${skillName}`);
-        }
-      }
+        if (!paths || paths.length === 0) continue;
 
-      // Remove command files (namespaced)
-      for (const cmdPath of artifact.commands) {
-        const cmdName = getSafeFilename(artifactId, cmdPath);
-        const cmdTarget = `${projectRoot}/${CLAUDE_COMMANDS_DIR}/${cmdName}`;
-        if (existsSync(cmdTarget)) {
-          unlinkSync(cmdTarget);
-          removed.push(`${CLAUDE_COMMANDS_DIR}/${cmdName}`);
-        }
-      }
+        for (const filePath of paths) {
+          // Unique categories use artifactId-based naming, others use getSafeFilename
+          const targetName = isUniqueCategory(category)
+            ? `${artifactId.replace("/", "-")}.md`
+            : getSafeFilename(artifactId, filePath);
 
-      // Clean up empty directories
-      cleanEmptyDir(`${projectRoot}/${CLAUDE_AGENTS_DIR}`);
-      cleanEmptyDir(`${projectRoot}/${CLAUDE_SKILLS_DIR}`);
-      cleanEmptyDir(`${projectRoot}/${CLAUDE_COMMANDS_DIR}`);
+          const targetPath = `${projectRoot}/${categoryDir}/${targetName}`;
+          if (existsSync(targetPath)) {
+            unlinkSync(targetPath);
+            removed.push(`${categoryDir}/${targetName}`);
+          }
+        }
+
+        // Clean up empty directory
+        cleanEmptyDir(`${projectRoot}/${categoryDir}`);
+      }
     }
 
     // Update grekt.yaml

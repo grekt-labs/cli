@@ -6,10 +6,13 @@ import {
   scanArtifact,
   generateIndex,
   serializeIndex,
+  CATEGORIES,
+  createCategoryRecord,
   type IndexGeneratorInput,
   type ArtifactMode,
   type ProjectConfig,
   type Lockfile,
+  type CategoryFilePaths,
 } from "@grekt-labs/cli-engine";
 
 /**
@@ -72,17 +75,17 @@ export function generateArtifactIndex(projectRoot: string, config: ProjectConfig
         const mode = getArtifactMode(lockfile, config, artifactId);
         const keywords = scanned.manifest.keywords ?? [];
 
+        // Build components map dynamically from categories
+        const components = createCategoryRecord<string[]>(() => []);
+        for (const category of CATEGORIES) {
+          components[category] = scanned[category].map((f) => f.path);
+        }
+
         inputs.push({
           artifactId,
           keywords,
           mode,
-          components: {
-            agents: scanned.agent ? [scanned.agent.path] : [],
-            skills: scanned.skills.map((s) => s.path),
-            commands: scanned.commands.map((c) => c.path),
-            mcps: scanned.mcps.map((m) => m.path),
-            rules: scanned.rules.map((r) => r.path),
-          },
+          components,
         });
       }
     }

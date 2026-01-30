@@ -3,7 +3,8 @@ import { existsSync, mkdirSync, rmSync, writeFileSync } from "fs";
 import { join } from "path";
 import { removeUnselectedFiles, cleanEmptyDirs } from "./component-manager";
 import type { ArtifactInfo } from "#/context";
-import type { ComponentSelection } from "#/artifact/selector/selector";
+import { createEmptySelection, type ComponentSelection } from "#/artifact/selector/selector";
+import { createCategoryRecord } from "@grekt-labs/cli-engine";
 
 describe("component-manager", () => {
   const testDir = join(process.cwd(), ".test-component-manager");
@@ -28,25 +29,29 @@ describe("component-manager", () => {
       version: "1.0.0",
       description: "desc",
     },
-    agent: {
-      path: "agent.md",
-      parsed: {
-        frontmatter: { type: "agent", name: "Agent", description: "desc" },
-        content: "content",
+    invalidFiles: [],
+    ...createCategoryRecord(() => []),
+    agents: [
+      {
+        path: "agent.md",
+        parsed: {
+          frontmatter: { "grk-type": "agents", "grk-name": "Agent", "grk-description": "desc" },
+          content: "content",
+        },
       },
-    },
+    ],
     skills: [
       {
         path: "skills/skill1.md",
         parsed: {
-          frontmatter: { type: "skill", name: "Skill 1", description: "desc" },
+          frontmatter: { "grk-type": "skills", "grk-name": "Skill 1", "grk-description": "desc" },
           content: "content",
         },
       },
       {
         path: "skills/skill2.md",
         parsed: {
-          frontmatter: { type: "skill", name: "Skill 2", description: "desc" },
+          frontmatter: { "grk-type": "skills", "grk-name": "Skill 2", "grk-description": "desc" },
           content: "content",
         },
       },
@@ -55,7 +60,7 @@ describe("component-manager", () => {
       {
         path: "commands/cmd1.md",
         parsed: {
-          frontmatter: { type: "command", name: "Cmd 1", description: "desc" },
+          frontmatter: { "grk-type": "commands", "grk-name": "Cmd 1", "grk-description": "desc" },
           content: "content",
         },
       },
@@ -73,7 +78,8 @@ describe("component-manager", () => {
 
       const artifactInfo = createTestArtifactInfo();
       const selection: ComponentSelection = {
-        agent: undefined,
+        ...createEmptySelection(),
+        agents: [],
         skills: ["skills/skill1.md", "skills/skill2.md"],
         commands: ["commands/cmd1.md"],
       };
@@ -90,7 +96,8 @@ describe("component-manager", () => {
 
       const artifactInfo = createTestArtifactInfo();
       const selection: ComponentSelection = {
-        agent: "agent.md",
+        ...createEmptySelection(),
+        agents: ["agent.md"],
         skills: ["skills/skill1.md"],
         commands: ["commands/cmd1.md"],
       };
@@ -111,7 +118,8 @@ describe("component-manager", () => {
 
       const artifactInfo = createTestArtifactInfo();
       const selection: ComponentSelection = {
-        agent: "agent.md",
+        ...createEmptySelection(),
+        agents: ["agent.md"],
         skills: ["skills/skill1.md", "skills/skill2.md"],
         commands: ["commands/cmd1.md"],
       };

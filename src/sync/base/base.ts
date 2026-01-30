@@ -1,9 +1,21 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync, copyFileSync } from "fs";
 import { dirname, join } from "path";
 import type { SyncPlugin, SyncResult, SyncOptions, SyncPreview, FolderPluginConfig, RulesOnlyPluginConfig } from "#/sync/sync.types";
-import type { Lockfile, ProjectConfig, ArtifactMode } from "@grekt-labs/cli-engine";
+import {
+  type Lockfile,
+  type ProjectConfig,
+  type ArtifactMode,
+  type Category,
+  CATEGORIES,
+  CATEGORY_CONFIG,
+  isUniqueCategory,
+  getCategoriesForFormat,
+} from "@grekt-labs/cli-engine";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
 import { getSafeFilename, GREKT_BLOCK_START, GREKT_BLOCK_END, generateDefaultBlockContent } from "@grekt-labs/cli-engine";
+
+// MD categories can be synced to folder targets
+const SYNCABLE_CATEGORIES = getCategoriesForFormat("md");
 
 // Re-export for external use
 export { GREKT_BLOCK_START, GREKT_BLOCK_END, generateDefaultBlockContent } from "@grekt-labs/cli-engine";
@@ -46,15 +58,16 @@ function shouldSyncArtifact(config: ProjectConfig | undefined, artifactId: strin
 }
 
 /**
- * Create a folder-based plugin that syncs agents/skills/commands to subfolders.
+ * Create a folder-based plugin that syncs artifacts to category subfolders.
  * Optionally updates a rules file (like CLAUDE.md).
  */
 export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
   const { id, name, targetDir, contextEntryPoint, generateRulesContent } = config;
 
-  const AGENT_DIR = config.paths?.agent ?? join(targetDir, "agents");
-  const SKILL_DIR = config.paths?.skill ?? join(targetDir, "skills");
-  const COMMAND_DIR = config.paths?.command ?? join(targetDir, "commands");
+  // Build category paths from config or defaults
+  function getCategoryDir(category: Category): string {
+    return config.paths?.[category] ?? join(targetDir, CATEGORY_CONFIG[category].defaultPath);
+  }
 
   function updateContextEntryPoint(projectRoot: string, lockfile: Lockfile, result: SyncResult): void {
     if (!contextEntryPoint || !generateRulesContent) return;
@@ -83,6 +96,13 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
     result.updated.push(contextEntryPoint);
   }
 
+  // Get target filename for a component
+  function getTargetName(artifactId: string, category: Category, filePath: string): string {
+    return isUniqueCategory(category)
+      ? `${artifactId.replace("/", "-")}.md`
+      : getSafeFilename(artifactId, filePath);
+  }
+
   return {
     id,
     name,
@@ -105,7 +125,7 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
       }
 
       // Create target directories
-      const dirs = [targetDir, AGENT_DIR, SKILL_DIR, COMMAND_DIR];
+      const dirs = [targetDir, ...SYNCABLE_CATEGORIES.map(getCategoryDir)];
       for (const dir of dirs) {
         const fullPath = `${projectRoot}/${dir}`;
         if (!existsSync(fullPath)) {
@@ -115,7 +135,6 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
 
       // Sync each artifact (only CORE mode artifacts are copied)
       for (const [artifactId, artifact] of Object.entries(lockfile.artifacts)) {
-        // Skip LAZY mode artifacts - they're only in the index
         if (!shouldSyncArtifact(options.projectConfig, artifactId)) {
           result.skipped.push(`${artifactId} (lazy mode)`);
           continue;
@@ -123,70 +142,35 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
 
         const artifactDir = `${projectRoot}/${ARTIFACTS_DIR}/${artifactId}`;
 
-        // Copy agent
-        if (artifact.agent) {
-          const source = join(artifactDir, artifact.agent);
-          const targetName = `${artifactId.replace("/", "-")}.md`;
-          const target = `${projectRoot}/${AGENT_DIR}/${targetName}`;
+        // Copy files for each syncable category
+        for (const category of SYNCABLE_CATEGORIES) {
+          const categoryDir = getCategoryDir(category);
+          const files = artifact[category];
 
-          if (existsSync(source)) {
-            ensureDir(target);
-            const existed = existsSync(target);
-            copyFileSync(source, target);
-            if (existed) {
-              result.updated.push(`${AGENT_DIR}/${targetName}`);
+          if (!files || files.length === 0) continue;
+
+          for (const filePath of files) {
+            const source = join(artifactDir, filePath);
+            const targetName = getTargetName(artifactId, category, filePath);
+            const target = `${projectRoot}/${categoryDir}/${targetName}`;
+
+            if (existsSync(source)) {
+              ensureDir(target);
+              const existed = existsSync(target);
+              copyFileSync(source, target);
+              if (existed) {
+                result.updated.push(`${categoryDir}/${targetName}`);
+              } else {
+                result.created.push(`${categoryDir}/${targetName}`);
+              }
             } else {
-              result.created.push(`${AGENT_DIR}/${targetName}`);
+              result.skipped.push(`${artifactId}/${filePath} (source not found)`);
             }
-          } else {
-            result.skipped.push(`${artifactId}/agent (source not found)`);
-          }
-        }
-
-        // Copy skills
-        for (const skillPath of artifact.skills) {
-          const source = join(artifactDir, skillPath);
-          const skillName = getSafeFilename(artifactId, skillPath);
-          const target = `${projectRoot}/${SKILL_DIR}/${skillName}`;
-
-          if (existsSync(source)) {
-            ensureDir(target);
-            const existed = existsSync(target);
-            copyFileSync(source, target);
-            if (existed) {
-              result.updated.push(`${SKILL_DIR}/${skillName}`);
-            } else {
-              result.created.push(`${SKILL_DIR}/${skillName}`);
-            }
-          } else {
-            result.skipped.push(`${artifactId}/${skillPath} (source not found)`);
-          }
-        }
-
-        // Copy commands
-        for (const cmdPath of artifact.commands) {
-          const source = join(artifactDir, cmdPath);
-          const cmdName = getSafeFilename(artifactId, cmdPath);
-          const target = `${projectRoot}/${COMMAND_DIR}/${cmdName}`;
-
-          if (existsSync(source)) {
-            ensureDir(target);
-            const existed = existsSync(target);
-            copyFileSync(source, target);
-            if (existed) {
-              result.updated.push(`${COMMAND_DIR}/${cmdName}`);
-            } else {
-              result.created.push(`${COMMAND_DIR}/${cmdName}`);
-            }
-          } else {
-            result.skipped.push(`${artifactId}/${cmdPath} (source not found)`);
           }
         }
       }
 
-      // Update context entry point if configured
       updateContextEntryPoint(projectRoot, lockfile, result);
-
       return result;
     },
 
@@ -198,7 +182,6 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
       }
 
       for (const [artifactId, artifact] of Object.entries(lockfile.artifacts)) {
-        // Skip LAZY mode artifacts - they're only in the index
         if (!shouldSyncArtifact(options?.projectConfig, artifactId)) {
           preview.willSkip.push(`${artifactId} (lazy mode)`);
           continue;
@@ -206,50 +189,28 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
 
         const artifactDir = `${projectRoot}/${ARTIFACTS_DIR}/${artifactId}`;
 
-        if (artifact.agent) {
-          const source = join(artifactDir, artifact.agent);
-          const targetName = `${artifactId.replace("/", "-")}.md`;
-          const target = `${projectRoot}/${AGENT_DIR}/${targetName}`;
+        for (const category of SYNCABLE_CATEGORIES) {
+          const categoryDir = getCategoryDir(category);
+          const files = artifact[category];
 
-          if (!existsSync(source)) {
-            preview.willSkip.push(`${artifactId}/agent (source not found)`);
-          } else if (existsSync(target)) {
-            preview.willUpdate.push(`${AGENT_DIR}/${targetName}`);
-          } else {
-            preview.willCreate.push(`${AGENT_DIR}/${targetName}`);
-          }
-        }
+          if (!files || files.length === 0) continue;
 
-        for (const skillPath of artifact.skills) {
-          const source = join(artifactDir, skillPath);
-          const skillName = getSafeFilename(artifactId, skillPath);
-          const target = `${projectRoot}/${SKILL_DIR}/${skillName}`;
+          for (const filePath of files) {
+            const source = join(artifactDir, filePath);
+            const targetName = getTargetName(artifactId, category, filePath);
+            const target = `${projectRoot}/${categoryDir}/${targetName}`;
 
-          if (!existsSync(source)) {
-            preview.willSkip.push(`${artifactId}/${skillPath} (source not found)`);
-          } else if (existsSync(target)) {
-            preview.willUpdate.push(`${SKILL_DIR}/${skillName}`);
-          } else {
-            preview.willCreate.push(`${SKILL_DIR}/${skillName}`);
-          }
-        }
-
-        for (const cmdPath of artifact.commands) {
-          const source = join(artifactDir, cmdPath);
-          const cmdName = getSafeFilename(artifactId, cmdPath);
-          const target = `${projectRoot}/${COMMAND_DIR}/${cmdName}`;
-
-          if (!existsSync(source)) {
-            preview.willSkip.push(`${artifactId}/${cmdPath} (source not found)`);
-          } else if (existsSync(target)) {
-            preview.willUpdate.push(`${COMMAND_DIR}/${cmdName}`);
-          } else {
-            preview.willCreate.push(`${COMMAND_DIR}/${cmdName}`);
+            if (!existsSync(source)) {
+              preview.willSkip.push(`${artifactId}/${filePath} (source not found)`);
+            } else if (existsSync(target)) {
+              preview.willUpdate.push(`${categoryDir}/${targetName}`);
+            } else {
+              preview.willCreate.push(`${categoryDir}/${targetName}`);
+            }
           }
         }
       }
 
-      // Context entry point preview
       if (contextEntryPoint) {
         if (!existsSync(`${projectRoot}/${contextEntryPoint}`)) {
           preview.willCreate.push(contextEntryPoint);

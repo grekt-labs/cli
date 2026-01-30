@@ -32,9 +32,11 @@ describe("base", () => {
         version: "1.0.0",
         integrity: "sha256:abc",
         files: {},
-        agent: "agent.md",
+        agents: ["agent.md"],
         skills: [],
         commands: [],
+        mcps: [],
+        rules: [],
       },
     },
   };

@@ -1,10 +1,11 @@
 import { describe, test, expect } from "bun:test";
-import { isFullSelection, isEmptySelection, type ComponentSelection } from "./selector";
+import { isFullSelection, isEmptySelection, createEmptySelection, type ComponentSelection } from "./selector";
 import type { ArtifactInfo } from "#/context";
+import { CATEGORIES, createCategoryRecord } from "@grekt-labs/cli-engine";
 
 describe("selector", () => {
   const createArtifactInfo = (options: {
-    hasAgent?: boolean;
+    agentCount?: number;
     skillCount?: number;
     commandCount?: number;
   }): ArtifactInfo => {
@@ -15,25 +16,25 @@ describe("selector", () => {
         version: "1.0.0",
         description: "desc",
       },
-      skills: [],
-      commands: [],
+      invalidFiles: [],
+      ...createCategoryRecord(() => []),
     };
 
-    if (options.hasAgent) {
-      info.agent = {
-        path: "agent.md",
+    for (let i = 0; i < (options.agentCount || 0); i++) {
+      info.agents.push({
+        path: `agents/agent${i}.md`,
         parsed: {
-          frontmatter: { type: "agent", name: "Agent", description: "desc" },
+          frontmatter: { "grk-type": "agents", "grk-name": `Agent ${i}`, "grk-description": "desc" },
           content: "content",
         },
-      };
+      });
     }
 
     for (let i = 0; i < (options.skillCount || 0); i++) {
       info.skills.push({
         path: `skills/skill${i}.md`,
         parsed: {
-          frontmatter: { type: "skill", name: `Skill ${i}`, description: "desc" },
+          frontmatter: { "grk-type": "skills", "grk-name": `Skill ${i}`, "grk-description": "desc" },
           content: "content",
         },
       });
@@ -43,7 +44,7 @@ describe("selector", () => {
       info.commands.push({
         path: `commands/cmd${i}.md`,
         parsed: {
-          frontmatter: { type: "command", name: `Command ${i}`, description: "desc" },
+          frontmatter: { "grk-type": "commands", "grk-name": `Command ${i}`, "grk-description": "desc" },
           content: "content",
         },
       });
@@ -55,12 +56,13 @@ describe("selector", () => {
   describe("isFullSelection", () => {
     test("returns true when all components selected", () => {
       const artifactInfo = createArtifactInfo({
-        hasAgent: true,
+        agentCount: 1,
         skillCount: 2,
         commandCount: 1,
       });
       const selection: ComponentSelection = {
-        agent: "agent.md",
+        ...createEmptySelection(),
+        agents: ["agents/agent0.md"],
         skills: ["skills/skill0.md", "skills/skill1.md"],
         commands: ["commands/cmd0.md"],
       };
@@ -70,13 +72,13 @@ describe("selector", () => {
 
     test("returns false for partial selection", () => {
       const artifactInfo = createArtifactInfo({
-        hasAgent: true,
+        agentCount: 1,
         skillCount: 2,
       });
       const selection: ComponentSelection = {
-        agent: undefined,
+        ...createEmptySelection(),
+        agents: [],
         skills: ["skills/skill0.md"],
-        commands: [],
       };
 
       expect(isFullSelection(artifactInfo, selection)).toBe(false);
@@ -84,11 +86,7 @@ describe("selector", () => {
 
     test("returns true for empty artifact with empty selection", () => {
       const artifactInfo = createArtifactInfo({});
-      const selection: ComponentSelection = {
-        agent: undefined,
-        skills: [],
-        commands: [],
-      };
+      const selection = createEmptySelection();
 
       expect(isFullSelection(artifactInfo, selection)).toBe(true);
     });
@@ -96,20 +94,15 @@ describe("selector", () => {
 
   describe("isEmptySelection", () => {
     test("returns true when nothing selected", () => {
-      const selection: ComponentSelection = {
-        agent: undefined,
-        skills: [],
-        commands: [],
-      };
+      const selection = createEmptySelection();
 
       expect(isEmptySelection(selection)).toBe(true);
     });
 
-    test("returns false when something selected", () => {
+    test("returns false when agent selected", () => {
       const selection: ComponentSelection = {
-        agent: "agent.md",
-        skills: [],
-        commands: [],
+        ...createEmptySelection(),
+        agents: ["agents/agent.md"],
       };
 
       expect(isEmptySelection(selection)).toBe(false);
@@ -117,9 +110,8 @@ describe("selector", () => {
 
     test("returns false when skills selected", () => {
       const selection: ComponentSelection = {
-        agent: undefined,
+        ...createEmptySelection(),
         skills: ["skills/skill.md"],
-        commands: [],
       };
 
       expect(isEmptySelection(selection)).toBe(false);
@@ -127,8 +119,7 @@ describe("selector", () => {
 
     test("returns false when commands selected", () => {
       const selection: ComponentSelection = {
-        agent: undefined,
-        skills: [],
+        ...createEmptySelection(),
         commands: ["commands/cmd.md"],
       };
 

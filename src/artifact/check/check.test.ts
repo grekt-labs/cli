@@ -109,15 +109,21 @@ describe("runCheck", () => {
           version: "1.0.0",
           integrity: "sha256:a",
           files: {},
+          agents: [],
           skills: ["skills/shared.md"],
           commands: [],
+          mcps: [],
+          rules: [],
         },
         "@org/b": {
           version: "1.0.0",
           integrity: "sha256:b",
           files: {},
+          agents: [],
           skills: ["skills/shared.md"],
           commands: [],
+          mcps: [],
+          rules: [],
         },
       },
     });
@@ -126,7 +132,7 @@ describe("runCheck", () => {
 
     expect(summary.collisions.length).toBeGreaterThan(0);
     expect(summary.collisions[0].filename).toBe("shared.md");
-    expect(summary.collisions[0].type).toBe("skill");
+    expect(summary.collisions[0].category).toBe("skills");
   });
 
   test("calculates total size of all artifacts", () => {
