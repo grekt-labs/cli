@@ -32,7 +32,7 @@ export async function unsetRegistry(scope: string): Promise<void> {
   success(`Registry ${colors.highlight(scope)} removed`);
 }
 
-export async function setRepoTokenInteractive(): Promise<void> {
+export async function setTokenInteractive(): Promise<void> {
   await withPromptHandler(async () => {
     const { host, token } = await promptRepoToken();
     setToken(host, token);
@@ -40,7 +40,7 @@ export async function setRepoTokenInteractive(): Promise<void> {
   });
 }
 
-export async function unsetRepoToken(host: string): Promise<void> {
+export async function unsetToken(host: string): Promise<void> {
   removeToken(host);
   success(`Token for ${colors.highlight(host)} removed`);
 }
