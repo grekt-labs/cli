@@ -1,3 +1,10 @@
+## [5.4.1](https://github.com/grekt-labs/cli/compare/v5.4.0...v5.4.1) (2026-01-31)
+
+
+### Bug Fixes
+
+* update cli engine missing version ([d6a8540](https://github.com/grekt-labs/cli/commit/d6a8540fdf637c18d215773f005b5a58b1cd8a9a))
+
 # [5.4.0](https://github.com/grekt-labs/cli/compare/v5.3.0...v5.4.0) (2026-01-31)
 
 
