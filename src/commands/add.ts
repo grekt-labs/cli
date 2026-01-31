@@ -1,4 +1,5 @@
 import { Command } from "commander";
+import { randomUUID } from "crypto";
 import { existsSync, mkdirSync, rmSync, renameSync } from "fs";
 import { isInitialized, getConfig, saveConfig } from "#/config/project/project";
 import { getLockfile, saveLockfile } from "#/context";
@@ -35,7 +36,7 @@ export const addCommand = new Command("add")
     const displayName = getSourceDisplayName(source);
 
     // For git sources, use temp dir first, then rename after we know the artifact ID
-    const tempDir = `${projectRoot}/${ARTIFACTS_DIR}/.tmp-${Date.now()}`;
+    const tempDir = `${projectRoot}/${ARTIFACTS_DIR}/.tmp-${randomUUID()}`;
 
     const spin = spinner(`Downloading ${displayName}...`);
     spin.start();
