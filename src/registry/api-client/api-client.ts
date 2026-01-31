@@ -1,5 +1,5 @@
-import { mkdirSync, writeFileSync } from "fs";
-import { execSync } from "child_process";
+import { mkdirSync, writeFileSync, rmSync } from "fs";
+import { execFileSync } from "child_process";
 import type { ArtifactMetadata } from "@grekt-labs/cli-engine";
 import { sortVersionsDesc, getHighestVersion } from "@grekt-labs/cli-engine";
 import { getSupabaseClient, getSession, SUPABASE_URL } from "#/auth/session/session";
@@ -157,10 +157,10 @@ export class RegistryClient {
       writeFileSync(tempTarball, Buffer.from(buffer));
 
       mkdirSync(targetDir, { recursive: true });
-      execSync(`tar -xzf ${tempTarball} -C ${targetDir} --strip-components=1`, {
+      execFileSync("tar", ["-xzf", tempTarball, "-C", targetDir, "--strip-components=1"], {
         stdio: "pipe",
       });
-      execSync(`rm -f ${tempTarball}`, { stdio: "pipe" });
+      rmSync(tempTarball, { force: true });
 
       return {
         success: true,
