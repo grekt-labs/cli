@@ -1,4 +1,5 @@
 import { Command } from "commander";
+import { randomUUID } from "crypto";
 import { existsSync, mkdirSync, rmSync, renameSync } from "fs";
 import { isInitialized, getConfig, saveConfig } from "#/config/project/project";
 import { getLockfile, saveLockfile } from "#/context";
@@ -11,6 +12,7 @@ import { selectComponents, isEmptySelection, isFullSelection, createEmptySelecti
 import { removeUnselectedFiles } from "#/artifact/component-manager/component-manager";
 import { runCheck, displayCompactCheckResults } from "#/artifact/check/check";
 import { generateArtifactIndex } from "#/artifact/index/index";
+import { assertSafeArtifactId } from "#/artifact/validation/validation";
 import { success, error, info, log, warning, newline, colors, spinner } from "#/shared/ui/ui";
 import { compareSemver, CATEGORIES, type Category } from "@grekt-labs/cli-engine";
 
@@ -34,7 +36,7 @@ export const addCommand = new Command("add")
     const displayName = getSourceDisplayName(source);
 
     // For git sources, use temp dir first, then rename after we know the artifact ID
-    const tempDir = `${projectRoot}/${ARTIFACTS_DIR}/.tmp-${Date.now()}`;
+    const tempDir = `${projectRoot}/${ARTIFACTS_DIR}/.tmp-${randomUUID()}`;
 
     const spin = spinner(`Downloading ${displayName}...`);
     spin.start();
@@ -77,6 +79,15 @@ export const addCommand = new Command("add")
     }
 
     const resolvedArtifactId = getArtifactId(artifactInfo.manifest.author, artifactInfo.manifest.name);
+
+    // Validate artifact ID to prevent path traversal
+    try {
+      assertSafeArtifactId(resolvedArtifactId);
+    } catch {
+      rmSync(tempDir, { recursive: true, force: true });
+      error("Invalid artifact: manifest contains unsafe characters in author or name");
+      process.exit(1);
+    }
 
     // Now we know the artifact ID, create final target directory
     const targetDir = `${projectRoot}/${ARTIFACTS_DIR}/${resolvedArtifactId}`;

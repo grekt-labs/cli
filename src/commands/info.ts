@@ -22,10 +22,19 @@ export const infoCommand = new Command("info")
     const spin = spinner("Fetching artifact info...");
     spin.start();
 
-    const [metadata, versions] = await Promise.all([
-      getArtifactMetadata(credentials, artifactId),
-      listVersions(credentials, artifactId),
-    ]);
+    let metadata: Awaited<ReturnType<typeof getArtifactMetadata>> = null;
+    let versions: Awaited<ReturnType<typeof listVersions>> = [];
+
+    try {
+      [metadata, versions] = await Promise.all([
+        getArtifactMetadata(credentials, artifactId),
+        listVersions(credentials, artifactId),
+      ]);
+    } catch (err) {
+      spin.stop();
+      error(`Failed to fetch artifact info: ${err instanceof Error ? err.message : "Unknown error"}`);
+      process.exit(1);
+    }
 
     spin.stop();
 

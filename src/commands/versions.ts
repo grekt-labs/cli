@@ -22,10 +22,19 @@ export const versionsCommand = new Command("versions")
     const spin = spinner("Fetching versions...");
     spin.start();
 
-    const [metadata, versions] = await Promise.all([
-      getArtifactMetadata(credentials, artifactId),
-      listVersions(credentials, artifactId),
-    ]);
+    let metadata: Awaited<ReturnType<typeof getArtifactMetadata>> = null;
+    let versions: Awaited<ReturnType<typeof listVersions>> = [];
+
+    try {
+      [metadata, versions] = await Promise.all([
+        getArtifactMetadata(credentials, artifactId),
+        listVersions(credentials, artifactId),
+      ]);
+    } catch (err) {
+      spin.stop();
+      error(`Failed to fetch versions: ${err instanceof Error ? err.message : "Unknown error"}`);
+      process.exit(1);
+    }
 
     spin.stop();
 

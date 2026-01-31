@@ -8,6 +8,7 @@ import { downloadAndExtractTarball } from "#/registry/download/download";
 import { verifyIntegrity } from "#/context";
 import { runCheck, displayCompactCheckResults } from "#/artifact/check/check";
 import { generateArtifactIndex } from "#/artifact/index/index";
+import { isSafeArtifactId } from "#/artifact/validation/validation";
 import { success, error, info, warning, log, newline, colors, spinner } from "#/shared/ui/ui";
 
 export const installCommand = new Command("install")
@@ -53,6 +54,13 @@ export const installCommand = new Command("install")
     let failed = 0;
 
     for (const [artifactId, entry] of artifacts) {
+      // Validate artifact ID to prevent path traversal from corrupted lockfile
+      if (!isSafeArtifactId(artifactId)) {
+        error(`Skipping unsafe artifact ID: ${artifactId}`);
+        failed++;
+        continue;
+      }
+
       const targetDir = `${projectRoot}/${ARTIFACTS_DIR}/${artifactId}`;
 
       // Check if already installed
