@@ -1,3 +1,15 @@
+# [5.7.0](https://github.com/grekt-labs/cli/compare/v5.6.3...v5.7.0) (2026-01-31)
+
+
+### Bug Fixes
+
+* trigger again release ([b755822](https://github.com/grekt-labs/cli/commit/b7558226d6802fb24dfe72716d26f6acd3e27a73))
+
+
+### Features
+
+* **sync:** add MANDATORY section to context entry points ([a7fd1a0](https://github.com/grekt-labs/cli/commit/a7fd1a047969aa063e83a3f5b433153733ae501b))
+
 ## [5.6.3](https://github.com/grekt-labs/cli/compare/v5.6.2...v5.6.3) (2026-01-31)
 
 
