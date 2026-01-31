@@ -1,3 +1,10 @@
+## [5.6.1](https://github.com/grekt-labs/cli/compare/v5.6.0...v5.6.1) (2026-01-31)
+
+
+### Bug Fixes
+
+* remove lockfile generation from init command ([#62](https://github.com/grekt-labs/cli/issues/62)) ([0c1f96e](https://github.com/grekt-labs/cli/commit/0c1f96e234bbd90cc845e6c5cea6c3b517e80e38))
+
 # [5.6.0](https://github.com/grekt-labs/cli/compare/v5.5.0...v5.6.0) (2026-01-31)
 
 
