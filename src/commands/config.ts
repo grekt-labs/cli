@@ -5,6 +5,12 @@ import {
   isInitialized,
 } from "#/config/project/project";
 import { success, error, info, log, colors } from "#/shared/ui/ui";
+import {
+  setRegistryInteractive,
+  unsetRegistry,
+  setRepoTokenInteractive,
+  unsetRepoToken,
+} from "./config/registry/registry";
 import type { ProjectConfig } from "@grekt-labs/cli-engine";
 
 const VALID_KEYS: (keyof ProjectConfig)[] = ["targets", "autoSync", "registry"];
@@ -71,6 +77,36 @@ configCommand
       process.exit(1);
     }
   });
+
+// Registry subcommands
+const registryCommand = configCommand
+  .command("registry")
+  .description("Manage registry backends for scoped artifacts");
+
+registryCommand
+  .command("set <scope>")
+  .description("Configure a registry for a scope (e.g., @myteam)")
+  .action(setRegistryInteractive);
+
+registryCommand
+  .command("unset <scope>")
+  .description("Remove registry configuration for a scope")
+  .action(unsetRegistry);
+
+// Repo token subcommands
+const repoTokenCommand = configCommand
+  .command("repo-token")
+  .description("Manage tokens for git sources (github:, gitlab:)");
+
+repoTokenCommand
+  .command("set")
+  .description("Add a token for a git host")
+  .action(setRepoTokenInteractive);
+
+repoTokenCommand
+  .command("unset <host>")
+  .description("Remove token for a git host")
+  .action(unsetRepoToken);
 
 function parseValue(key: string, value: string): unknown {
   // Boolean values
