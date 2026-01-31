@@ -6,13 +6,11 @@ export const githubProvider: RegistryProvider = {
   label: "GitHub",
 
   async prompts() {
-    const host = await input({
-      message: "GitHub host (e.g., github.com, github.mycompany.com):",
-      validate: (value) => {
-        if (!value.trim()) return "Host is required";
-        return true;
-      },
+    const hostInput = await input({
+      message: "GitHub host (leave empty for github.com):",
     });
+
+    const host = hostInput.trim() || "github.com";
 
     const project = await input({
       message: "Repository (e.g., myorg/artifacts):",
