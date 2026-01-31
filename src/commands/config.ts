@@ -8,8 +8,8 @@ import { success, error, info, log, colors } from "#/shared/ui/ui";
 import {
   setRegistryInteractive,
   unsetRegistry,
-  setRepoTokenInteractive,
-  unsetRepoToken,
+  setTokenInteractive,
+  unsetToken,
 } from "./config/registry/registry";
 import type { ProjectConfig } from "@grekt-labs/cli-engine";
 
@@ -93,20 +93,20 @@ registryCommand
   .description("Remove registry configuration for a scope")
   .action(unsetRegistry);
 
-// Repo token subcommands
-const repoTokenCommand = configCommand
-  .command("repo-token")
+// Token subcommands
+const tokenCommand = configCommand
+  .command("token")
   .description("Manage tokens for git sources (github:, gitlab:)");
 
-repoTokenCommand
+tokenCommand
   .command("set")
   .description("Add a token for a git host")
-  .action(setRepoTokenInteractive);
+  .action(setTokenInteractive);
 
-repoTokenCommand
+tokenCommand
   .command("unset <host>")
   .description("Remove token for a git host")
-  .action(unsetRepoToken);
+  .action(unsetToken);
 
 function parseValue(key: string, value: string): unknown {
   // Boolean values
