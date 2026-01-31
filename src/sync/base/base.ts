@@ -95,8 +95,11 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
     result.updated.push(contextEntryPoint);
   }
 
-  // Get target filename for a component
-  function getTargetName(artifactId: string, _category: Category, filePath: string): string {
+  function getTargetPath(artifactId: string, category: Category, filePath: string): string {
+    if (config.getTargetPath) {
+      const customPath = config.getTargetPath(artifactId, category, filePath);
+      if (customPath) return customPath;
+    }
     return getSafeFilename(artifactId, filePath);
   }
 
@@ -148,7 +151,7 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
 
           for (const filePath of files) {
             const source = join(artifactDir, filePath);
-            const targetName = getTargetName(artifactId, category, filePath);
+            const targetName = getTargetPath(artifactId, category, filePath);
             const target = `${projectRoot}/${categoryDir}/${targetName}`;
 
             if (existsSync(source)) {
@@ -194,7 +197,7 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
 
           for (const filePath of files) {
             const source = join(artifactDir, filePath);
-            const targetName = getTargetName(artifactId, category, filePath);
+            const targetName = getTargetPath(artifactId, category, filePath);
             const target = `${projectRoot}/${categoryDir}/${targetName}`;
 
             if (!existsSync(source)) {
