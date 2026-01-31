@@ -147,10 +147,14 @@ export class RegistryClient {
     try {
       const metadata = await this.getArtifact(artifactId);
       if (!metadata) {
-        return { success: false };
+        return { success: false, error: "Artifact not found in registry" };
       }
 
       const resolvedVersion = version || metadata.latest;
+      if (!resolvedVersion) {
+        return { success: false, error: "No versions available for this artifact" };
+      }
+
       const tarballUrl = `${REGISTRY_URL}/${artifactId}/${resolvedVersion}.tar.gz`;
       const deprecationMessage = metadata.deprecated[resolvedVersion];
 
@@ -159,7 +163,13 @@ export class RegistryClient {
       });
 
       if (!response.ok) {
-        return { success: false };
+        if (response.status === 404) {
+          return { success: false, error: `Version ${resolvedVersion} not found` };
+        }
+        if (response.status === 401 || response.status === 403) {
+          return { success: false, error: "Access denied (check authentication)" };
+        }
+        return { success: false, error: `Registry returned ${response.status}` };
       }
 
       const buffer = await response.arrayBuffer();
@@ -171,7 +181,7 @@ export class RegistryClient {
       const validation = validateTarballContents(shellAdapter, tempTarball, targetDir, 1);
       if (!validation.safe) {
         rmSync(tempTarball, { force: true });
-        return { success: false };
+        return { success: false, error: "Security: tarball failed validation" };
       }
 
       mkdirSync(targetDir, { recursive: true });
@@ -186,8 +196,12 @@ export class RegistryClient {
         resolved: tarballUrl,
         deprecationMessage,
       };
-    } catch {
-      return { success: false };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      if (message.includes("ENOTFOUND") || message.includes("ECONNREFUSED")) {
+        return { success: false, error: "Cannot reach registry (network error)" };
+      }
+      return { success: false, error: message };
     }
   }
 
