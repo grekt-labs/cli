@@ -38,6 +38,9 @@ jobs:
 
       - run: bun install
 
+      - name: Run tests
+        run: bun test
+
       - name: Semantic Release
         id: release
         env:
