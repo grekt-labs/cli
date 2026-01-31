@@ -10,7 +10,8 @@ import { runCheck, displayCompactCheckResults } from "#/artifact/check/check";
 import { generateArtifactIndex } from "#/artifact/index/index";
 import { isSafeArtifactId } from "#/artifact/validation/validation";
 import { resolveRegistry } from "#/registry/factory/factory";
-import { parseArtifactId, getGitLabHeaders, getGitHubHeaders } from "@grekt-labs/cli-engine";
+import { parseArtifactId, getGitLabHeaders, getGitHubHeaders, scanArtifact } from "@grekt-labs/cli-engine";
+import { fs as cliFs } from "#/context";
 import { success, error, info, warning, log, newline, colors, spinner } from "#/shared/ui/ui";
 
 /**
@@ -149,13 +150,27 @@ export const installCommand = new Command("install")
 
       if (!integrity.valid) {
         spin.stop();
+
+        // Scan for frontmatter errors before deleting
+        const scanned = scanArtifact(cliFs, targetDir);
+        const hasValidationErrors = scanned && scanned.invalidFiles.length > 0;
+
         rmSync(targetDir, { recursive: true, force: true });
         error(`Integrity check failed for ${artifactId}`);
+
+        // Show frontmatter validation errors if any
+        if (hasValidationErrors) {
+          log(colors.dim("  Validation errors:"));
+          for (const file of scanned.invalidFiles) {
+            const detail = file.details || file.reason;
+            log(`    ${file.path}: ${detail}`);
+          }
+        }
 
         if (integrity.missingFiles.length > 0) {
           log(`  ${colors.dim("missing:")} ${integrity.missingFiles.join(", ")}`);
         }
-        if (integrity.modifiedFiles.length > 0) {
+        if (integrity.modifiedFiles.length > 0 && !hasValidationErrors) {
           log(`  ${colors.dim("modified:")} ${integrity.modifiedFiles.map((f) => f.path).join(", ")}`);
         }
 
