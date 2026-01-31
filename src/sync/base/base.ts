@@ -11,14 +11,17 @@ import {
   scanArtifact,
 } from "@grekt-labs/cli-engine";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
-import { getSafeFilename, GREKT_BLOCK_START, GREKT_BLOCK_END, generateDefaultBlockContent } from "@grekt-labs/cli-engine";
+import { getSafeFilename, generateDefaultBlockContent } from "@grekt-labs/cli-engine";
+
+/** Section header to detect if grekt block exists */
+const GREKT_SECTION_HEADER = "## Grekt Artifacts (MANDATORY)";
 import { fs as cliFs } from "#/context";
 
 // MD categories can be synced to folder targets
 const SYNCABLE_CATEGORIES = getCategoriesForFormat("md");
 
 // Re-export for external use
-export { GREKT_BLOCK_START, GREKT_BLOCK_END, generateDefaultBlockContent } from "@grekt-labs/cli-engine";
+export { generateDefaultBlockContent } from "@grekt-labs/cli-engine";
 
 // Utility functions
 export function ensureDir(filepath: string): void {
@@ -77,22 +80,20 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
 
     if (!existsSync(filepath)) {
       ensureDir(filepath);
-      writeFileSync(filepath, managedBlock, "utf-8");
+      writeFileSync(filepath, managedBlock + "\n", "utf-8");
       result.created.push(contextEntryPoint);
       return;
     }
 
-    let content = readFileSync(filepath, "utf-8");
-    const startIndex = content.indexOf(GREKT_BLOCK_START);
-    const endIndex = content.indexOf(GREKT_BLOCK_END);
+    const content = readFileSync(filepath, "utf-8");
 
-    if (startIndex !== -1 && endIndex !== -1) {
-      content = content.slice(0, startIndex) + managedBlock + content.slice(endIndex + GREKT_BLOCK_END.length);
-    } else {
-      content = managedBlock + "\n" + content.trimStart();
+    // If section header already exists, nothing to do
+    if (content.includes(GREKT_SECTION_HEADER)) {
+      return;
     }
 
-    writeFileSync(filepath, content, "utf-8");
+    // Prepend to file
+    writeFileSync(filepath, managedBlock + "\n\n" + content.trimStart(), "utf-8");
     result.updated.push(contextEntryPoint);
   }
 
@@ -281,17 +282,15 @@ export function createRulesOnlyPlugin(config: RulesOnlyPluginConfig): SyncPlugin
         return result;
       }
 
-      let content = readFileSync(filepath, "utf-8");
-      const startIndex = content.indexOf(GREKT_BLOCK_START);
-      const endIndex = content.indexOf(GREKT_BLOCK_END);
+      const content = readFileSync(filepath, "utf-8");
 
-      if (startIndex !== -1 && endIndex !== -1) {
-        content = content.slice(0, startIndex) + managedBlock + content.slice(endIndex + GREKT_BLOCK_END.length);
-      } else {
-        content = managedBlock + "\n" + content.trimStart();
+      // If section header already exists, nothing to do
+      if (content.includes(GREKT_SECTION_HEADER)) {
+        return result;
       }
 
-      writeFileSync(filepath, content, "utf-8");
+      // Prepend to file
+      writeFileSync(filepath, managedBlock + "\n\n" + content.trimStart(), "utf-8");
       result.updated.push(contextEntryPoint);
       return result;
     },

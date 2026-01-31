@@ -1,8 +1,10 @@
 import { describe, test, expect, beforeEach, afterEach } from "bun:test";
 import { existsSync, mkdirSync, rmSync, writeFileSync, readFileSync } from "fs";
 import { join } from "path";
-import { createFolderPlugin, createRulesOnlyPlugin, GREKT_BLOCK_START, GREKT_BLOCK_END } from "./base";
+import { createFolderPlugin, createRulesOnlyPlugin } from "./base";
 import type { Lockfile, ProjectConfig } from "@grekt-labs/cli-engine";
+
+const GREKT_SECTION_HEADER = "## Grekt Artifacts (MANDATORY)";
 
 const ARTIFACTS_DIR = ".grekt/artifacts";
 const TEST_ARTIFACT_ID = "@scope/artifact";
@@ -161,7 +163,7 @@ grk-description: A test agent
         id: "test",
         name: "Test",
         contextEntryPoint,
-        generateRulesContent: () => `${GREKT_BLOCK_START}MANAGED${GREKT_BLOCK_END}`,
+        generateRulesContent: () => `${GREKT_SECTION_HEADER}\n\nMANAGED CONTENT`,
       });
 
     test("prepends managed block to existing file", async () => {
@@ -172,22 +174,20 @@ grk-description: A test agent
 
       const content = readFileSync(join(testDir, "RULES.md"), "utf-8");
       expect(content).toContain("# Header");
-      expect(content).toContain("MANAGED");
-      expect(content.startsWith(GREKT_BLOCK_START)).toBe(true);
+      expect(content).toContain("MANAGED CONTENT");
+      expect(content.startsWith(GREKT_SECTION_HEADER)).toBe(true);
     });
 
-    test("replaces existing managed block", async () => {
-      const initial = `Before\n${GREKT_BLOCK_START}OLD${GREKT_BLOCK_END}\nAfter`;
+    test("does nothing if section header already exists", async () => {
+      const initial = `${GREKT_SECTION_HEADER}\n\nEXISTING\n\n# Other`;
       writeFileSync(join(testDir, "RULES.md"), initial);
       const plugin = createTestPlugin();
 
       await plugin.sync(testLockfile, testDir, {});
 
       const content = readFileSync(join(testDir, "RULES.md"), "utf-8");
-      expect(content).toContain("Before");
-      expect(content).toContain("After");
-      expect(content).toContain("MANAGED");
-      expect(content).not.toContain("OLD");
+      expect(content).toContain("EXISTING");
+      expect(content).not.toContain("MANAGED CONTENT");
     });
 
     test("creates file when createTarget is true", async () => {

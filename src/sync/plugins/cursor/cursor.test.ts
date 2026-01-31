@@ -2,11 +2,11 @@ import { describe, test, expect, beforeEach, afterEach } from "bun:test";
 import { existsSync, mkdirSync, writeFileSync, readFileSync, rmSync } from "fs";
 import { join } from "path";
 import { cursorPlugin } from "./cursor";
-import { GREKT_BLOCK_START, GREKT_BLOCK_END } from "#/sync/base/base";
 
 const PLUGIN_ID = "cursor";
 const PLUGIN_NAME = "Cursor";
 const RULES_FILE = ".cursorrules";
+const GREKT_SECTION_HEADER = "## Grekt Artifacts (MANDATORY)";
 
 describe("cursorPlugin", () => {
   const testDir = join(process.cwd(), ".test-cursor-plugin");
@@ -78,21 +78,19 @@ describe("cursorPlugin", () => {
 
       const content = readFileSync(join(testDir, RULES_FILE), "utf-8");
       expect(content).toContain(existingContent);
-      expect(content).toContain(GREKT_BLOCK_START);
-      expect(content).toContain(GREKT_BLOCK_END);
-      expect(content.startsWith(GREKT_BLOCK_START)).toBe(true);
+      expect(content).toContain(GREKT_SECTION_HEADER);
+      expect(content.startsWith(GREKT_SECTION_HEADER)).toBe(true);
     });
 
-    test("replaces existing managed block preserving surrounding content", async () => {
-      const existingContent = `Header\n${GREKT_BLOCK_START}OLD${GREKT_BLOCK_END}\nFooter`;
+    test("does nothing if section header already exists", async () => {
+      const existingContent = `${GREKT_SECTION_HEADER}\n\nEXISTING\n\n# Footer`;
       writeFileSync(join(testDir, RULES_FILE), existingContent);
 
       await cursorPlugin.sync({ version: 1, artifacts: {} }, testDir, {});
 
       const content = readFileSync(join(testDir, RULES_FILE), "utf-8");
-      expect(content).toContain("Header");
-      expect(content).toContain("Footer");
-      expect(content).not.toContain("OLD");
+      expect(content).toContain("EXISTING");
+      expect(content).toContain("# Footer");
     });
 
     test("dryRun returns preview without file changes", async () => {
