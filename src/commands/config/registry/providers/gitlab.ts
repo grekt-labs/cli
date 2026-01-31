@@ -6,13 +6,11 @@ export const gitlabProvider: RegistryProvider = {
   label: "GitLab",
 
   async prompts() {
-    const host = await input({
-      message: "GitLab host (e.g., gitlab.com, gitlab.mycompany.com):",
-      validate: (value) => {
-        if (!value.trim()) return "Host is required";
-        return true;
-      },
+    const hostInput = await input({
+      message: "GitLab host (leave empty for gitlab.com):",
     });
+
+    const host = hostInput.trim() || "gitlab.com";
 
     const project = await input({
       message: "Project path (e.g., myteam/artifacts):",
