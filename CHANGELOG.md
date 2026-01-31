@@ -1,3 +1,10 @@
+# [5.5.0](https://github.com/grekt-labs/cli/compare/v5.4.1...v5.5.0) (2026-01-31)
+
+
+### Features
+
+* improve CLI error messages for missing arguments ([#60](https://github.com/grekt-labs/cli/issues/60)) ([9c5967c](https://github.com/grekt-labs/cli/commit/9c5967ce59fede6cf18615c1b470e12073286061))
+
 ## [5.4.1](https://github.com/grekt-labs/cli/compare/v5.4.0...v5.4.1) (2026-01-31)
 
 
