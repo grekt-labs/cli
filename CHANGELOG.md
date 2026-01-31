@@ -1,3 +1,10 @@
+# [5.2.0](https://github.com/grekt-labs/cli/compare/v5.1.0...v5.2.0) (2026-01-31)
+
+
+### Features
+
+* **install:** show frontmatter validation errors on integrity failure ([1b1dc2d](https://github.com/grekt-labs/cli/commit/1b1dc2d297245ecd64f1e3126d8b304d2b616a17))
+
 # [5.1.0](https://github.com/grekt-labs/cli/compare/v5.0.0...v5.1.0) (2026-01-31)
 
 
