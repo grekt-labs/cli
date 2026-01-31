@@ -1,10 +1,11 @@
 import { existsSync, readFileSync } from "fs";
 import { basename, join } from "path";
-import { getLockfile, getSafeFilename } from "#/context";
+import { getLockfile } from "#/context";
 import { getConfig } from "#/config/project/project";
 import { getSyncPaths } from "#/sync/manager/manager";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
-import { verifyIntegrity, getDirectorySize, formatBytes, estimateTokens } from "#/context";
+import { verifyIntegrity, getDirectorySize } from "#/context";
+import { getSafeFilename, formatBytes, estimateTokens } from "@grekt-labs/cli-engine";
 import { success, warning, log, newline, colors, symbols } from "#/shared/ui/ui";
 import {
   type Lockfile,

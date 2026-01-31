@@ -1,9 +1,9 @@
 import { Command } from "commander";
 import { existsSync } from "fs";
 import { isInitialized } from "#/config/project/project";
-import { getLockfile } from "#/context";
+import { getLockfile, getDirectorySize } from "#/context";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
-import { getDirectorySize, formatBytes, estimateTokens } from "#/context";
+import { formatBytes, estimateTokens } from "@grekt-labs/cli-engine";
 import { error, info, log, colors, newline } from "#/shared/ui/ui";
 import { CATEGORIES } from "@grekt-labs/cli-engine";
 
