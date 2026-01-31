@@ -48,6 +48,12 @@ export function assertSafeArtifactId(artifactId: string): void {
 function formatInvalidFileMessage(file: InvalidFile): string {
   const prefix = `  ${file.path}:`;
 
+  // If we have detailed error info, use it
+  if (file.details) {
+    return `${prefix} ${file.details}`;
+  }
+
+  // Fallback to generic messages
   switch (file.reason) {
     case "no-frontmatter":
       return `${prefix} missing frontmatter`;
