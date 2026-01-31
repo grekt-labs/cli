@@ -1,3 +1,10 @@
+## [5.6.3](https://github.com/grekt-labs/cli/compare/v5.6.2...v5.6.3) (2026-01-31)
+
+
+### Bug Fixes
+
+* add missing new cli engine version ([47443ef](https://github.com/grekt-labs/cli/commit/47443ef3fcdf9edea6f7ac76c3c9ac6a2e3e21d9))
+
 ## [5.6.2](https://github.com/grekt-labs/cli/compare/v5.6.1...v5.6.2) (2026-01-31)
 
 
