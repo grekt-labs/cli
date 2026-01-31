@@ -1,3 +1,10 @@
+## [4.10.2](https://github.com/grekt-labs/cli/compare/v4.10.1...v4.10.2) (2026-01-31)
+
+
+### Bug Fixes
+
+* **security:** align with cli-engine security improvements ([eb4fb4b](https://github.com/grekt-labs/cli/commit/eb4fb4bedb9e3bbf9d5baf808d9a3c969e2e2709))
+
 ## [4.10.1](https://github.com/grekt-labs/cli/compare/v4.10.0...v4.10.1) (2026-01-30)
 
 
