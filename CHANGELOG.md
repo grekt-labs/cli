@@ -1,3 +1,10 @@
+## [5.6.2](https://github.com/grekt-labs/cli/compare/v5.6.1...v5.6.2) (2026-01-31)
+
+
+### Bug Fixes
+
+* optional host for gitlab and github providers ([#63](https://github.com/grekt-labs/cli/issues/63)) ([ef5e315](https://github.com/grekt-labs/cli/commit/ef5e315cc9214368028debfcd4743327913baaa6))
+
 ## [5.6.1](https://github.com/grekt-labs/cli/compare/v5.6.0...v5.6.1) (2026-01-31)
 
 
