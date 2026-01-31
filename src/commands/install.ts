@@ -1,15 +1,43 @@
 import { Command } from "commander";
 import { existsSync, mkdirSync, rmSync } from "fs";
-import { isInitialized, getConfig } from "#/config/project/project";
+import { isInitialized, getConfig, getLocalConfig } from "#/config/project/project";
 import { getLockfile, lockfileExists } from "#/context";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
-import { parseSource, downloadFromSource } from "#/registry/sources/sources";
+import { parseSource, downloadFromSource, getSourceToken } from "#/registry/sources/sources";
 import { downloadAndExtractTarball } from "#/registry/download/download";
 import { verifyIntegrity } from "#/context";
 import { runCheck, displayCompactCheckResults } from "#/artifact/check/check";
 import { generateArtifactIndex } from "#/artifact/index/index";
 import { isSafeArtifactId } from "#/artifact/validation/validation";
+import { resolveRegistry } from "#/registry/factory/factory";
+import { parseArtifactId, getGitLabHeaders, getGitHubHeaders } from "@grekt-labs/cli-engine";
 import { success, error, info, warning, log, newline, colors, spinner } from "#/shared/ui/ui";
+
+/**
+ * Get authentication headers for downloading an artifact.
+ * Resolves the registry type from the artifact scope and returns appropriate headers.
+ */
+function getHeadersForArtifact(artifactId: string, projectRoot: string): Record<string, string> {
+  try {
+    const { scope } = parseArtifactId(artifactId);
+    const localConfig = getLocalConfig(projectRoot);
+    const registry = resolveRegistry(scope, localConfig, projectRoot);
+
+    if (registry.type === "gitlab") {
+      const token = registry.token || process.env.GITLAB_TOKEN || process.env.GL_TOKEN;
+      return getGitLabHeaders(token);
+    }
+
+    if (registry.type === "github") {
+      const token = registry.token || process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
+      return getGitHubHeaders(token);
+    }
+
+    return {};
+  } catch {
+    return {};
+  }
+}
 
 export const installCommand = new Command("install")
   .alias("i")
@@ -88,7 +116,9 @@ export const installCommand = new Command("install")
 
       // Use resolved URL if available (strict mode - no recalculation)
       if (entry.resolved) {
-        const result = await downloadAndExtractTarball(entry.resolved, targetDir);
+        // Get auth headers for the resolved URL based on registry type
+        const headers = getHeadersForArtifact(artifactId, projectRoot);
+        const result = await downloadAndExtractTarball(entry.resolved, targetDir, { headers });
         downloadSuccess = result.success;
       } else {
         // Fallback for old lockfiles without resolved

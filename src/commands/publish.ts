@@ -11,6 +11,7 @@ import { isApiAuthenticated } from "#/registry/publishers/api-publisher";
 import type { PublishContext } from "#/registry/publishers/publisher.types";
 import { createTarball, removeTarball } from "#/artifact/tarball/tarball";
 import { validateArtifact } from "#/artifact/validation/validation";
+import { CATEGORIES } from "@grekt-labs/cli-engine";
 import { success, error, info, log, colors, spinner } from "#/shared/ui/ui";
 
 const MIN_KEYWORDS = 3;
@@ -51,12 +52,12 @@ function showFrontmatterExample(): void {
   log("");
   log(colors.dim("  Example frontmatter for .md files:"));
   log(colors.dim("    ---"));
-  log(colors.dim("    grk-type: skill"));
-  log(colors.dim("    grk-name: My Skill"));
-  log(colors.dim("    grk-description: What this skill does"));
+  log(colors.dim(`    grk-type: ${CATEGORIES[0]}`));
+  log(colors.dim("    grk-name: My Component"));
+  log(colors.dim("    grk-description: What this component does"));
   log(colors.dim("    ---"));
   log("");
-  log(colors.dim("  Valid types: agent, skill, command, mcp, rule"));
+  log(colors.dim(`  Valid types: ${CATEGORIES.join(", ")}`));
 }
 
 export const publishCommand = new Command("publish")
