@@ -93,3 +93,13 @@ export interface RegistryEntry {
 export interface LocalConfig {
   registries?: Record<string, RegistryEntry>;
 }
+
+/**
+ * Registry provider for interactive configuration.
+ * Each provider handles prompts for its specific registry type.
+ */
+export interface RegistryProvider {
+  type: Exclude<RegistryType, "default">;
+  label: string;
+  prompts(): Promise<Omit<RegistryEntry, "type">>;
+}

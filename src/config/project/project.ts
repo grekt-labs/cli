@@ -199,3 +199,26 @@ export function removeToken(name: string, projectRoot: string = process.cwd()): 
     saveLocalConfig(config, projectRoot);
   }
 }
+
+// Registry management for scoped artifacts
+export function getRegistry(scope: string, projectRoot: string = process.cwd()): LocalConfig["registries"] extends Record<string, infer T> | undefined ? T | undefined : never {
+  const config = getLocalConfig(projectRoot);
+  return config?.registries?.[scope];
+}
+
+export function setRegistry(scope: string, entry: NonNullable<LocalConfig["registries"]>[string], projectRoot: string = process.cwd()): void {
+  const config = getLocalConfig(projectRoot) ?? {};
+  if (!config.registries) {
+    config.registries = {};
+  }
+  config.registries[scope] = entry;
+  saveLocalConfig(config, projectRoot);
+}
+
+export function removeRegistry(scope: string, projectRoot: string = process.cwd()): void {
+  const config = getLocalConfig(projectRoot);
+  if (config?.registries) {
+    delete config.registries[scope];
+    saveLocalConfig(config, projectRoot);
+  }
+}
