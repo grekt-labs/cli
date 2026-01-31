@@ -7,6 +7,7 @@ import { getLockfile, saveLockfile } from "#/context";
 import { getSafeFilename, CATEGORIES, CATEGORY_CONFIG, type Category } from "@grekt-labs/cli-engine";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
 import { generateArtifactIndex } from "#/artifact/index/index";
+import { isSafeArtifactId } from "#/artifact/validation/validation";
 import { success, error, info, log, newline, colors } from "#/shared/ui/ui";
 import { withPromptHandler } from "#/shared/prompts/prompts";
 
@@ -34,6 +35,12 @@ export const removeCommand = new Command("remove")
         info("Run 'grekt init' first");
         process.exit(1);
       }
+
+    // Validate artifact ID to prevent path traversal
+    if (!isSafeArtifactId(artifactId)) {
+      error("Invalid artifact ID: contains unsafe path characters");
+      process.exit(1);
+    }
 
     const config = getConfig(projectRoot);
     const lockfile = getLockfile(projectRoot);

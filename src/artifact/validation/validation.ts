@@ -11,6 +11,40 @@ import type {
   ValidationResult,
 } from "./validation.types";
 
+/**
+ * Validate that an artifact ID is safe for filesystem operations.
+ * Prevents path traversal attacks by rejecting IDs with dangerous patterns.
+ * Returns true if safe, false otherwise.
+ */
+export function isSafeArtifactId(artifactId: string): boolean {
+  // Reject path traversal attempts
+  if (artifactId.includes("..")) {
+    return false;
+  }
+
+  // Reject absolute paths
+  if (artifactId.startsWith("/") || artifactId.startsWith("\\")) {
+    return false;
+  }
+
+  // Reject null bytes (can truncate paths in some systems)
+  if (artifactId.includes("\0")) {
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Assert that an artifact ID is safe for filesystem operations.
+ * Throws an error if the ID contains dangerous patterns.
+ */
+export function assertSafeArtifactId(artifactId: string): void {
+  if (!isSafeArtifactId(artifactId)) {
+    throw new Error(`Invalid artifact ID: "${artifactId}" contains unsafe path characters`);
+  }
+}
+
 function formatInvalidFileMessage(file: InvalidFile): string {
   const prefix = `  ${file.path}:`;
 
