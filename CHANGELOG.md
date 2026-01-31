@@ -1,3 +1,10 @@
+# [5.1.0](https://github.com/grekt-labs/cli/compare/v5.0.0...v5.1.0) (2026-01-31)
+
+
+### Features
+
+* improve error messages and fix install auth ([ad98429](https://github.com/grekt-labs/cli/commit/ad98429f0e538cfe4e8a8ee5dac80cb226a9b829))
+
 # [5.0.0](https://github.com/grekt-labs/cli/compare/v4.10.2...v5.0.0) (2026-01-31)
 
 
