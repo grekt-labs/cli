@@ -19,10 +19,18 @@ import { compareSemver, CATEGORIES, type Category } from "@grekt-labs/cli-engine
 
 export const addCommand = new Command("add")
   .description("Add an artifact from registry, GitHub, or GitLab")
-  .argument("<source>", "Artifact source (e.g., @grekt/code-reviewer, github:user/repo, gitlab:host/user/repo)")
+  .argument("[source]", "Artifact source (e.g., @grekt/code-reviewer, github:user/repo, gitlab:host/user/repo)")
   .option("-c, --choose", "Choose which components to install")
   .option("--core", "Mark artifact as CORE (copied to target on sync, not just indexed)")
-  .action(async (sourceArg: string, options: { choose?: boolean; core?: boolean }) => {
+  .action(async (sourceArg: string | undefined, options: { choose?: boolean; core?: boolean }) => {
+    if (!sourceArg) {
+      error("Source required. Examples:");
+      info("  grekt add @scope/artifact");
+      info("  grekt add github:user/repo");
+      info("  grekt add gitlab:host/user/repo");
+      process.exit(1);
+    }
+
     const projectRoot = process.cwd();
 
     if (!isInitialized(projectRoot)) {

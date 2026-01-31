@@ -5,8 +5,14 @@ import { error, info as showInfo, log, colors, spinner } from "#/shared/ui/ui";
 
 export const infoCommand = new Command("info")
   .description("Show information about an artifact (requires S3 credentials)")
-  .argument("<artifact>", "Artifact ID (e.g., @author/name)")
-  .action(async (artifactId: string) => {
+  .argument("[artifact]", "Artifact ID (e.g., @author/name)")
+  .action(async (artifactId: string | undefined) => {
+    if (!artifactId) {
+      error("Artifact ID required. Usage:");
+      showInfo("  grekt info @author/name");
+      process.exit(1);
+    }
+
     if (!artifactId.startsWith("@")) {
       error("Invalid artifact ID. Use: @author/name");
       process.exit(1);
