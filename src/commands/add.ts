@@ -64,9 +64,23 @@ export const addCommand = new Command("add")
     if (!downloadResult.success) {
       // Clean up temp directory
       rmSync(tempDir, { recursive: true, force: true });
-      error(`Artifact ${colors.highlight(displayName)} not found`);
+
+      if (downloadResult.error) {
+        error(`${colors.highlight(displayName)}: ${downloadResult.error}`);
+      } else {
+        error(`Artifact ${colors.highlight(displayName)} not found`);
+      }
+
       if (source.type === "registry") {
-        info("Check .grekt/config.yaml for custom registry configuration");
+        if (downloadResult.error?.includes("not found")) {
+          info("Verify the artifact name and version are correct");
+          info("For custom registries, check .grekt/config.yaml");
+        } else if (downloadResult.error?.includes("network") || downloadResult.error?.includes("reach")) {
+          info("Check your internet connection");
+          info("For custom registries, verify the URL in .grekt/config.yaml");
+        } else if (downloadResult.error?.includes("denied") || downloadResult.error?.includes("auth")) {
+          info("This artifact may be private. Run 'grekt login' first");
+        }
       } else if (source.type === "github") {
         info("Check the repository exists and you have access");
         info("For private repos, set GITHUB_TOKEN environment variable");

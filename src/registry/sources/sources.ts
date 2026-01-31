@@ -65,7 +65,7 @@ async function downloadFromGitHub(
   if (result.success) {
     return { success: true, version: ref };
   }
-  return { success: false };
+  return { success: false, error: result.error || "Failed to download from GitHub" };
 }
 
 async function downloadFromGitLab(
@@ -85,7 +85,7 @@ async function downloadFromGitLab(
   if (result.success) {
     return { success: true, version: ref };
   }
-  return { success: false };
+  return { success: false, error: result.error || "Failed to download from GitLab" };
 }
 
 /**
@@ -123,7 +123,8 @@ async function downloadFromRegistrySource(
     const client = createRegistryClient(registry);
 
     return await client.download(artifactId, version, targetDir);
-  } catch {
-    return { success: false };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return { success: false, error: message };
   }
 }

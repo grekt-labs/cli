@@ -157,8 +157,12 @@ export const publishCommand = new Command("publish")
         info("Bump the version in grekt.yaml and try again");
         process.exit(1);
       }
-    } catch {
+    } catch (err) {
       checkSpin.stop();
+      // Version check failed, but we continue with publish attempt
+      // The publish step will provide a more specific error if there's an issue
+      const message = err instanceof Error ? err.message : "Unknown error";
+      info(`Could not verify version existence: ${message}`);
     }
 
     const publisherName = getPublisherTypeName(publisher);
