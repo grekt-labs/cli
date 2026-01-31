@@ -1,3 +1,10 @@
+# [5.6.0](https://github.com/grekt-labs/cli/compare/v5.5.0...v5.6.0) (2026-01-31)
+
+
+### Features
+
+* add specific error messages for download failures ([#61](https://github.com/grekt-labs/cli/issues/61)) ([05b6307](https://github.com/grekt-labs/cli/commit/05b6307a1a00801584e9ee4e7adca312dd1f5344))
+
 # [5.5.0](https://github.com/grekt-labs/cli/compare/v5.4.1...v5.5.0) (2026-01-31)
 
 
