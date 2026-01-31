@@ -1,3 +1,15 @@
+# [5.0.0](https://github.com/grekt-labs/cli/compare/v4.10.2...v5.0.0) (2026-01-31)
+
+
+### Bug Fixes
+
+* trigger release for security improvements ([a16e42d](https://github.com/grekt-labs/cli/commit/a16e42d09443ae3f883057be5b3d7c059d025399))
+
+
+### BREAKING CHANGES
+
+* cli-engine upgraded to 4.0.0 with security improvements
+
 ## [4.10.2](https://github.com/grekt-labs/cli/compare/v4.10.1...v4.10.2) (2026-01-31)
 
 
