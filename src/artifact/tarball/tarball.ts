@@ -1,4 +1,4 @@
-import { execSync } from "child_process";
+import { execFileSync } from "child_process";
 import { existsSync, mkdirSync } from "fs";
 import { basename, dirname, join } from "path";
 
@@ -36,7 +36,7 @@ export function createTarball(options: CreateTarballOptions): TarballResult {
   const parentDir = dirname(artifactPath);
 
   try {
-    execSync(`tar -czf ${outputPath} -C ${parentDir} ${artifactDir}`, {
+    execFileSync("tar", ["-czf", outputPath, "-C", parentDir, artifactDir], {
       stdio: "pipe",
     });
 

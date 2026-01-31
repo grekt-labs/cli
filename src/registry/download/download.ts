@@ -1,5 +1,5 @@
 import { mkdirSync, writeFileSync, existsSync, rmSync } from "fs";
-import { execSync } from "child_process";
+import { execFileSync } from "child_process";
 import { tmpdir } from "os";
 import { join } from "path";
 
@@ -56,8 +56,11 @@ export async function downloadAndExtractTarball(
     mkdirSync(targetDir, { recursive: true });
 
     // Extract tarball
-    const stripArg = stripComponents > 0 ? `--strip-components=${stripComponents}` : "";
-    execSync(`tar -xzf ${tempTarball} -C ${targetDir} ${stripArg}`, {
+    const tarArgs = ["-xzf", tempTarball, "-C", targetDir];
+    if (stripComponents > 0) {
+      tarArgs.push(`--strip-components=${stripComponents}`);
+    }
+    execFileSync("tar", tarArgs, {
       stdio: "pipe",
     });
 
