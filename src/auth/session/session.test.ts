@@ -32,10 +32,7 @@ describe("session", () => {
     test("returns true when GREKT_SUPABASE vars are set", () => {
       process.env.GREKT_SUPABASE_URL = "https://test.supabase.co";
       process.env.GREKT_SUPABASE_ANON_KEY = "test-key";
-
-      // Note: isSupabaseConfigured uses module-level constants
-      // which are evaluated at import time, so this test may not work as expected
-      // This is a known limitation of the test setup
+      expect(isSupabaseConfigured()).toBe(true);
     });
   });
 
