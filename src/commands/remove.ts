@@ -24,11 +24,18 @@ const CLAUDE_CATEGORY_DIRS: Record<Category, string> = {
 export const removeCommand = new Command("remove")
   .alias("rm")
   .description("Remove an installed artifact")
-  .argument("<artifact>", "Artifact ID to remove (e.g., @grekt/code-reviewer)")
+  .argument("[artifact]", "Artifact ID to remove (e.g., @grekt/code-reviewer)")
   .option("-f, --force", "Skip confirmation prompt")
-  .action(async (artifactId: string, options: { force?: boolean }) => {
+  .action(async (artifactId: string | undefined, options: { force?: boolean }) => {
     await withPromptHandler(async () => {
       const projectRoot = process.cwd();
+
+      if (!artifactId) {
+        error("Artifact ID required. Usage:");
+        info("  grekt remove @scope/artifact");
+        info("  grekt rm @scope/artifact");
+        process.exit(1);
+      }
 
       if (!isInitialized(projectRoot)) {
         error("grekt is not initialized in this directory");

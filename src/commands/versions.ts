@@ -5,8 +5,14 @@ import { error, info, log, colors, spinner } from "#/shared/ui/ui";
 
 export const versionsCommand = new Command("versions")
   .description("List all versions of an artifact (requires S3 credentials)")
-  .argument("<artifact>", "Artifact ID (e.g., @author/name)")
-  .action(async (artifactId: string) => {
+  .argument("[artifact]", "Artifact ID (e.g., @author/name)")
+  .action(async (artifactId: string | undefined) => {
+    if (!artifactId) {
+      error("Artifact ID required. Usage:");
+      info("  grekt versions @author/name");
+      process.exit(1);
+    }
+
     if (!artifactId.startsWith("@")) {
       error("Invalid artifact ID. Use: @author/name");
       process.exit(1);

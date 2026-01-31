@@ -23,10 +23,18 @@ function isBumpType(value: string): value is BumpType {
 
 export const versionCommand = new Command("version")
   .description("Bump artifact versions (patch, minor, major)")
-  .argument("<bump>", "Bump type: patch, minor, or major")
+  .argument("[bump]", "Bump type: patch, minor, or major")
   .argument("[path]", "Path to artifact or directory containing artifacts", ".")
   .option("--dry-run", "Show what would happen without applying changes")
-  .action(async (bump: string, targetPath: string, options: VersionCommandOptions) => {
+  .action(async (bump: string | undefined, targetPath: string, options: VersionCommandOptions) => {
+    if (!bump) {
+      error("Bump type required. Usage:");
+      info("  grekt version patch");
+      info("  grekt version minor");
+      info("  grekt version major");
+      process.exit(1);
+    }
+
     if (!isBumpType(bump)) {
       error(`Invalid bump type: ${bump}`);
       info("Use: patch, minor, or major");

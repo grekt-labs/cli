@@ -34,11 +34,18 @@ interface DeprecateOptions {
 
 export const deprecateCommand = new Command("deprecate")
   .description("Deprecate an artifact version (API and S3 only, not supported for GitLab/GitHub)")
-  .argument("<artifact@version>", "Artifact and version to deprecate (e.g., @author/name@1.0.0)")
+  .argument("[artifact@version]", "Artifact and version to deprecate (e.g., @author/name@1.0.0)")
   .option("-m, --message <message>", "Deprecation message", "This version is deprecated")
   .option("--s3", "Use S3-compatible storage (legacy mode, env vars only)")
-  .action(async (artifactVersion: string, options: DeprecateOptions) => {
+  .action(async (artifactVersion: string | undefined, options: DeprecateOptions) => {
     const projectRoot = process.cwd();
+
+    if (!artifactVersion) {
+      error("Artifact and version required. Usage:");
+      info("  grekt deprecate @author/name@1.0.0");
+      info("  grekt deprecate @author/name@1.0.0 -m 'Use v2 instead'");
+      process.exit(1);
+    }
 
     // Require project initialization
     if (!isInitialized(projectRoot)) {

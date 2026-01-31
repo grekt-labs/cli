@@ -84,12 +84,12 @@ const registryCommand = configCommand
   .description("Manage registry backends for scoped artifacts");
 
 registryCommand
-  .command("set <scope>")
+  .command("set [scope]")
   .description("Configure a registry for a scope (e.g., @myteam)")
   .action(setRegistryInteractive);
 
 registryCommand
-  .command("unset <scope>")
+  .command("unset [scope]")
   .description("Remove registry configuration for a scope")
   .action(unsetRegistry);
 
@@ -104,7 +104,7 @@ tokenCommand
   .action(setTokenInteractive);
 
 tokenCommand
-  .command("unset <host>")
+  .command("unset [host]")
   .description("Remove token for a git host")
   .action(unsetToken);
 
