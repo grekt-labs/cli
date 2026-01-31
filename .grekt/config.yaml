@@ -1,6 +1,0 @@
-registries:
-  "@grekt":
-    type: gitlab
-    host: gitlab.com
-    project: grekt-labs/artifacts
-    token: glpat-tGGeA7fEK6OvqRD6mUO8LW86MQp1OmpzYzVnCw.01.121vmicaz
