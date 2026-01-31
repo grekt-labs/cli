@@ -1,5 +1,5 @@
 import { createServer, type Server } from "http";
-import { execSync } from "child_process";
+import { execFileSync } from "child_process";
 import { getSupabaseClient } from "#/auth/session/session";
 
 const LOGIN_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
@@ -7,21 +7,21 @@ const LOGIN_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 /**
  * Open a URL in the default browser.
  * Supports macOS, Windows, and Linux.
+ * Uses execFileSync with array args to prevent URL injection.
  */
 export function openBrowser(url: string): boolean {
   const platform = process.platform;
-  let command: string;
-
-  if (platform === "darwin") {
-    command = `open "${url}"`;
-  } else if (platform === "win32") {
-    command = `start "" "${url}"`;
-  } else {
-    command = `xdg-open "${url}"`;
-  }
 
   try {
-    execSync(command, { stdio: "ignore" });
+    if (platform === "darwin") {
+      execFileSync("open", [url], { stdio: "ignore" });
+    } else if (platform === "win32") {
+      // Use rundll32 to avoid cmd shell interpretation of special chars like &
+      // This directly invokes the URL protocol handler without shell parsing
+      execFileSync("rundll32", ["url.dll,FileProtocolHandler", url], { stdio: "ignore" });
+    } else {
+      execFileSync("xdg-open", [url], { stdio: "ignore" });
+    }
     return true;
   } catch {
     // If browser fails to open, user will need to copy the URL manually

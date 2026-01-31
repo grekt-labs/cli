@@ -1,14 +1,15 @@
-import { execSync } from "child_process";
+import { execFileSync } from "child_process";
 import type { ShellExecutor } from "@grekt-labs/cli-engine";
 
 /**
  * Real ShellExecutor implementation using Node.js child_process.
- * Used for running shell commands like tar extraction.
+ * Uses execFileSync to prevent shell injection - arguments are passed directly
+ * to the executable without shell interpretation.
  */
 export function createShellExecutor(): ShellExecutor {
   return {
-    exec: (command: string) => {
-      return execSync(command, { stdio: "pipe" }).toString();
+    execFile: (command: string, args: string[]) => {
+      return execFileSync(command, args, { stdio: "pipe" }).toString();
     },
   };
 }

@@ -1,10 +1,19 @@
 import { mkdirSync, writeFileSync, rmSync } from "fs";
 import { execFileSync } from "child_process";
 import { randomUUID } from "crypto";
-import type { ArtifactMetadata } from "@grekt-labs/cli-engine";
-import { sortVersionsDesc, getHighestVersion } from "@grekt-labs/cli-engine";
+import type { ArtifactMetadata, ShellExecutor } from "@grekt-labs/cli-engine";
+import { sortVersionsDesc, getHighestVersion, validateTarballContents } from "@grekt-labs/cli-engine";
 import { getSupabaseClient, getSession, SUPABASE_URL } from "#/auth/session/session";
 import { REGISTRY_URL } from "#/constants";
+
+/**
+ * Minimal ShellExecutor adapter for validateTarballContents.
+ */
+const shellAdapter: ShellExecutor = {
+  execFile: (command: string, args: string[]) => {
+    return execFileSync(command, args, { stdio: "pipe" }).toString();
+  },
+};
 
 
 
@@ -156,6 +165,14 @@ export class RegistryClient {
       const buffer = await response.arrayBuffer();
       const tempTarball = `/tmp/grekt-${randomUUID()}.tar.gz`;
       writeFileSync(tempTarball, Buffer.from(buffer));
+
+      // Validate tarball contents BEFORE extraction (prevents path traversal)
+      // stripComponents=1 matches the extraction below
+      const validation = validateTarballContents(shellAdapter, tempTarball, targetDir, 1);
+      if (!validation.safe) {
+        rmSync(tempTarball, { force: true });
+        return { success: false };
+      }
 
       mkdirSync(targetDir, { recursive: true });
       execFileSync("tar", ["-xzf", tempTarball, "-C", targetDir, "--strip-components=1"], {
