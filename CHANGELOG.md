@@ -1,3 +1,10 @@
+# [5.3.0](https://github.com/grekt-labs/cli/compare/v5.2.0...v5.3.0) (2026-01-31)
+
+
+### Features
+
+* **claude:** sync skills as folders for Claude Code format ([#53](https://github.com/grekt-labs/cli/issues/53)) ([641c849](https://github.com/grekt-labs/cli/commit/641c8498f4545185fadeef8dba52842c312da662))
+
 # [5.2.0](https://github.com/grekt-labs/cli/compare/v5.1.0...v5.2.0) (2026-01-31)
 
 
