@@ -3,7 +3,7 @@ import { execFileSync } from "child_process";
 import { randomUUID } from "crypto";
 import type { ArtifactMetadata, ShellExecutor } from "@grekt-labs/cli-engine";
 import { sortVersionsDesc, getHighestVersion, validateTarballContents } from "@grekt-labs/cli-engine";
-import { getSupabaseClient, getSession, SUPABASE_URL } from "#/auth/session/session";
+import { getSupabaseClient, getSession, getSupabaseUrl } from "#/auth/session/session";
 import { REGISTRY_URL } from "#/constants";
 
 /**
@@ -46,7 +46,7 @@ export class RegistryClient {
   private edgeFunctionUrl: string;
 
   constructor(edgeFunctionUrl?: string) {
-    this.edgeFunctionUrl = edgeFunctionUrl || `${SUPABASE_URL}/functions/v1`;
+    this.edgeFunctionUrl = edgeFunctionUrl || `${getSupabaseUrl()}/functions/v1`;
   }
 
   // ============================================================================

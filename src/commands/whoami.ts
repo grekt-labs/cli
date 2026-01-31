@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { getSupabaseClient, setProjectRoot, SUPABASE_URL } from "#/auth/session/session";
+import { getSupabaseClient, setProjectRoot, getSupabaseUrl } from "#/auth/session/session";
 import { isInitialized } from "#/config/project/project";
 import { log, colors, spinner, error as showError } from "#/shared/ui/ui";
 
@@ -28,17 +28,17 @@ export const whoamiCommand = new Command("whoami")
 
       if (error || !user) {
         log("Not logged in");
-        log(colors.dim(`Registry: ${SUPABASE_URL}`));
+        log(colors.dim(`Registry: ${getSupabaseUrl()}`));
         return; // Exit 0, informational
       }
 
       log(`Logged in as ${colors.highlight(user.email || user.id)}`);
-      log(colors.dim(`Registry: ${SUPABASE_URL}`));
+      log(colors.dim(`Registry: ${getSupabaseUrl()}`));
     } catch {
       spin.stop();
       // Token invalid/expired = not logged in
       log("Not logged in");
-      log(colors.dim(`Registry: ${SUPABASE_URL}`));
+      log(colors.dim(`Registry: ${getSupabaseUrl()}`));
     }
     // Always exit 0
   });

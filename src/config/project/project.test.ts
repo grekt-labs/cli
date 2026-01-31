@@ -12,8 +12,10 @@ import {
   saveLocalConfig,
   getSession,
   saveSession,
+  clearSession,
   getToken,
   setToken,
+  removeToken,
 } from "./project";
 import type { ProjectConfig, LocalConfig, StoredSession } from "@grekt-labs/cli-engine";
 
@@ -198,8 +200,19 @@ describe("project", () => {
       expect(retrieved!.refresh_token).toBe("refresh");
     });
 
-    // Note: clearSession test removed - writeLocalConfigWithComments writes empty YAML
-    // that parses to null, causing ZodError. This is a source code issue.
+    test("clearSession removes session without breaking config parsing", () => {
+      const session: StoredSession = {
+        access_token: "access",
+        refresh_token: "refresh",
+        expires_at: 12345,
+      };
+
+      saveSession(session, testDir);
+      clearSession(testDir);
+
+      const retrieved = getSession(testDir);
+      expect(retrieved).toBeNull();
+    });
   });
 
   describe("token management", () => {
@@ -217,7 +230,12 @@ describe("project", () => {
       expect(token).toBe("my-token");
     });
 
-    // Note: removeToken test removed - writeLocalConfigWithComments writes empty YAML
-    // that parses to null, causing ZodError. This is a source code issue.
+    test("removeToken removes token without breaking config parsing", () => {
+      setToken("github", "my-token", testDir);
+      removeToken("github", testDir);
+
+      const token = getToken("github", testDir);
+      expect(token).toBeUndefined();
+    });
   });
 });

@@ -7,15 +7,20 @@ import {
 import type { StoredSession } from "@grekt-labs/cli-engine";
 
 // Supabase project config - loaded from environment
-const SUPABASE_URL = process.env.GREKT_SUPABASE_URL || process.env.SUPABASE_URL || "";
-const SUPABASE_ANON_KEY = process.env.GREKT_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || "";
+export function getSupabaseUrl(): string {
+  return process.env.GREKT_SUPABASE_URL || process.env.SUPABASE_URL || "";
+}
+
+export function getSupabaseAnonKey(): string {
+  return process.env.GREKT_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || "";
+}
 
 /**
  * Check if Supabase is configured.
  * Returns false if environment variables are not set.
  */
 export function isSupabaseConfigured(): boolean {
-  return Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
+  return Boolean(getSupabaseUrl() && getSupabaseAnonKey());
 }
 
 // Current project root for session persistence
@@ -50,7 +55,7 @@ export function getSupabaseClient(): SupabaseClient {
     );
   }
 
-  _client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  _client = createClient(getSupabaseUrl(), getSupabaseAnonKey(), {
     auth: {
       autoRefreshToken: true,
       persistSession: false, // We handle persistence manually
@@ -114,4 +119,5 @@ export function clearSession(): void {
   clearStoredSession(_projectRoot);
 }
 
-export { SUPABASE_URL, SUPABASE_ANON_KEY };
+export const SUPABASE_URL = getSupabaseUrl();
+export const SUPABASE_ANON_KEY = getSupabaseAnonKey();

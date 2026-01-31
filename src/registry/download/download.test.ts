@@ -1,12 +1,20 @@
-import { describe, test, expect } from "bun:test";
+import { describe, test, expect, vi, afterEach } from "bun:test";
 import {
   buildGitHubTarballUrl,
   buildGitLabArchiveUrl,
   getGitHubHeaders,
   getGitLabHeaders,
 } from "@grekt-labs/cli-engine";
+import { downloadAndExtractTarball } from "./download";
 
 describe("download", () => {
+  const originalFetch = globalThis.fetch;
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+    vi.restoreAllMocks();
+  });
+
   describe("buildGitHubTarballUrl", () => {
     test("builds correct URL", () => {
       const url = buildGitHubTarballUrl("owner", "repo");
@@ -85,6 +93,35 @@ describe("download", () => {
     });
   });
 
-  // Note: downloadAndExtractTarball tests require mocking HTTP client and filesystem
-  // These are tested in cli-engine with proper mocks
+  describe("downloadAndExtractTarball", () => {
+    test("returns error when HTTP response is not ok", async () => {
+      globalThis.fetch = vi.fn(async () => ({
+        ok: false,
+        status: 404,
+        statusText: "Not Found",
+      })) as unknown as typeof fetch;
+
+      const result = await downloadAndExtractTarball("https://example.com/tar.gz", "/tmp/grekt-test");
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain("HTTP 404");
+    });
+
+    test("sets User-Agent header", async () => {
+      globalThis.fetch = vi.fn(async () => ({
+        ok: false,
+        status: 500,
+        statusText: "Server Error",
+      })) as unknown as typeof fetch;
+
+      await downloadAndExtractTarball("https://example.com/tar.gz", "/tmp/grekt-test");
+
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        "https://example.com/tar.gz",
+        expect.objectContaining({
+          headers: expect.objectContaining({ "User-Agent": "grekt-cli" }),
+        })
+      );
+    });
+  });
 });

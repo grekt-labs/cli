@@ -28,7 +28,11 @@ function readYaml<T>(filepath: string, defaultValue: T): T {
     return defaultValue;
   }
   const content = readFileSync(filepath, "utf-8");
-  return parse(content) as T;
+  const parsed = parse(content);
+  if (parsed === null || parsed === undefined) {
+    return defaultValue;
+  }
+  return parsed as T;
 }
 
 function writeYaml(filepath: string, data: unknown, secure = false): void {
@@ -148,7 +152,7 @@ function writeLocalConfigWithComments(filepath: string, config: LocalConfig): vo
     lines.push("");
   }
 
-  const content = lines.length > 0 ? lines.join("\n") : "";
+  const content = lines.length > 0 ? lines.join("\n") : "{}\n";
   writeFileSync(filepath, content, "utf-8");
   chmodSync(filepath, 0o600);
 }
