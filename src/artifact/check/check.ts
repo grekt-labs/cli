@@ -1,46 +1,16 @@
-import { existsSync, readFileSync } from "fs";
-import { basename, join } from "path";
-import { getLockfile } from "#/context";
-import { getConfig } from "#/config/project/project";
-import { getSyncPaths } from "#/sync/manager/manager";
+import { existsSync } from "fs";
+import { getLockfile, verifyIntegrity, getDirectorySize } from "#/context";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
-import { verifyIntegrity, getDirectorySize } from "#/context";
-import { getSafeFilename, formatBytes, estimateTokens } from "@grekt-labs/cli-engine";
+import { formatBytes, estimateTokens } from "@grekt-labs/cli-engine";
 import { success, warning, log, newline, colors, symbols } from "#/shared/ui/ui";
-import {
-  type Lockfile,
-  type ProjectConfig,
-  type ArtifactMode,
-  CATEGORIES,
-  type Category,
-} from "@grekt-labs/cli-engine";
+import { type Lockfile } from "@grekt-labs/cli-engine";
 
 const CONTEXT_WARNING_THRESHOLD = 10 * 1024; // 10 KB
-
-function getArtifactMode(config: ProjectConfig, artifactId: string): ArtifactMode {
-  const entry = config.artifacts[artifactId];
-  if (!entry) return "lazy";
-  if (typeof entry === "string") return "lazy";
-  return entry.mode ?? "lazy";
-}
-
-function filesAreEqual(path1: string, path2: string): boolean {
-  if (!existsSync(path1) || !existsSync(path2)) return false;
-  const content1 = readFileSync(path1);
-  const content2 = readFileSync(path2);
-  return content1.equals(content2);
-}
 
 export interface CheckResult {
   artifactId: string;
   status: "ok" | "drift" | "missing";
   issues: string[];
-}
-
-interface CollisionInfo {
-  filename: string;
-  category: Category;
-  artifacts: string[];
 }
 
 export interface CheckSummary {
@@ -49,35 +19,7 @@ export interface CheckSummary {
   okCount: number;
   driftCount: number;
   missingCount: number;
-  collisions: CollisionInfo[];
   healthy: boolean;
-}
-
-function detectCollisions(lockfile: Lockfile): CollisionInfo[] {
-  const collisions: CollisionInfo[] = [];
-
-  // Check for filename collisions in all categories
-  for (const category of CATEGORIES) {
-    const fileMap = new Map<string, string[]>();
-
-    for (const [artifactId, artifact] of Object.entries(lockfile.artifacts)) {
-      for (const filePath of artifact[category]) {
-        const filename = basename(filePath);
-        if (!fileMap.has(filename)) {
-          fileMap.set(filename, []);
-        }
-        fileMap.get(filename)!.push(`${artifactId}/${filePath}`);
-      }
-    }
-
-    for (const [filename, artifacts] of fileMap) {
-      if (artifacts.length > 1) {
-        collisions.push({ filename, category, artifacts });
-      }
-    }
-  }
-
-  return collisions;
 }
 
 /**
@@ -85,7 +27,6 @@ function detectCollisions(lockfile: Lockfile): CollisionInfo[] {
  */
 export function runCheck(projectRoot: string): CheckSummary {
   const lockfile = getLockfile(projectRoot);
-  const config = getConfig(projectRoot);
   const artifactIds = Object.keys(lockfile.artifacts);
 
   const results: CheckResult[] = [];
@@ -124,46 +65,10 @@ export function runCheck(projectRoot: string): CheckSummary {
       }
     }
 
-    // Check synced files for CORE mode artifacts
-    const mode = getArtifactMode(config, artifactId);
-    if (mode === "core" && lockEntry && config.targets.length > 0) {
-      for (const target of config.targets) {
-        const syncPaths = getSyncPaths(target, config.customTargets);
-        if (!syncPaths) continue;
-
-        const checkSyncedFile = (sourcePath: string, targetDir: string, targetName: string): void => {
-          const targetPath = `${projectRoot}/${targetDir}/${targetName}`;
-          if (existsSync(targetPath)) {
-            if (!filesAreEqual(sourcePath, targetPath)) {
-              result.status = "drift";
-              result.issues.push(`Synced modified (${target}): ${targetDir}/${targetName}`);
-            }
-          } else {
-            result.status = "drift";
-            result.issues.push(`Synced missing (${target}): ${targetDir}/${targetName}`);
-          }
-        };
-
-        for (const category of CATEGORIES) {
-          const targetDir = syncPaths[category];
-          if (!targetDir) continue;
-
-          const items = lockEntry[category];
-          if (!items || items.length === 0) continue;
-
-          for (const filePath of items) {
-            const targetName = getSafeFilename(artifactId, filePath);
-            checkSyncedFile(join(artifactDir, filePath), targetDir, targetName);
-          }
-        }
-      }
-    }
-
     totalSize += getDirectorySize(artifactDir);
     results.push(result);
   }
 
-  const collisions = detectCollisions(lockfile);
   const okCount = results.filter((r) => r.status === "ok").length;
   const driftCount = results.filter((r) => r.status === "drift").length;
   const missingCount = results.filter((r) => r.status === "missing").length;
@@ -174,7 +79,6 @@ export function runCheck(projectRoot: string): CheckSummary {
     okCount,
     driftCount,
     missingCount,
-    collisions,
     healthy: driftCount === 0 && missingCount === 0,
   };
 }
@@ -204,18 +108,6 @@ export function displayCheckResults(summary: CheckSummary, lockfile: Lockfile): 
   }
 
   newline();
-  log(colors.bold("Checking for name overlaps...\n"));
-
-  if (summary.collisions.length > 0) {
-    log(`${summary.collisions.length} filename overlap(s) found ${colors.dim("(resolved by namespacing)")}`);
-    for (const overlap of summary.collisions) {
-      log(`  ${colors.dim("•")} ${overlap.category}/${overlap.filename}: ${overlap.artifacts.length} artifacts`);
-    }
-  } else {
-    log(`${symbols.success} No filename overlaps`);
-  }
-
-  newline();
   log(colors.bold("Context summary:\n"));
 
   const tokens = estimateTokens(summary.totalSize);
@@ -238,7 +130,7 @@ export function displayCheckResults(summary: CheckSummary, lockfile: Lockfile): 
 }
 
 /**
- * Display compact check results (for autoCheck after add/install)
+ * Display compact check results
  */
 export function displayCompactCheckResults(summary: CheckSummary): void {
   newline();

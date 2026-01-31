@@ -15,7 +15,6 @@ const coreProjectConfig: ProjectConfig = {
     [TEST_ARTIFACT_ID]: { version: "1.0.0", mode: "core" },
   },
   customTargets: {},
-  options: { autoCheck: false },
 };
 
 describe("claudePlugin", () => {
@@ -37,22 +36,20 @@ describe("claudePlugin", () => {
     expect(preview.willCreate).toContain(TARGET_DIR);
   });
 
-  test("preview reports missing sources as skipped for CORE mode", () => {
+  test("preview reports invalid artifact as skipped for CORE mode", () => {
     const lockfile = {
       version: 1,
       artifacts: {
         [TEST_ARTIFACT_ID]: {
           version: "1.0.0",
-          agent: "agent.md",
-          skills: ["skills/missing.md"],
-          commands: [],
+          files: { "skills/missing.md": "sha256:abc" },
         },
       },
     };
 
     const preview = claudePlugin.preview(lockfile, "/nonexistent", { projectConfig: coreProjectConfig });
 
-    expect(preview.willSkip.some((s) => s.includes("source not found"))).toBe(true);
+    expect(preview.willSkip.some((s) => s.includes("invalid artifact"))).toBe(true);
   });
 
   test("preview skips LAZY mode artifacts", () => {
@@ -61,9 +58,7 @@ describe("claudePlugin", () => {
       artifacts: {
         [TEST_ARTIFACT_ID]: {
           version: "1.0.0",
-          agent: "agent.md",
-          skills: [],
-          commands: [],
+          files: {},
         },
       },
     };

@@ -2,7 +2,8 @@ targets:
   - claude
 autoSync: false
 artifacts:
-  "@grekt/tools": 1.0.0
+  "@grekt/tools": 2.0.0
+  "@grekt/cli-experts":
+    version: 0.1.1
+    mode: core
 customTargets: {}
-options:
-  autoCheck: false

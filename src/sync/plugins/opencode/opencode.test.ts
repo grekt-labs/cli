@@ -16,7 +16,6 @@ const coreProjectConfig: ProjectConfig = {
     [TEST_ARTIFACT_ID]: { version: "1.0.0", mode: "core" },
   },
   customTargets: {},
-  options: { autoCheck: false },
 };
 
 describe("opencodePlugin", () => {
@@ -54,24 +53,20 @@ describe("opencodePlugin", () => {
       expect(preview.willCreate).toContain(TARGET_DIR);
     });
 
-    test("reports skipped for CORE artifacts with missing source files", () => {
+    test("reports skipped for CORE artifacts with invalid artifact", () => {
       const lockfile = {
         version: 1,
         artifacts: {
           [TEST_ARTIFACT_ID]: {
             version: "1.0.0",
-            agents: ["agent.md"],
-            skills: [],
-            commands: [],
-            mcps: [],
-            rules: [],
+            files: {},
           },
         },
       };
 
       const preview = opencodePlugin.preview(lockfile, testDir, { projectConfig: coreProjectConfig });
 
-      expect(preview.willSkip.some((s) => s.includes("source not found"))).toBe(true);
+      expect(preview.willSkip.some((s) => s.includes("invalid artifact"))).toBe(true);
     });
 
     test("reports skipped for LAZY mode artifacts", () => {
@@ -80,11 +75,7 @@ describe("opencodePlugin", () => {
         artifacts: {
           [TEST_ARTIFACT_ID]: {
             version: "1.0.0",
-            agents: ["agent.md"],
-            skills: [],
-            commands: [],
-            mcps: [],
-            rules: [],
+            files: {},
           },
         },
       };
@@ -105,18 +96,14 @@ describe("opencodePlugin", () => {
       expect(existsSync(join(testDir, TARGET_DIR, "commands"))).toBe(true);
     });
 
-    test("skips CORE artifacts when source files missing", async () => {
+    test("skips CORE artifacts with invalid artifact", async () => {
       const missingArtifactId = "@test/missing";
       const lockfile = {
         version: 1,
         artifacts: {
           [missingArtifactId]: {
             version: "1.0.0",
-            agents: ["agent.md"],
-            skills: [],
-            commands: [],
-            mcps: [],
-            rules: [],
+            files: {},
           },
         },
       };
@@ -127,7 +114,7 @@ describe("opencodePlugin", () => {
 
       const result = await opencodePlugin.sync(lockfile, testDir, { projectConfig: configWithMissing });
 
-      expect(result.skipped.some((s) => s.includes("source not found"))).toBe(true);
+      expect(result.skipped.some((s) => s.includes("invalid artifact"))).toBe(true);
     });
 
     test("skips LAZY mode artifacts", async () => {
@@ -136,11 +123,7 @@ describe("opencodePlugin", () => {
         artifacts: {
           [TEST_ARTIFACT_ID]: {
             version: "1.0.0",
-            agents: ["agent.md"],
-            skills: [],
-            commands: [],
-            mcps: [],
-            rules: [],
+            files: {},
           },
         },
       };

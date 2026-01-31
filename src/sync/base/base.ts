@@ -6,12 +6,13 @@ import {
   type ProjectConfig,
   type ArtifactMode,
   type Category,
-  CATEGORIES,
   CATEGORY_CONFIG,
   getCategoriesForFormat,
+  scanArtifact,
 } from "@grekt-labs/cli-engine";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
 import { getSafeFilename, GREKT_BLOCK_START, GREKT_BLOCK_END, generateDefaultBlockContent } from "@grekt-labs/cli-engine";
+import { fs as cliFs } from "#/context";
 
 // MD categories can be synced to folder targets
 const SYNCABLE_CATEGORIES = getCategoriesForFormat("md");
@@ -134,7 +135,7 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
       }
 
       // Sync each artifact (only CORE mode artifacts are copied)
-      for (const [artifactId, artifact] of Object.entries(lockfile.artifacts)) {
+      for (const [artifactId] of Object.entries(lockfile.artifacts)) {
         if (!shouldSyncArtifact(options.projectConfig, artifactId)) {
           result.skipped.push(`${artifactId} (lazy mode)`);
           continue;
@@ -142,14 +143,22 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
 
         const artifactDir = `${projectRoot}/${ARTIFACTS_DIR}/${artifactId}`;
 
+        // Scan artifact to determine file categories from frontmatter
+        const artifactInfo = scanArtifact(cliFs, artifactDir);
+        if (!artifactInfo) {
+          result.skipped.push(`${artifactId} (invalid artifact)`);
+          continue;
+        }
+
         // Copy files for each syncable category
         for (const category of SYNCABLE_CATEGORIES) {
           const categoryDir = getCategoryDir(category);
-          const files = artifact[category];
+          const files = artifactInfo[category];
 
           if (!files || files.length === 0) continue;
 
-          for (const filePath of files) {
+          for (const scannedFile of files) {
+            const filePath = scannedFile.path;
             const source = join(artifactDir, filePath);
             const targetName = getTargetPath(artifactId, category, filePath);
             const target = `${projectRoot}/${categoryDir}/${targetName}`;
@@ -181,7 +190,7 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
         preview.willCreate.push(targetDir);
       }
 
-      for (const [artifactId, artifact] of Object.entries(lockfile.artifacts)) {
+      for (const [artifactId] of Object.entries(lockfile.artifacts)) {
         if (!shouldSyncArtifact(options?.projectConfig, artifactId)) {
           preview.willSkip.push(`${artifactId} (lazy mode)`);
           continue;
@@ -189,13 +198,21 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
 
         const artifactDir = `${projectRoot}/${ARTIFACTS_DIR}/${artifactId}`;
 
+        // Scan artifact to determine file categories from frontmatter
+        const artifactInfo = scanArtifact(cliFs, artifactDir);
+        if (!artifactInfo) {
+          preview.willSkip.push(`${artifactId} (invalid artifact)`);
+          continue;
+        }
+
         for (const category of SYNCABLE_CATEGORIES) {
           const categoryDir = getCategoryDir(category);
-          const files = artifact[category];
+          const files = artifactInfo[category];
 
           if (!files || files.length === 0) continue;
 
-          for (const filePath of files) {
+          for (const scannedFile of files) {
+            const filePath = scannedFile.path;
             const source = join(artifactDir, filePath);
             const targetName = getTargetPath(artifactId, category, filePath);
             const target = `${projectRoot}/${categoryDir}/${targetName}`;

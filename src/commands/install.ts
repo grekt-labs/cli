@@ -6,7 +6,6 @@ import { ARTIFACTS_DIR } from "#/config/paths/paths";
 import { parseSource, downloadFromSource, getSourceToken } from "#/registry/sources/sources";
 import { downloadAndExtractTarball } from "#/registry/download/download";
 import { verifyIntegrity } from "#/context";
-import { runCheck, displayCompactCheckResults } from "#/artifact/check/check";
 import { generateArtifactIndex } from "#/artifact/index/index";
 import { isSafeArtifactId } from "#/artifact/validation/validation";
 import { resolveRegistry } from "#/registry/factory/factory";
@@ -205,10 +204,5 @@ export const installCommand = new Command("install")
     if (installed > 0) {
       newline();
       info("Run 'grekt sync' to sync with your AI tools");
-    }
-
-    if (config.options.autoCheck) {
-      const summary = runCheck(projectRoot);
-      displayCompactCheckResults(summary);
     }
   });

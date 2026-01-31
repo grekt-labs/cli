@@ -44,8 +44,6 @@ describe("runCheck", () => {
           version: "1.0.0",
           integrity: "sha256:abc",
           files: {},
-          skills: [],
-          commands: [],
         },
       },
     });
@@ -64,8 +62,6 @@ describe("runCheck", () => {
           version: "1.0.0",
           integrity: "sha256:abc",
           files: {},
-          skills: [],
-          commands: [],
         },
       },
     });
@@ -99,42 +95,6 @@ describe("runCheck", () => {
     expect(summary.results[0].status).toBe("drift");
   });
 
-  test("detects skill filename collisions between artifacts", () => {
-    createArtifact("@org/a", { "skills/shared.md": "# A" });
-    createArtifact("@org/b", { "skills/shared.md": "# B" });
-    writeLockfile({
-      version: 1,
-      artifacts: {
-        "@org/a": {
-          version: "1.0.0",
-          integrity: "sha256:a",
-          files: {},
-          agents: [],
-          skills: ["skills/shared.md"],
-          commands: [],
-          mcps: [],
-          rules: [],
-        },
-        "@org/b": {
-          version: "1.0.0",
-          integrity: "sha256:b",
-          files: {},
-          agents: [],
-          skills: ["skills/shared.md"],
-          commands: [],
-          mcps: [],
-          rules: [],
-        },
-      },
-    });
-
-    const summary = runCheck(testDir);
-
-    expect(summary.collisions.length).toBeGreaterThan(0);
-    expect(summary.collisions[0].filename).toBe("shared.md");
-    expect(summary.collisions[0].category).toBe("skills");
-  });
-
   test("calculates total size of all artifacts", () => {
     const content = "x".repeat(100);
     createArtifact("@scope/artifact", { "file.md": content });
@@ -145,8 +105,6 @@ describe("runCheck", () => {
           version: "1.0.0",
           integrity: "sha256:abc",
           files: {},
-          skills: [],
-          commands: [],
         },
       },
     });
@@ -175,15 +133,11 @@ describe("runCheck", () => {
           version: "1.0.0",
           integrity: "sha256:abc",
           files: {},
-          skills: [],
-          commands: [],
         },
         "@scope/missing": {
           version: "1.0.0",
           integrity: "sha256:xyz",
           files: {},
-          skills: [],
-          commands: [],
         },
       },
     });

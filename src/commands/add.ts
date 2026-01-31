@@ -10,7 +10,6 @@ import { scanArtifact, hashDirectory } from "#/context";
 import { getArtifactId, calculateIntegrity } from "@grekt-labs/cli-engine";
 import { selectComponents, isEmptySelection, isFullSelection, createEmptySelection, type ComponentSelection } from "#/artifact/selector/selector";
 import { removeUnselectedFiles } from "#/artifact/component-manager/component-manager";
-import { runCheck, displayCompactCheckResults } from "#/artifact/check/check";
 import { generateArtifactIndex } from "#/artifact/index/index";
 import { assertSafeArtifactId } from "#/artifact/validation/validation";
 import { success, error, info, log, warning, newline, colors, spinner } from "#/shared/ui/ui";
@@ -209,7 +208,7 @@ export const addCommand = new Command("add")
     const fileHashes = hashDirectory(targetDir);
     const integrity = calculateIntegrity(fileHashes);
 
-    // Update lockfile with version, checksums, and selected component paths
+    // Update lockfile with version, checksums
     lockfile.artifacts[resolvedArtifactId] = {
       version: artifactInfo.manifest.version,
       integrity,
@@ -217,7 +216,6 @@ export const addCommand = new Command("add")
       resolved: downloadResult.resolved, // Full URL, immutable after write
       mode: options.core ? "core" : "lazy",
       files: fileHashes,
-      ...selection, // Spread all category selections (agents, skills, commands, mcps, rules)
     };
     saveLockfile(lockfile, projectRoot);
 
@@ -242,9 +240,4 @@ export const addCommand = new Command("add")
 
     newline();
     info("Run 'grekt sync' to sync with your AI tools");
-
-    if (config.options.autoCheck) {
-      const summary = runCheck(projectRoot);
-      displayCompactCheckResults(summary);
-    }
   });

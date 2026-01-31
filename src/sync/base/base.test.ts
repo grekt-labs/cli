@@ -18,7 +18,6 @@ const testProjectConfig: ProjectConfig = {
     },
   },
   customTargets: {},
-  options: { autoCheck: false },
 };
 
 describe("base", () => {
@@ -32,11 +31,6 @@ describe("base", () => {
         version: "1.0.0",
         integrity: "sha256:abc",
         files: {},
-        agents: ["agent.md"],
-        skills: [],
-        commands: [],
-        mcps: [],
-        rules: [],
       },
     },
   };
@@ -44,7 +38,23 @@ describe("base", () => {
   beforeEach(() => {
     rmSync(testDir, { recursive: true, force: true });
     mkdirSync(artifactDir, { recursive: true });
-    writeFileSync(join(artifactDir, "agent.md"), "# Agent");
+
+    // Create artifact manifest (required by scanArtifact)
+    writeFileSync(
+      join(artifactDir, "grekt.yaml"),
+      "name: artifact\nauthor: scope\nversion: 1.0.0\ndescription: Test artifact"
+    );
+
+    // Create agent file with valid frontmatter
+    writeFileSync(
+      join(artifactDir, "agent.md"),
+      `---
+grk-type: agents
+grk-name: Test Agent
+grk-description: A test agent
+---
+# Agent`
+    );
   });
 
   afterEach(() => {

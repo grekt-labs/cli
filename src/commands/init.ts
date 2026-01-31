@@ -153,7 +153,6 @@ export const initCommand = new Command("init")
       autoSync: false,
       artifacts: {},
       customTargets,
-      options: { autoCheck: false },
     }, projectRoot);
 
     // Create empty index

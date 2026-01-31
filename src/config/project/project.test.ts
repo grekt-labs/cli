@@ -72,7 +72,6 @@ describe("project", () => {
         autoSync: false,
         artifacts: { "@test/pkg": "2.0.0" },
         customTargets: {},
-        options: { autoCheck: false },
       };
 
       saveConfig(config, testDir);

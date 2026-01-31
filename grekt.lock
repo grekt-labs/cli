@@ -1,23 +1,41 @@
 version: 1
 artifacts:
   "@grekt/tools":
-    version: 1.0.0
-    integrity: sha256:efd9851b4b074909
-    source: grekt/tools
-    resolved: https://gitlab.com/api/v4/projects/78003034/packages/generic/tools/1.0.0/artifact.tar.gz
+    version: 2.0.0
+    integrity: sha256:9ef4dc6c6f4535c603d9c9d9450f6af3
+    source: "@grekt/tools"
+    resolved: https://gitlab.com/api/v4/projects/78003034/packages/generic/tools/2.0.0/artifact.tar.gz
+    mode: lazy
     files:
-      agents/assistant.md: sha256:5f4297e8588d4bf1
-      skills/registry-config.md: sha256:1b8d34392a8ee3e2
-      skills/artifact-format.md: sha256:eb52b24d5e462787
-      skills/troubleshooting.md: sha256:13ef4b308f714bdc
-      grekt.yaml: sha256:bf0852777be005eb
-      commands/publish-checklist.md: sha256:a1b8327b0bcf7450
-      commands/new-artifact.md: sha256:b35346bf355bf001
-    agent: agents/assistant.md
-    skills:
-      - skills/registry-config.md
-      - skills/artifact-format.md
-      - skills/troubleshooting.md
-    commands:
-      - commands/publish-checklist.md
-      - commands/new-artifact.md
+      agents/assistant.md: sha256:6f8891b2609a2d4ab6d5bcb6b06f2b05
+      skills/registry-config.md: sha256:3db1d0a5d841eb7b13b8cb6158a7b217
+      skills/artifact-format.md: sha256:d692c5d7cce9e83cf3cd27c854987924
+      skills/troubleshooting.md: sha256:f79209babd6cc9da9f0ee28ec9a1ada6
+      grekt.yaml: sha256:852b0c59bc3757e8cc9bacec923a624d
+      commands/publish-checklist.md: sha256:7bfeb43a3d58e95b4b990ca88b308eb9
+      commands/new-artifact.md: sha256:9949bf64eed597ac257ae149aacff035
+  "@grekt/cli-experts":
+    version: 0.1.1
+    integrity: sha256:61d577a90e8bb2426d1b32a6b8c43b1e
+    source: "@grekt/cli-experts"
+    resolved: https://gitlab.com/api/v4/projects/78003034/packages/generic/cli-experts/0.1.1/artifact.tar.gz
+    mode: core
+    files:
+      sync-ops/skills/mode-logic.md: sha256:7a9361b4c6274a8e8b3528423d54cfd0
+      sync-ops/skills/plugin-system.md: sha256:88c1c42201e0051d5bd922e52202f4d3
+      sync-ops/skills/context-output.md: sha256:833db7b0b58f667b86bb6aa4fea8a46e
+      sync-ops/agent.md: sha256:6e786ed3ec7931c98bacfab7b4033be7
+      command-orchestrator/skills/conflict-resolution.md: sha256:80cdcbecf82948b6b2d6c99809957fda
+      command-orchestrator/skills/cross-cutting.md: sha256:45d9fd0f6c58345a6719654e884b478d
+      command-orchestrator/agent.md: sha256:f4ae21b454d725fc9ecf3e9f816bcbd8
+      grekt.yaml: sha256:3694062c48133d136f14cc478817f5f6
+      artifact-ops/skills/lockfile-ops.md: sha256:f62cc02f0c2945d39f779caa3ca256e5
+      artifact-ops/skills/component-selection.md: sha256:29948ddeee9a8320326d9a2a41e0d485
+      artifact-ops/skills/download-flow.md: sha256:d720f7c475e63370f73a41f59e12632b
+      artifact-ops/skills/publish-flow.md: sha256:6d68c403bb4f975da7b6841510dcf6c8
+      artifact-ops/agent.md: sha256:5ff081a366cfaeeda02701fcf9676219
+      test-ops/agent.md: sha256:d47446884b95f777181e2b7e8c9c7a82
+      config-ops/skills/credentials.md: sha256:829f6ba7e9b0271bbdc327475cd13071
+      config-ops/skills/yaml-schema.md: sha256:928f8c9072b2cf8258e1f8fb53ffa13e
+      config-ops/skills/project-init.md: sha256:d2f84a630ff9c8dbe68796f17968fe31
+      config-ops/agent.md: sha256:87cc7658088fcd172416c055eec6aad9
