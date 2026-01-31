@@ -3,7 +3,6 @@ import { existsSync, mkdirSync } from "fs";
 import { basename } from "path";
 import { checkbox, input, confirm } from "@inquirer/prompts";
 import { isInitialized, saveConfig } from "#/config/project/project";
-import { saveLockfile, createEmptyLockfile } from "#/context";
 import { getPluginChoices, getDefaultTarget } from "#/sync/manager/manager";
 import { createEmptyIndex } from "#/artifact/index/index";
 import { GREKT_YAML, GREKT_DIR, ARTIFACTS_DIR, INDEX_FILE } from "#/config/paths/paths";
@@ -157,17 +156,12 @@ export const initCommand = new Command("init")
       options: { autoCheck: false },
     }, projectRoot);
 
-    // Create grekt.lock
-    const lockfile = createEmptyLockfile();
-    saveLockfile(lockfile, projectRoot);
-
     // Create empty index
     createEmptyIndex(projectRoot);
 
     newline();
     success(`Created ${GREKT_YAML}`);
     success(`Created ${GREKT_DIR}/`);
-    success("Created grekt.lock");
     success(`Created ${INDEX_FILE}`);
     newline();
 
