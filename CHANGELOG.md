@@ -1,3 +1,10 @@
+# [5.4.0](https://github.com/grekt-labs/cli/compare/v5.3.0...v5.4.0) (2026-01-31)
+
+
+### Features
+
+* **config:** add interactive registry and repo-token commands ([9a36bcc](https://github.com/grekt-labs/cli/commit/9a36bcc5f9971e9545ec3831d328b21b310131ac))
+
 # [5.3.0](https://github.com/grekt-labs/cli/compare/v5.2.0...v5.3.0) (2026-01-31)
 
 
