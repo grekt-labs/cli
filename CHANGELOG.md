@@ -1,3 +1,10 @@
+## [5.10.1](https://github.com/grekt-labs/cli/compare/v5.10.0...v5.10.1) (2026-02-01)
+
+
+### Bug Fixes
+
+* **tarball:** exclude .grekt directory from artifact packaging ([#71](https://github.com/grekt-labs/cli/issues/71)) ([d58d1bb](https://github.com/grekt-labs/cli/commit/d58d1bb5ecdd90c83d2ea531209ab94d73d57f7e))
+
 # [5.10.0](https://github.com/grekt-labs/cli/compare/v5.9.0...v5.10.0) (2026-02-01)
 
 
