@@ -150,7 +150,6 @@ export const initCommand = new Command("init")
     saveConfig({
       ...manifestFields,
       targets,
-      autoSync: false,
       artifacts: {},
       customTargets,
     }, projectRoot);
