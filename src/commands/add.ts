@@ -14,6 +14,7 @@ import { generateArtifactIndex } from "#/artifact/index/index";
 import { assertSafeArtifactId } from "#/artifact/validation/validation";
 import { success, error, info, log, warning, newline, colors, spinner } from "#/shared/ui/ui";
 import { compareSemver, CATEGORIES, type Category } from "@grekt-labs/cli-engine";
+import { getPlugin } from "#/sync/manager/manager";
 
 
 export const addCommand = new Command("add")
@@ -238,6 +239,34 @@ export const addCommand = new Command("add")
       log(`  ${colors.dim(`${category}:`)} ${names.join(", ")}`);
     }
 
-    newline();
-    info("Run 'grekt sync' to sync with your AI tools");
+    // Auto-sync when using --core
+    if (options.core && config.targets.length > 0) {
+      newline();
+      for (const target of config.targets) {
+        const plugin = getPlugin(target, config.customTargets);
+        const spin = spinner(`Syncing ${plugin.name}...`);
+        spin.start();
+
+        const result = await plugin.sync(lockfile, projectRoot, {
+          createTarget: true,
+          force: true,
+          projectConfig: config,
+        });
+
+        spin.stop();
+
+        for (const file of result.created) {
+          success(`Created ${file}`);
+        }
+        for (const file of result.updated) {
+          info(`Updated ${file}`);
+        }
+        for (const file of result.skipped) {
+          warning(`Skipped ${file}`);
+        }
+      }
+    } else if (!options.core) {
+      newline();
+      info("Run 'grekt sync' to sync with your AI tools");
+    }
   });

@@ -13,7 +13,7 @@ import {
 } from "./config/registry/registry";
 import type { ProjectConfig } from "@grekt-labs/cli-engine";
 
-const VALID_KEYS: (keyof ProjectConfig)[] = ["targets", "autoSync", "registry"];
+const VALID_KEYS: (keyof ProjectConfig)[] = ["targets", "registry"];
 
 export const configCommand = new Command("config")
   .description("Manage project configuration");
@@ -109,11 +109,6 @@ tokenCommand
   .action(unsetToken);
 
 function parseValue(key: string, value: string): unknown {
-  // Boolean values
-  if (key === "autoSync") {
-    return value === "true" || value === "1";
-  }
-
   // Array values (comma-separated)
   if (key === "targets") {
     return value.split(",").map((s) => s.trim());

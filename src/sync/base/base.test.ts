@@ -10,7 +10,6 @@ const TEST_ARTIFACT_ID = "@scope/artifact";
 // Project config with artifact in CORE mode (so it gets copied)
 const testProjectConfig: ProjectConfig = {
   targets: [],
-  autoSync: false,
   artifacts: {
     [TEST_ARTIFACT_ID]: {
       version: "1.0.0",
