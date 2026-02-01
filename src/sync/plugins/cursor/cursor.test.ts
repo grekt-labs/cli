@@ -2,11 +2,11 @@ import { describe, test, expect, beforeEach, afterEach } from "bun:test";
 import { existsSync, mkdirSync, writeFileSync, readFileSync, rmSync } from "fs";
 import { join } from "path";
 import { cursorPlugin } from "./cursor";
+import { GREKT_SECTION_HEADER } from "@grekt-labs/cli-engine";
 
 const PLUGIN_ID = "cursor";
 const PLUGIN_NAME = "Cursor";
 const RULES_FILE = ".cursorrules";
-const GREKT_SECTION_HEADER = "## Grekt Artifacts (MANDATORY)";
 
 describe("cursorPlugin", () => {
   const testDir = join(process.cwd(), ".test-cursor-plugin");

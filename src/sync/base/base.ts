@@ -11,10 +11,7 @@ import {
   scanArtifact,
 } from "@grekt-labs/cli-engine";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
-import { getSafeFilename, generateDefaultBlockContent } from "@grekt-labs/cli-engine";
-
-/** Section header to detect if grekt block exists */
-const GREKT_SECTION_HEADER = "## Grekt Artifacts (MANDATORY)";
+import { getSafeFilename, generateDefaultBlockContent, GREKT_SECTION_HEADER } from "@grekt-labs/cli-engine";
 import { fs as cliFs } from "#/context";
 
 // MD categories can be synced to folder targets
