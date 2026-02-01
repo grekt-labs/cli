@@ -1,5 +1,6 @@
 import { execFileSync } from "child_process";
 import { existsSync, mkdirSync, cpSync, rmSync, readFileSync, writeFileSync } from "fs";
+import { tmpdir } from "os";
 import { basename, dirname, join } from "path";
 import { parse, stringify } from "yaml";
 import type { Components } from "@grekt-labs/cli-engine";
@@ -55,7 +56,7 @@ export function createTarball(options: CreateTarballOptions): TarballResult {
     // If components provided, copy to temp and inject into manifest
     if (components) {
       const artifactDirName = basename(artifactPath);
-      tempDir = join(tarballDir, `tmp-${Date.now()}`);
+      tempDir = join(tmpdir(), `grekt-tmp-${Date.now()}`);
       const tempArtifactPath = join(tempDir, artifactDirName);
 
       mkdirSync(tempDir, { recursive: true });
