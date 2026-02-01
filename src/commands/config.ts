@@ -13,7 +13,7 @@ import {
 } from "./config/registry/registry";
 import type { ProjectConfig } from "@grekt-labs/cli-engine";
 
-const VALID_KEYS: (keyof ProjectConfig)[] = ["targets", "registry"];
+const VALID_KEYS: (keyof ProjectConfig)[] = ["registry"];
 
 export const configCommand = new Command("config")
   .description("Manage project configuration");
@@ -108,13 +108,7 @@ tokenCommand
   .description("Remove token for a git host")
   .action(unsetToken);
 
-function parseValue(key: string, value: string): unknown {
-  // Array values (comma-separated)
-  if (key === "targets") {
-    return value.split(",").map((s) => s.trim());
-  }
-
-  // String values
+function parseValue(_key: string, value: string): unknown {
   return value;
 }
 

@@ -1,11 +1,22 @@
 import { ExitPromptError } from "@inquirer/core";
-import { input, confirm } from "@inquirer/prompts";
+import { input, confirm, checkbox } from "@inquirer/prompts";
 import { newline, info, log, colors } from "#/shared/ui/ui";
 import { CATEGORIES, type CustomTarget, type ComponentPaths, type Category } from "@grekt-labs/cli-engine";
 
 export interface PromptCustomTargetResult {
   id: string;
   config: CustomTarget;
+}
+
+export interface SelectTargetsResult {
+  targets: string[];
+  customTargets: Record<string, CustomTarget>;
+}
+
+export interface SelectTargetsOptions {
+  currentTargets?: string[];
+  currentCustomTargets?: Record<string, CustomTarget>;
+  defaultCheckedIndex?: number;
 }
 
 /**
@@ -83,4 +94,58 @@ export async function promptCustomTarget(
   }
 
   return { id, config };
+}
+
+const OTHER_TARGET_VALUE = "__other__";
+
+/**
+ * Interactive prompt to select sync targets.
+ * Handles built-in plugins and custom target configuration.
+ */
+export async function selectTargets(
+  pluginChoices: Array<{ name: string; value: string }>,
+  options: SelectTargetsOptions = {}
+): Promise<SelectTargetsResult> {
+  const {
+    currentTargets = [],
+    currentCustomTargets = {},
+    defaultCheckedIndex,
+  } = options;
+
+  const currentTargetSet = new Set(currentTargets);
+
+  const choices = [
+    ...pluginChoices.map((choice, index) => ({
+      ...choice,
+      checked: currentTargetSet.has(choice.value) ||
+        (currentTargetSet.size === 0 && index === defaultCheckedIndex),
+    })),
+    {
+      name: "Other (custom)",
+      value: OTHER_TARGET_VALUE,
+      checked: false,
+    },
+  ];
+
+  const selected = await checkbox<string>({
+    message: "Select AI tools to sync with:",
+    choices,
+  });
+
+  const customTargets: Record<string, CustomTarget> = { ...currentCustomTargets };
+  let targets: string[];
+
+  if (selected.includes(OTHER_TARGET_VALUE)) {
+    const builtInIds = pluginChoices.map((p) => p.value);
+    const { id: customId, config: customTarget } = await promptCustomTarget(builtInIds);
+
+    customTargets[customId] = customTarget;
+
+    targets = selected.filter((t) => t !== OTHER_TARGET_VALUE);
+    targets.push(customId);
+  } else {
+    targets = selected;
+  }
+
+  return { targets, customTargets };
 }

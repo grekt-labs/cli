@@ -1,17 +1,15 @@
 import { Command } from "commander";
 import { existsSync, mkdirSync } from "fs";
 import { basename } from "path";
-import { checkbox, input, confirm } from "@inquirer/prompts";
+import { input, confirm } from "@inquirer/prompts";
 import { isInitialized, saveConfig } from "#/config/project/project";
 import { getPluginChoices, getDefaultTarget } from "#/sync/manager/manager";
 import { createEmptyIndex } from "#/artifact/index/index";
 import { GREKT_YAML, GREKT_DIR, ARTIFACTS_DIR, INDEX_FILE } from "#/config/paths/paths";
 import { success, info, warning, newline, log, colors } from "#/shared/ui/ui";
-import { withPromptHandler, promptCustomTarget } from "#/shared/prompts/prompts";
+import { withPromptHandler, selectTargets } from "#/shared/prompts/prompts";
 import { ASCII_LOGO } from "#/constants";
 import type { CustomTarget, ProjectConfig } from "@grekt-labs/cli-engine";
-
-const OTHER_TARGET_VALUE = "__other__";
 
 export const initCommand = new Command("init")
   .description("Initialize grekt in the current directory")
@@ -94,7 +92,7 @@ export const initCommand = new Command("init")
 
     // Select targets
     let targets: string[] = options.artifact ? [] : [defaultTarget];
-    const customTargets: Record<string, CustomTarget> = {};
+    let customTargets: Record<string, CustomTarget> = {};
 
     // For artifacts, ask if they want to configure targets (optional)
     // For projects, always ask for targets
@@ -103,36 +101,12 @@ export const initCommand = new Command("init")
       : true;
 
     if (shouldConfigureTargets && !options.yes) {
-      const choices = [
-        ...pluginChoices.map((choice, index) => ({
-          ...choice,
-          checked: !options.artifact && index === 0, // First plugin checked by default for projects
-        })),
-        {
-          name: "Other (custom)",
-          value: OTHER_TARGET_VALUE,
-          checked: false,
-        },
-      ];
-
-      const selected = await checkbox<string>({
-        message: "Select AI tools to sync with:",
-        choices,
+      const result = await selectTargets(pluginChoices, {
+        defaultCheckedIndex: options.artifact ? undefined : 0,
       });
 
-      // Handle "Other" selection
-      if (selected.includes(OTHER_TARGET_VALUE)) {
-        const builtInIds = pluginChoices.map((p) => p.value);
-        const { id: customId, config: customTarget } = await promptCustomTarget(builtInIds);
-
-        customTargets[customId] = customTarget;
-
-        // Replace __other__ with the custom ID
-        targets = selected.filter((t) => t !== OTHER_TARGET_VALUE);
-        targets.push(customId);
-      } else {
-        targets = selected;
-      }
+      targets = result.targets;
+      customTargets = result.customTargets;
 
       if (targets.length === 0 && !options.artifact) {
         targets = [defaultTarget];
