@@ -2,9 +2,7 @@ import { describe, test, expect, beforeEach, afterEach } from "bun:test";
 import { existsSync, mkdirSync, rmSync, writeFileSync, readFileSync } from "fs";
 import { join } from "path";
 import { createFolderPlugin, createRulesOnlyPlugin } from "./base";
-import type { Lockfile, ProjectConfig } from "@grekt-labs/cli-engine";
-
-const GREKT_SECTION_HEADER = "## Grekt Artifacts (MANDATORY)";
+import { GREKT_SECTION_HEADER, type Lockfile, type ProjectConfig } from "@grekt-labs/cli-engine";
 
 const ARTIFACTS_DIR = ".grekt/artifacts";
 const TEST_ARTIFACT_ID = "@scope/artifact";
