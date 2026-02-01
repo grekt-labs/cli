@@ -35,7 +35,8 @@ describe("manager", () => {
 
       expect(plugin.id).toBe("myCustom");
       expect(plugin.name).toBe("My Custom");
-      expect(plugin.targetFile).toBe(".myrules");
+      // Without paths, targetFile is the target-id (used as base for default paths)
+      expect(plugin.targetFile).toBe("myCustom");
     });
 
     test("prefers built-in over custom with same id", () => {
