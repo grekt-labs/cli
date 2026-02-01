@@ -1,3 +1,10 @@
+# [5.8.0](https://github.com/grekt-labs/cli/compare/v5.7.1...v5.8.0) (2026-02-01)
+
+
+### Features
+
+* update examples when initializing project with custom AI ([7e3c637](https://github.com/grekt-labs/cli/commit/7e3c637c2ff3de5aa63e6d3eb9007d7c6b58b1cc))
+
 ## [5.7.1](https://github.com/grekt-labs/cli/compare/v5.7.0...v5.7.1) (2026-02-01)
 
 
