@@ -1,3 +1,10 @@
+# [5.10.0](https://github.com/grekt-labs/cli/compare/v5.9.0...v5.10.0) (2026-02-01)
+
+
+### Features
+
+* auto-generate components in manifest during pack/publish ([607d45d](https://github.com/grekt-labs/cli/commit/607d45dd132e8275d75343becfc5f4fb3076effa))
+
 # [5.9.0](https://github.com/grekt-labs/cli/compare/v5.8.1...v5.9.0) (2026-02-01)
 
 
