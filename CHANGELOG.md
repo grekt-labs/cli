@@ -1,3 +1,10 @@
+## [5.10.2](https://github.com/grekt-labs/cli/compare/v5.10.1...v5.10.2) (2026-02-01)
+
+
+### Bug Fixes
+
+* **tarball:** use system tmpdir to avoid self-copy error ([#72](https://github.com/grekt-labs/cli/issues/72)) ([ef66d96](https://github.com/grekt-labs/cli/commit/ef66d961dcb198296e9a152d3970d52645d1b918))
+
 ## [5.10.1](https://github.com/grekt-labs/cli/compare/v5.10.0...v5.10.1) (2026-02-01)
 
 
