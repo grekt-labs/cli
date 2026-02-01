@@ -1,3 +1,11 @@
+## [5.8.1](https://github.com/grekt-labs/cli/compare/v5.8.0...v5.8.1) (2026-02-01)
+
+
+### Bug Fixes
+
+* auto-sync when using --core flag, remove autoSync config ([5bc871c](https://github.com/grekt-labs/cli/commit/5bc871ca8b5ef6f8c5408e6b649e753d28d3b834))
+* custom targets always use FolderPlugin with default paths ([66545ca](https://github.com/grekt-labs/cli/commit/66545cabb206ab0242f083d5e229dc65b13298e2))
+
 # [5.8.0](https://github.com/grekt-labs/cli/compare/v5.7.1...v5.8.0) (2026-02-01)
 
 
