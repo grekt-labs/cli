@@ -13,6 +13,8 @@ import { cursorPlugin } from "#/sync/plugins/cursor/cursor";
 import { opencodePlugin } from "#/sync/plugins/opencode/opencode";
 import { createRulesOnlyPlugin, createFolderPlugin, generateDefaultBlockContent } from "#/sync/base/base";
 
+// Note: createRulesOnlyPlugin and RulesOnlyPluginConfig kept for built-in cursor plugin
+
 export type SyncPaths = Record<Category, string>;
 
 type PluginConfig =
@@ -59,28 +61,52 @@ const builtInPlugins: Record<string, SyncPlugin> = {
 const plugins: Map<string, SyncPlugin> = new Map(Object.entries(builtInPlugins));
 
 /**
+ * Generate content block for custom targets.
+ * Includes explanation of grk-types and where CORE artifacts are located.
+ */
+function generateCustomBlockContent(targetDir: string): () => string {
+  return () => {
+    const lines = [
+      "**MANDATORY:** Read `.grekt/index` at session start to discover artifacts.",
+      "",
+      "**CORE artifacts in:**",
+      `- ${targetDir}/agents/ - autonomous specialists for complex tasks`,
+      `- ${targetDir}/skills/ - reusable capabilities`,
+      `- ${targetDir}/commands/ - user-invoked actions`,
+    ];
+    return lines.join("\n");
+  };
+}
+
+/**
  * Create a plugin for a custom target.
- * Uses FolderPlugin when paths are defined (copies CORE artifacts),
- * otherwise uses RulesOnlyPlugin (only updates context entry point).
+ * Always uses FolderPlugin to support CORE artifacts.
+ * If no paths defined, uses target-id as base directory for default paths.
  */
 function createCustomPlugin(id: string, config: CustomTarget): SyncPlugin {
-  if (config.paths) {
-    return createFolderPlugin({
-      id,
-      name: config.name,
-      targetDir: dirname(config.contextEntryPoint),
-      contextEntryPoint: config.contextEntryPoint,
-      paths: config.paths,
-      generateRulesContent: generateDefaultBlockContent,
-    });
-  }
+  // Use provided paths or default to target-id based paths
+  const targetDir = config.paths ? dirname(config.contextEntryPoint) : id;
+  const paths = config.paths ?? buildDefaultPaths(id);
 
-  return createRulesOnlyPlugin({
+  return createFolderPlugin({
     id,
     name: config.name,
+    targetDir,
     contextEntryPoint: config.contextEntryPoint,
-    generateRulesContent: generateDefaultBlockContent,
+    paths,
+    generateRulesContent: generateCustomBlockContent(targetDir),
   });
+}
+
+/**
+ * Build default paths for a custom target using target-id as base.
+ */
+function buildDefaultPaths(targetId: string): Record<Category, string> {
+  const paths = {} as Record<Category, string>;
+  for (const category of CATEGORIES) {
+    paths[category] = join(targetId, CATEGORY_CONFIG[category].defaultPath);
+  }
+  return paths;
 }
 
 /**
@@ -186,15 +212,17 @@ export function getSyncPaths(target: string, customTargets?: Record<string, Cust
     return buildSyncPaths(builtIn.config.targetDir, builtIn.config.paths);
   }
 
-  // Check custom targets
+  // Check custom targets - always have paths (default to target-id based)
   const customTarget = customTargets?.[target];
   if (!customTarget) return null;
 
-  // Custom targets without paths are RulesOnlyPlugin
-  if (!customTarget.paths) return null;
+  if (customTarget.paths) {
+    const baseDir = dirname(customTarget.contextEntryPoint);
+    return buildSyncPaths(baseDir, customTarget.paths);
+  }
 
-  const baseDir = dirname(customTarget.contextEntryPoint);
-  return buildSyncPaths(baseDir, customTarget.paths);
+  // Default paths using target-id as base
+  return buildSyncPaths(target, buildDefaultPaths(target));
 }
 
 // Re-export types
