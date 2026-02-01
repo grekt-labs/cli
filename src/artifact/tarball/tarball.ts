@@ -59,7 +59,10 @@ export function createTarball(options: CreateTarballOptions): TarballResult {
       const tempArtifactPath = join(tempDir, artifactDirName);
 
       mkdirSync(tempDir, { recursive: true });
-      cpSync(artifactPath, tempArtifactPath, { recursive: true });
+      cpSync(artifactPath, tempArtifactPath, {
+        recursive: true,
+        filter: (src) => !src.includes("/.grekt/"),
+      });
       injectComponentsIntoManifest(tempArtifactPath, components);
 
       sourcePath = tempArtifactPath;
@@ -68,9 +71,11 @@ export function createTarball(options: CreateTarballOptions): TarballResult {
     const artifactDir = basename(sourcePath);
     const parentDir = dirname(sourcePath);
 
-    execFileSync("tar", ["-czf", outputPath, "-C", parentDir, artifactDir], {
-      stdio: "pipe",
-    });
+    execFileSync(
+      "tar",
+      ["-czf", outputPath, "--exclude=.grekt", "-C", parentDir, artifactDir],
+      { stdio: "pipe" }
+    );
 
     return {
       success: true,
