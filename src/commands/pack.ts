@@ -1,6 +1,7 @@
 import { Command } from "commander";
 import { createTarball } from "#/artifact/tarball/tarball";
 import { validateArtifact } from "#/artifact/validation/validation";
+import { generateComponents } from "@grekt-labs/cli-engine";
 import { success, error, info, log, colors } from "#/shared/ui/ui";
 
 function logComponentSummary(
@@ -46,10 +47,13 @@ export const packCommand = new Command("pack")
       artifact.componentCount
     );
 
+    const components = generateComponents(artifact.scanned);
+
     const tarballResult = createTarball({
       artifactPath: artifact.fullPath,
       artifactId: artifact.artifactId,
       projectRoot,
+      components,
     });
 
     if (!tarballResult.success) {
