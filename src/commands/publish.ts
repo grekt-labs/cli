@@ -11,7 +11,7 @@ import { isApiAuthenticated } from "#/registry/publishers/api-publisher";
 import type { PublishContext } from "#/registry/publishers/publisher.types";
 import { createTarball, removeTarball } from "#/artifact/tarball/tarball";
 import { validateArtifact } from "#/artifact/validation/validation";
-import { CATEGORIES } from "@grekt-labs/cli-engine";
+import { CATEGORIES, generateComponents } from "@grekt-labs/cli-engine";
 import { success, error, info, log, colors, spinner } from "#/shared/ui/ui";
 
 const MIN_KEYWORDS = 3;
@@ -99,10 +99,13 @@ export const publishCommand = new Command("publish")
       artifact.componentCount
     );
 
+    const components = generateComponents(artifact.scanned);
+
     const tarballResult = createTarball({
       artifactPath: artifact.fullPath,
       artifactId: artifact.artifactId,
       projectRoot,
+      components,
     });
 
     if (!tarballResult.success || !tarballResult.path) {

@@ -5,7 +5,9 @@ import { formatBytes, estimateTokens } from "@grekt-labs/cli-engine";
 import { success, warning, log, newline, colors, symbols } from "#/shared/ui/ui";
 import { type Lockfile } from "@grekt-labs/cli-engine";
 
-const CONTEXT_WARNING_THRESHOLD = 10 * 1024; // 10 KB
+// TODO: Make this configurable via grekt.yaml or config
+// Disabled for now - 10KB was too low, needs proper configuration
+// const CONTEXT_WARNING_THRESHOLD = 10 * 1024;
 
 export interface CheckResult {
   artifactId: string;
@@ -113,12 +115,12 @@ export function displayCheckResults(summary: CheckSummary, lockfile: Lockfile): 
   const tokens = estimateTokens(summary.totalSize);
   log(`  Total size: ${formatBytes(summary.totalSize)} (~${tokens.toLocaleString()} tokens)`);
 
-  if (summary.totalSize > CONTEXT_WARNING_THRESHOLD) {
-    newline();
-    warning("Total context exceeds 10 KB. Consider:");
-    log("  • Removing unused artifacts");
-    log("  • Using smaller/more focused artifacts");
-  }
+  // TODO: Re-enable with configurable threshold
+  // if (summary.totalSize > CONTEXT_WARNING_THRESHOLD) {
+  //   warning("Total context exceeds threshold. Consider:");
+  //   log("  • Removing unused artifacts");
+  //   log("  • Using smaller/more focused artifacts");
+  // }
 
   newline();
 

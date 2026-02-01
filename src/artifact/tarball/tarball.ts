@@ -1,6 +1,8 @@
 import { execFileSync } from "child_process";
-import { existsSync, mkdirSync } from "fs";
+import { existsSync, mkdirSync, cpSync, rmSync, readFileSync, writeFileSync } from "fs";
 import { basename, dirname, join } from "path";
+import { parse, stringify } from "yaml";
+import type { Components } from "@grekt-labs/cli-engine";
 
 const TARBALL_DIR = ".grekt/tmp";
 
@@ -15,6 +17,7 @@ export interface CreateTarballOptions {
   artifactPath: string;
   artifactId: string;
   projectRoot: string;
+  components?: Components; // Auto-generated components to inject into manifest
 }
 
 function ensureTarballDir(projectRoot: string): string {
@@ -25,17 +28,46 @@ function ensureTarballDir(projectRoot: string): string {
   return tarballDir;
 }
 
+function injectComponentsIntoManifest(
+  artifactPath: string,
+  components: Components
+): void {
+  const manifestPath = join(artifactPath, "grekt.yaml");
+  const content = readFileSync(manifestPath, "utf-8");
+  const manifest = parse(content);
+
+  manifest.components = components;
+
+  writeFileSync(manifestPath, stringify(manifest));
+}
+
 export function createTarball(options: CreateTarballOptions): TarballResult {
-  const { artifactPath, artifactId, projectRoot } = options;
+  const { artifactPath, artifactId, projectRoot, components } = options;
 
   const tarballDir = ensureTarballDir(projectRoot);
   const tarballName = `${artifactId.replace("/", "-")}.tar.gz`;
   const outputPath = join(tarballDir, tarballName);
 
-  const artifactDir = basename(artifactPath);
-  const parentDir = dirname(artifactPath);
+  let sourcePath = artifactPath;
+  let tempDir: string | null = null;
 
   try {
+    // If components provided, copy to temp and inject into manifest
+    if (components) {
+      const artifactDirName = basename(artifactPath);
+      tempDir = join(tarballDir, `tmp-${Date.now()}`);
+      const tempArtifactPath = join(tempDir, artifactDirName);
+
+      mkdirSync(tempDir, { recursive: true });
+      cpSync(artifactPath, tempArtifactPath, { recursive: true });
+      injectComponentsIntoManifest(tempArtifactPath, components);
+
+      sourcePath = tempArtifactPath;
+    }
+
+    const artifactDir = basename(sourcePath);
+    const parentDir = dirname(sourcePath);
+
     execFileSync("tar", ["-czf", outputPath, "-C", parentDir, artifactDir], {
       stdio: "pipe",
     });
@@ -50,14 +82,18 @@ export function createTarball(options: CreateTarballOptions): TarballResult {
       success: false,
       error: err instanceof Error ? err.message : "Failed to create tarball",
     };
+  } finally {
+    // Clean up temp directory
+    if (tempDir && existsSync(tempDir)) {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
   }
 }
 
 export function removeTarball(tarballPath: string): void {
-  const { unlinkSync } = require("fs");
   try {
     if (existsSync(tarballPath)) {
-      unlinkSync(tarballPath);
+      rmSync(tarballPath);
     }
   } catch {
     // Ignore cleanup errors
