@@ -40,7 +40,6 @@ describe("project", () => {
     test("returns parsed ProjectConfig", () => {
       const configData = {
         targets: ["claude"],
-        autoSync: true,
         artifacts: {
           "@scope/artifact": "1.0.0",
         },
@@ -50,7 +49,6 @@ describe("project", () => {
       const config = getConfig(testDir);
 
       expect(config.targets).toEqual(["claude"]);
-      expect(config.autoSync).toBe(true);
       expect(config.artifacts["@scope/artifact"]).toBe("1.0.0");
     });
 
@@ -60,7 +58,6 @@ describe("project", () => {
       const config = getConfig(testDir);
 
       expect(config.targets).toEqual([]);
-      expect(config.autoSync).toBe(false);
       expect(config.artifacts).toEqual({});
     });
   });
@@ -69,7 +66,6 @@ describe("project", () => {
     test("writes valid YAML", () => {
       const config: ProjectConfig = {
         targets: ["cursor"],
-        autoSync: false,
         artifacts: { "@test/pkg": "2.0.0" },
         customTargets: {},
       };
@@ -84,12 +80,12 @@ describe("project", () => {
 
   describe("setConfigValue", () => {
     test("updates single key", () => {
-      writeFileSync(join(testDir, "grekt.yaml"), stringify({ autoSync: false }));
+      writeFileSync(join(testDir, "grekt.yaml"), stringify({ targets: [] }));
 
-      setConfigValue("autoSync", true, testDir);
+      setConfigValue("targets", ["claude"], testDir);
 
       const config = getConfig(testDir);
-      expect(config.autoSync).toBe(true);
+      expect(config.targets).toEqual(["claude"]);
     });
   });
 

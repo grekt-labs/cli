@@ -11,7 +11,6 @@ const TEST_ARTIFACT_ID = "@test/artifact";
 
 const coreProjectConfig: ProjectConfig = {
   targets: [],
-  autoSync: false,
   artifacts: {
     [TEST_ARTIFACT_ID]: { version: "1.0.0", mode: "core" },
   },
