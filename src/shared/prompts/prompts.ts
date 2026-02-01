@@ -38,22 +38,22 @@ export async function promptCustomTarget(
   newline();
 
   const id = await input({
-    message: "Target ID (e.g., my-ai):",
+    message: "Internal ID for grekt config (e.g., codex-gpt, my-custom-ai):",
     validate: (value) => {
       if (!value.trim()) return "ID is required";
-      if (!/^[a-z0-9-]+$/.test(value)) return "ID must be lowercase alphanumeric with dashes";
-      if (builtInIds.includes(value)) return "ID conflicts with built-in target";
+      if (!/^[a-z0-9-]+$/.test(value)) return "Use kebab-case: lowercase letters, numbers, and dashes only";
+      if (builtInIds.includes(value)) return `"${value}" is a built-in target, choose a different ID`;
       return true;
     },
   });
 
   const name = await input({
-    message: "Display name (e.g., My AI Tool):",
+    message: "Display name shown in CLI output (e.g., Codex GPT, My AI Tool):",
     validate: (value) => (value.trim() ? true : "Name is required"),
   });
 
   const contextEntryPoint = await input({
-    message: "Context entry point (e.g., .my-ai/instructions.md):",
+    message: "Main context file for this AI (e.g., .my-ai/instructions.md):",
     validate: (value) => (value.trim() ? true : "Context entry point is required"),
   });
 
