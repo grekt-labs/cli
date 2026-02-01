@@ -1,3 +1,10 @@
+## [5.7.1](https://github.com/grekt-labs/cli/compare/v5.7.0...v5.7.1) (2026-02-01)
+
+
+### Bug Fixes
+
+* update cli-engine to 4.5.0 ([4fea780](https://github.com/grekt-labs/cli/commit/4fea78017426c0a4419cdde90dd29e587983817d))
+
 # [5.7.0](https://github.com/grekt-labs/cli/compare/v5.6.3...v5.7.0) (2026-01-31)
 
 
