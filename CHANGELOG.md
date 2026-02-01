@@ -1,3 +1,10 @@
+# [5.12.0](https://github.com/grekt-labs/cli/compare/v5.11.0...v5.12.0) (2026-02-01)
+
+
+### Features
+
+* add GitHub Container Registry (GHCR) support ([#74](https://github.com/grekt-labs/cli/issues/74)) ([ed6cc94](https://github.com/grekt-labs/cli/commit/ed6cc946e9292bdcabf7896830e05e5745a01c70))
+
 # [5.11.0](https://github.com/grekt-labs/cli/compare/v5.10.2...v5.11.0) (2026-02-01)
 
 
