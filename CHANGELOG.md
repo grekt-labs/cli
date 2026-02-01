@@ -1,3 +1,10 @@
+# [5.9.0](https://github.com/grekt-labs/cli/compare/v5.8.1...v5.9.0) (2026-02-01)
+
+
+### Features
+
+* add dedicated add-target command for configuring sync targets ([#69](https://github.com/grekt-labs/cli/issues/69)) ([f302f98](https://github.com/grekt-labs/cli/commit/f302f9852fd7e105c9cd63f89ba8b38b70ae44d0))
+
 ## [5.8.1](https://github.com/grekt-labs/cli/compare/v5.8.0...v5.8.1) (2026-02-01)
 
 
