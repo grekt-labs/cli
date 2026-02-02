@@ -1,6 +1,6 @@
 import { Command } from "commander";
-import { existsSync, readdirSync, readFileSync, writeFileSync } from "fs";
 import { join, resolve } from "path";
+import { fs } from "#/context";
 import { parse as parseYaml } from "yaml";
 import {
   ArtifactManifestSchema,
@@ -43,7 +43,7 @@ export const versionCommand = new Command("version")
 
     const absolutePath = resolve(targetPath);
 
-    if (!existsSync(absolutePath)) {
+    if (!fs.exists(absolutePath)) {
       error(`Path not found: ${absolutePath}`);
       process.exit(1);
     }
@@ -68,7 +68,7 @@ export const versionCommand = new Command("version")
 
     for (const artifactPath of artifactPaths) {
       const manifestPath = join(artifactPath, MANIFEST_FILE);
-      const manifestContent = readFileSync(manifestPath, "utf-8");
+      const manifestContent = fs.readFile(manifestPath);
       const parsed = parseYaml(manifestContent);
       const manifest = ArtifactManifestSchema.parse(parsed);
       const artifactId = getArtifactIdFromManifest(manifest);
@@ -82,7 +82,7 @@ export const versionCommand = new Command("version")
           /^version:\s*["']?[\d.]+[-\w.]*["']?/m,
           `version: "${newVersion}"`
         );
-        writeFileSync(manifestPath, updatedContent);
+        fs.writeFile(manifestPath, updatedContent);
         updated++;
       }
     }
@@ -103,20 +103,20 @@ function findArtifacts(basePath: string): string[] {
   const artifacts: string[] = [];
 
   // Check if basePath itself is an artifact
-  if (existsSync(join(basePath, MANIFEST_FILE))) {
+  if (fs.exists(join(basePath, MANIFEST_FILE))) {
     artifacts.push(basePath);
     return artifacts;
   }
 
   // Scan subdirectories
   try {
-    const entries = readdirSync(basePath, { withFileTypes: true });
+    const entries = fs.readdir(basePath);
     for (const entry of entries) {
-      if (entry.isDirectory() && !entry.name.startsWith(".")) {
-        const subPath = join(basePath, entry.name);
-        if (existsSync(join(subPath, MANIFEST_FILE))) {
-          artifacts.push(subPath);
-        }
+      if (entry.startsWith(".")) continue;
+      const subPath = join(basePath, entry);
+      const stat = fs.stat(subPath);
+      if (stat.isDirectory && fs.exists(join(subPath, MANIFEST_FILE))) {
+        artifacts.push(subPath);
       }
     }
   } catch {

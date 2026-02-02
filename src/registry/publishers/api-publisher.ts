@@ -1,5 +1,5 @@
-import { readFileSync } from "fs";
 import { isAuthenticated, isSupabaseConfigured } from "#/auth/session/session";
+import { fs, http } from "#/context";
 import { createRegistryClient } from "#/registry/api-client/api-client";
 import type { Publisher, PublishContext, PublishResult } from "./publisher.types";
 
@@ -39,10 +39,10 @@ export class ApiPublisher implements Publisher {
       const { uploadUrl } = await client.publish(ctx.artifactId, ctx.version);
 
       // Upload tarball to signed URL
-      const body = readFileSync(ctx.tarballPath);
-      const uploadResponse = await fetch(uploadUrl, {
+      const fileBuffer = fs.readFileBinary(ctx.tarballPath);
+      const uploadResponse = await http.fetch(uploadUrl, {
         method: "PUT",
-        body,
+        body: new Uint8Array(fileBuffer),
         headers: { "Content-Type": "application/gzip" },
       });
 

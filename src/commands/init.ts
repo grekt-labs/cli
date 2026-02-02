@@ -1,6 +1,6 @@
 import { Command } from "commander";
-import { existsSync, mkdirSync } from "fs";
 import { basename } from "path";
+import { fs } from "#/context";
 import { input, confirm } from "@inquirer/prompts";
 import { isInitialized, saveConfig } from "#/config/project/project";
 import { getPluginChoices, getDefaultTarget } from "#/sync/manager/manager";
@@ -116,8 +116,8 @@ export const initCommand = new Command("init")
 
     // Create .grekt/artifacts/ directory
     const artifactsPath = `${projectRoot}/${ARTIFACTS_DIR}`;
-    if (!existsSync(artifactsPath)) {
-      mkdirSync(artifactsPath, { recursive: true });
+    if (!fs.exists(artifactsPath)) {
+      fs.mkdir(artifactsPath, { recursive: true });
     }
 
     // Create grekt.yaml

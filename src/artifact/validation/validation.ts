@@ -1,8 +1,7 @@
-import { existsSync, readFileSync } from "fs";
 import { join, resolve } from "path";
 import { parse } from "yaml";
 import { isInitialized } from "#/config/project/project";
-import { fs as cliFs } from "#/context";
+import { fs } from "#/context";
 import { scanArtifact, ArtifactManifestSchema, isValidSemver, CATEGORIES } from "@grekt-labs/cli-engine";
 import type { InvalidFile } from "@grekt-labs/cli-engine";
 import type {
@@ -89,7 +88,7 @@ export function validateArtifact(
     };
   }
 
-  if (!existsSync(fullPath)) {
+  if (!fs.exists(fullPath)) {
     return {
       success: false,
       error: {
@@ -100,7 +99,7 @@ export function validateArtifact(
   }
 
   const manifestPath = join(fullPath, "grekt.yaml");
-  if (!existsSync(manifestPath)) {
+  if (!fs.exists(manifestPath)) {
     return {
       success: false,
       error: {
@@ -110,7 +109,7 @@ export function validateArtifact(
     };
   }
 
-  const rawManifest = parse(readFileSync(manifestPath, "utf-8"));
+  const rawManifest = parse(fs.readFile(manifestPath));
   const manifestResult = ArtifactManifestSchema.safeParse(rawManifest);
 
   if (!manifestResult.success) {
@@ -166,7 +165,7 @@ export function validateArtifact(
     }
   }
 
-  const scanned = scanArtifact(cliFs, fullPath);
+  const scanned = scanArtifact(fs, fullPath);
   if (!scanned) {
     return {
       success: false,

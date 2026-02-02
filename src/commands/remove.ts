@@ -1,6 +1,6 @@
 import { Command } from "commander";
-import { existsSync, rmSync, readdirSync, unlinkSync } from "fs";
 import { join } from "path";
+import { fs } from "#/context";
 import { confirm } from "@inquirer/prompts";
 import { isInitialized, getConfig, saveConfig } from "#/config/project/project";
 import { getLockfile, saveLockfile } from "#/context";
@@ -93,14 +93,14 @@ export const removeCommand = new Command("remove")
     const removed: string[] = [];
 
     // Remove from .grekt/artifacts/
-    if (existsSync(artifactDir)) {
-      rmSync(artifactDir, { recursive: true, force: true });
+    if (fs.exists(artifactDir)) {
+      fs.rmdir(artifactDir, { recursive: true });
       removed.push(`${ARTIFACTS_DIR}/${artifactId}`);
     }
 
     // Remove synced files from .claude/
     const claudeDir = `${projectRoot}/${CLAUDE_DIR}`;
-    if (existsSync(claudeDir)) {
+    if (fs.exists(claudeDir)) {
       for (const category of CATEGORIES) {
         const categoryDir = CLAUDE_CATEGORY_DIRS[category];
         const paths = artifact[category];
@@ -111,8 +111,8 @@ export const removeCommand = new Command("remove")
           const targetName = getSafeFilename(artifactId, filePath);
 
           const targetPath = `${projectRoot}/${categoryDir}/${targetName}`;
-          if (existsSync(targetPath)) {
-            unlinkSync(targetPath);
+          if (fs.exists(targetPath)) {
+            fs.unlink(targetPath);
             removed.push(`${categoryDir}/${targetName}`);
           }
         }
@@ -149,10 +149,10 @@ export const removeCommand = new Command("remove")
  * Remove directory if empty
  */
 function cleanEmptyDir(dir: string): void {
-  if (existsSync(dir)) {
-    const files = readdirSync(dir);
+  if (fs.exists(dir)) {
+    const files = fs.readdir(dir);
     if (files.length === 0) {
-      rmSync(dir, { recursive: true });
+      fs.rmdir(dir, { recursive: true });
     }
   }
 }

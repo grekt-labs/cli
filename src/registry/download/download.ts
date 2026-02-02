@@ -1,8 +1,6 @@
-import { mkdirSync, writeFileSync, existsSync, rmSync } from "fs";
-import { execFileSync } from "child_process";
-import { randomUUID } from "crypto";
 import { tmpdir } from "os";
 import { join } from "path";
+import { fs, shell, http, cryptoProvider } from "#/context";
 
 interface DownloadOptions {
   headers?: Record<string, string>;
@@ -35,10 +33,10 @@ export async function downloadAndExtractTarball(
     ...headers,
   };
 
-  const tempTarball = join(tmpdir(), `grekt-${randomUUID()}.tar.gz`);
+  const tempTarball = join(tmpdir(), `grekt-${cryptoProvider.randomUUID()}.tar.gz`);
 
   try {
-    const response = await fetch(url, {
+    const response = await http.fetch(url, {
       headers: finalHeaders,
       redirect: "follow",
     });
@@ -51,19 +49,17 @@ export async function downloadAndExtractTarball(
     }
 
     const buffer = await response.arrayBuffer();
-    writeFileSync(tempTarball, Buffer.from(buffer));
+    fs.writeFileBinary(tempTarball, Buffer.from(buffer));
 
     // Ensure target directory exists
-    mkdirSync(targetDir, { recursive: true });
+    fs.mkdir(targetDir, { recursive: true });
 
     // Extract tarball
     const tarArgs = ["-xzf", tempTarball, "-C", targetDir];
     if (stripComponents > 0) {
       tarArgs.push(`--strip-components=${stripComponents}`);
     }
-    execFileSync("tar", tarArgs, {
-      stdio: "pipe",
-    });
+    shell.execFile("tar", tarArgs);
 
     return { success: true };
   } catch (err) {
@@ -73,8 +69,8 @@ export async function downloadAndExtractTarball(
     };
   } finally {
     // Always clean up temp file
-    if (existsSync(tempTarball)) {
-      rmSync(tempTarball, { force: true });
+    if (fs.exists(tempTarball)) {
+      fs.unlink(tempTarball);
     }
   }
 }

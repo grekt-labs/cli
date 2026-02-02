@@ -1,4 +1,3 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync, copyFileSync } from "fs";
 import { dirname, join } from "path";
 import type { SyncPlugin, SyncResult, SyncOptions, SyncPreview, FolderPluginConfig, RulesOnlyPluginConfig } from "#/sync/sync.types";
 import {
@@ -12,7 +11,7 @@ import {
 } from "@grekt-labs/cli-engine";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
 import { getSafeFilename, generateDefaultBlockContent, GREKT_SECTION_HEADER } from "@grekt-labs/cli-engine";
-import { fs as cliFs } from "#/context";
+import { fs } from "#/context";
 
 // MD categories can be synced to folder targets
 const SYNCABLE_CATEGORIES = getCategoriesForFormat("md");
@@ -23,8 +22,8 @@ export { generateDefaultBlockContent } from "@grekt-labs/cli-engine";
 // Utility functions
 export function ensureDir(filepath: string): void {
   const dir = dirname(filepath);
-  if (!existsSync(dir)) {
-    mkdirSync(dir, { recursive: true });
+  if (!fs.exists(dir)) {
+    fs.mkdir(dir, { recursive: true });
   }
 }
 
@@ -75,14 +74,14 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
     const filepath = `${projectRoot}/${contextEntryPoint}`;
     const managedBlock = generateRulesContent(lockfile);
 
-    if (!existsSync(filepath)) {
+    if (!fs.exists(filepath)) {
       ensureDir(filepath);
-      writeFileSync(filepath, managedBlock + "\n", "utf-8");
+      fs.writeFile(filepath, managedBlock + "\n");
       result.created.push(contextEntryPoint);
       return;
     }
 
-    const content = readFileSync(filepath, "utf-8");
+    const content = fs.readFile(filepath);
 
     // If section header already exists, nothing to do
     if (content.includes(GREKT_SECTION_HEADER)) {
@@ -90,7 +89,7 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
     }
 
     // Prepend to file
-    writeFileSync(filepath, managedBlock + "\n\n" + content.trimStart(), "utf-8");
+    fs.writeFile(filepath, managedBlock + "\n\n" + content.trimStart());
     result.updated.push(contextEntryPoint);
   }
 
@@ -108,7 +107,7 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
     targetFile: targetDir,
 
     targetExists(projectRoot: string): boolean {
-      return existsSync(`${projectRoot}/${targetDir}`);
+      return fs.exists(`${projectRoot}/${targetDir}`);
     },
 
     async sync(lockfile: Lockfile, projectRoot: string, options: SyncOptions): Promise<SyncResult> {
@@ -127,8 +126,8 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
       const dirs = [targetDir, ...SYNCABLE_CATEGORIES.map(getCategoryDir)];
       for (const dir of dirs) {
         const fullPath = `${projectRoot}/${dir}`;
-        if (!existsSync(fullPath)) {
-          mkdirSync(fullPath, { recursive: true });
+        if (!fs.exists(fullPath)) {
+          fs.mkdir(fullPath, { recursive: true });
         }
       }
 
@@ -142,7 +141,7 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
         const artifactDir = `${projectRoot}/${ARTIFACTS_DIR}/${artifactId}`;
 
         // Scan artifact to determine file categories from frontmatter
-        const artifactInfo = scanArtifact(cliFs, artifactDir);
+        const artifactInfo = scanArtifact(fs, artifactDir);
         if (!artifactInfo) {
           result.skipped.push(`${artifactId} (invalid artifact)`);
           continue;
@@ -161,10 +160,10 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
             const targetName = getTargetPath(artifactId, category, filePath);
             const target = `${projectRoot}/${categoryDir}/${targetName}`;
 
-            if (existsSync(source)) {
+            if (fs.exists(source)) {
               ensureDir(target);
-              const existed = existsSync(target);
-              copyFileSync(source, target);
+              const existed = fs.exists(target);
+              fs.copyFile(source, target);
               if (existed) {
                 result.updated.push(`${categoryDir}/${targetName}`);
               } else {
@@ -184,7 +183,7 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
     preview(lockfile: Lockfile, projectRoot: string, options?: SyncOptions): SyncPreview {
       const preview: SyncPreview = { willCreate: [], willUpdate: [], willSkip: [] };
 
-      if (!existsSync(`${projectRoot}/${targetDir}`)) {
+      if (!fs.exists(`${projectRoot}/${targetDir}`)) {
         preview.willCreate.push(targetDir);
       }
 
@@ -197,7 +196,7 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
         const artifactDir = `${projectRoot}/${ARTIFACTS_DIR}/${artifactId}`;
 
         // Scan artifact to determine file categories from frontmatter
-        const artifactInfo = scanArtifact(cliFs, artifactDir);
+        const artifactInfo = scanArtifact(fs, artifactDir);
         if (!artifactInfo) {
           preview.willSkip.push(`${artifactId} (invalid artifact)`);
           continue;
@@ -215,9 +214,9 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
             const targetName = getTargetPath(artifactId, category, filePath);
             const target = `${projectRoot}/${categoryDir}/${targetName}`;
 
-            if (!existsSync(source)) {
+            if (!fs.exists(source)) {
               preview.willSkip.push(`${artifactId}/${filePath} (source not found)`);
-            } else if (existsSync(target)) {
+            } else if (fs.exists(target)) {
               preview.willUpdate.push(`${categoryDir}/${targetName}`);
             } else {
               preview.willCreate.push(`${categoryDir}/${targetName}`);
@@ -227,7 +226,7 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
       }
 
       if (contextEntryPoint) {
-        if (!existsSync(`${projectRoot}/${contextEntryPoint}`)) {
+        if (!fs.exists(`${projectRoot}/${contextEntryPoint}`)) {
           preview.willCreate.push(contextEntryPoint);
         } else {
           preview.willUpdate.push(contextEntryPoint);
@@ -251,7 +250,7 @@ export function createRulesOnlyPlugin(config: RulesOnlyPluginConfig): SyncPlugin
     targetFile: contextEntryPoint,
 
     targetExists(projectRoot: string): boolean {
-      return existsSync(`${projectRoot}/${contextEntryPoint}`);
+      return fs.exists(`${projectRoot}/${contextEntryPoint}`);
     },
 
     async sync(lockfile: Lockfile, projectRoot: string, options: SyncOptions): Promise<SyncResult> {
@@ -269,17 +268,17 @@ export function createRulesOnlyPlugin(config: RulesOnlyPluginConfig): SyncPlugin
       const filepath = `${projectRoot}/${contextEntryPoint}`;
       const managedBlock = generateRulesContent(lockfile);
 
-      if (!existsSync(filepath)) {
+      if (!fs.exists(filepath)) {
         if (!options.createTarget) {
           result.skipped.push(`${contextEntryPoint} (file doesn't exist)`);
           return result;
         }
-        writeFileSync(filepath, managedBlock, "utf-8");
+        fs.writeFile(filepath, managedBlock);
         result.created.push(contextEntryPoint);
         return result;
       }
 
-      const content = readFileSync(filepath, "utf-8");
+      const content = fs.readFile(filepath);
 
       // If section header already exists, nothing to do
       if (content.includes(GREKT_SECTION_HEADER)) {
@@ -287,7 +286,7 @@ export function createRulesOnlyPlugin(config: RulesOnlyPluginConfig): SyncPlugin
       }
 
       // Prepend to file
-      writeFileSync(filepath, managedBlock + "\n\n" + content.trimStart(), "utf-8");
+      fs.writeFile(filepath, managedBlock + "\n\n" + content.trimStart());
       result.updated.push(contextEntryPoint);
       return result;
     },
@@ -295,7 +294,7 @@ export function createRulesOnlyPlugin(config: RulesOnlyPluginConfig): SyncPlugin
     preview(_lockfile: Lockfile, projectRoot: string, _options?: SyncOptions): SyncPreview {
       const filepath = `${projectRoot}/${contextEntryPoint}`;
 
-      if (!existsSync(filepath)) {
+      if (!fs.exists(filepath)) {
         return {
           willCreate: [contextEntryPoint],
           willUpdate: [],

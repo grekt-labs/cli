@@ -1,7 +1,6 @@
 import { Command } from "commander";
-import { existsSync, mkdirSync, rmSync } from "fs";
 import { isInitialized, getConfig, getLocalConfig } from "#/config/project/project";
-import { getLockfile, lockfileExists } from "#/context";
+import { getLockfile, lockfileExists, fs } from "#/context";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
 import { parseSource, downloadFromSource, getSourceToken } from "#/registry/sources/sources";
 import { downloadAndExtractTarball } from "#/registry/download/download";
@@ -10,7 +9,6 @@ import { generateArtifactIndex } from "#/artifact/index/index";
 import { isSafeArtifactId } from "#/artifact/validation/validation";
 import { resolveRegistry } from "#/registry/factory/factory";
 import { parseArtifactId, getGitLabHeaders, getGitHubHeaders, scanArtifact } from "@grekt-labs/cli-engine";
-import { fs as cliFs } from "#/context";
 import { success, error, info, warning, log, newline, colors, spinner } from "#/shared/ui/ui";
 
 /**
@@ -92,7 +90,7 @@ export const installCommand = new Command("install")
       const targetDir = `${projectRoot}/${ARTIFACTS_DIR}/${artifactId}`;
 
       // Check if already installed
-      if (existsSync(targetDir) && !options.force) {
+      if (fs.exists(targetDir) && !options.force) {
         // Verify existing installation
         const integrity = verifyIntegrity(targetDir, entry.files);
 
@@ -103,10 +101,10 @@ export const installCommand = new Command("install")
         } else {
           // Existing but corrupted, will reinstall
           warning(`${artifactId} has integrity issues, reinstalling...`);
-          rmSync(targetDir, { recursive: true, force: true });
+          fs.rmdir(targetDir, { recursive: true });
         }
-      } else if (existsSync(targetDir) && options.force) {
-        rmSync(targetDir, { recursive: true, force: true });
+      } else if (fs.exists(targetDir) && options.force) {
+        fs.rmdir(targetDir, { recursive: true });
       }
 
       const spin = spinner(`Installing ${artifactId}@${entry.version}...`);
@@ -124,7 +122,7 @@ export const installCommand = new Command("install")
         // Fallback for old lockfiles without resolved
         const sourceStr = entry.source || artifactId;
         const source = parseSource(sourceStr);
-        mkdirSync(targetDir, { recursive: true });
+        fs.mkdir(targetDir, { recursive: true });
         const downloadResult = await downloadFromSource(source, targetDir, projectRoot);
         downloadSuccess = downloadResult.success;
 
@@ -138,7 +136,7 @@ export const installCommand = new Command("install")
 
       if (!downloadSuccess) {
         spin.stop();
-        rmSync(targetDir, { recursive: true, force: true });
+        fs.rmdir(targetDir, { recursive: true });
         error(`Failed to download ${artifactId}`);
         failed++;
         continue;
@@ -151,10 +149,10 @@ export const installCommand = new Command("install")
         spin.stop();
 
         // Scan for frontmatter errors before deleting
-        const scanned = scanArtifact(cliFs, targetDir);
+        const scanned = scanArtifact(fs, targetDir);
         const hasValidationErrors = scanned && scanned.invalidFiles.length > 0;
 
-        rmSync(targetDir, { recursive: true, force: true });
+        fs.rmdir(targetDir, { recursive: true });
         error(`Integrity check failed for ${artifactId}`);
 
         // Show frontmatter validation errors if any
