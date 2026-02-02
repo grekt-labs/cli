@@ -119,6 +119,9 @@ jobs:
           path: artifacts
           merge-multiple: true
 
+      - name: Copy install script to artifacts
+        run: cp scripts/install.sh artifacts/install.sh
+
       - name: Generate Release Notes
         id: notes
         run: |
