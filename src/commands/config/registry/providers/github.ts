@@ -7,16 +7,15 @@ export const githubProvider: RegistryProvider = {
 
   async prompts() {
     const hostInput = await input({
-      message: "GitHub host (leave empty for github.com):",
+      message: "GitHub Container Registry host (leave empty for ghcr.io):",
     });
 
-    const host = hostInput.trim() || "github.com";
+    const host = hostInput.trim() || "ghcr.io";
 
     const project = await input({
-      message: "Repository (e.g., myorg/artifacts):",
+      message: "Namespace (your GitHub username or org, e.g., myorg):",
       validate: (value) => {
-        if (!value.trim()) return "Repository is required";
-        if (!value.includes("/")) return "Repository must include owner (e.g., myorg/artifacts)";
+        if (!value.trim()) return "Namespace is required";
         return true;
       },
     });
