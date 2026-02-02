@@ -1,3 +1,10 @@
+# [5.13.0](https://github.com/grekt-labs/cli/compare/v5.12.0...v5.13.0) (2026-02-02)
+
+
+### Features
+
+* update GitHub registry provider for GHCR ([#75](https://github.com/grekt-labs/cli/issues/75)) ([cfb1a59](https://github.com/grekt-labs/cli/commit/cfb1a59a42f2e2783c5ca7444b11d790430ddd89))
+
 # [5.12.0](https://github.com/grekt-labs/cli/compare/v5.11.0...v5.12.0) (2026-02-01)
 
 
