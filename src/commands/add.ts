@@ -1,7 +1,6 @@
 import { Command } from "commander";
-import { randomUUID } from "crypto";
-import { existsSync, mkdirSync, rmSync, renameSync } from "fs";
 import { isInitialized, getConfig, saveConfig } from "#/config/project/project";
+import { fs, cryptoProvider } from "#/context";
 import { getLockfile, saveLockfile } from "#/context";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
 import { parseSource, downloadFromSource } from "#/registry/sources/sources";
@@ -44,13 +43,13 @@ export const addCommand = new Command("add")
     const displayName = getSourceDisplayName(source);
 
     // For git sources, use temp dir first, then rename after we know the artifact ID
-    const tempDir = `${projectRoot}/${ARTIFACTS_DIR}/.tmp-${randomUUID()}`;
+    const tempDir = `${projectRoot}/${ARTIFACTS_DIR}/.tmp-${cryptoProvider.randomUUID()}`;
 
     const spin = spinner(`Downloading ${displayName}...`);
     spin.start();
 
     // Download artifact from source
-    mkdirSync(tempDir, { recursive: true });
+    fs.mkdir(tempDir, { recursive: true });
     const downloadResult = await downloadFromSource(source, tempDir, projectRoot);
 
     spin.stop();
@@ -63,7 +62,7 @@ export const addCommand = new Command("add")
 
     if (!downloadResult.success) {
       // Clean up temp directory
-      rmSync(tempDir, { recursive: true, force: true });
+      fs.rmdir(tempDir, { recursive: true });
 
       if (downloadResult.error) {
         error(`${colors.highlight(displayName)}: ${downloadResult.error}`);
@@ -95,7 +94,7 @@ export const addCommand = new Command("add")
     const artifactInfo = scanArtifact(tempDir);
 
     if (!artifactInfo) {
-      rmSync(tempDir, { recursive: true, force: true });
+      fs.rmdir(tempDir, { recursive: true });
       error("Invalid artifact: missing grekt.yaml or invalid structure");
       process.exit(1);
     }
@@ -106,7 +105,7 @@ export const addCommand = new Command("add")
     try {
       assertSafeArtifactId(resolvedArtifactId);
     } catch {
-      rmSync(tempDir, { recursive: true, force: true });
+      fs.rmdir(tempDir, { recursive: true });
       error("Invalid artifact: manifest contains unsafe characters in author or name");
       process.exit(1);
     }
@@ -116,7 +115,7 @@ export const addCommand = new Command("add")
 
     // Check if already installed - update if newer version, skip if same/older
     const lockfile = getLockfile(projectRoot);
-    if (existsSync(targetDir)) {
+    if (fs.exists(targetDir)) {
       const existing = lockfile.artifacts[resolvedArtifactId];
       const newVersion = artifactInfo.manifest.version;
 
@@ -124,7 +123,7 @@ export const addCommand = new Command("add")
         try {
           const comparison = compareSemver(newVersion, existing.version);
           if (comparison <= 0) {
-            rmSync(tempDir, { recursive: true, force: true });
+            fs.rmdir(tempDir, { recursive: true });
             info(`Already installed: ${colors.highlight(resolvedArtifactId)}@${existing.version}`);
             if (comparison < 0) {
               info(`Current version (${existing.version}) is newer than requested (${newVersion})`);
@@ -139,17 +138,17 @@ export const addCommand = new Command("add")
       }
 
       // Remove old version to replace with new
-      rmSync(targetDir, { recursive: true, force: true });
+      fs.rmdir(targetDir, { recursive: true });
     }
 
     // Ensure parent directory exists (for scoped artifacts like @scope/name)
     const parentDir = targetDir.substring(0, targetDir.lastIndexOf("/"));
-    if (!existsSync(parentDir)) {
-      mkdirSync(parentDir, { recursive: true });
+    if (!fs.exists(parentDir)) {
+      fs.mkdir(parentDir, { recursive: true });
     }
 
     // Move temp dir to final location
-    renameSync(tempDir, targetDir);
+    fs.rename(tempDir, targetDir);
 
     // Determine which components to install (default: all)
     let selection: ComponentSelection = createEmptySelection();
@@ -170,7 +169,7 @@ export const addCommand = new Command("add")
 
         if (isEmptySelection(selection)) {
           warning("No components selected");
-          rmSync(targetDir, { recursive: true, force: true });
+          fs.rmdir(targetDir, { recursive: true });
           process.exit(0);
         }
 

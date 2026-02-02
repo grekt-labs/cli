@@ -9,14 +9,33 @@ import {
   rmSync,
   copyFileSync,
   renameSync,
+  chmodSync,
+  cpSync,
 } from "fs";
 import type { FileSystem } from "@grekt-labs/cli-engine";
+
+/**
+ * Copy options for recursive directory copying.
+ */
+export interface CopyOptions {
+  recursive?: boolean;
+  filter?: (src: string) => boolean;
+}
+
+/**
+ * Extended FileSystem interface with additional CLI-specific methods.
+ * Extends cli-engine's FileSystem with chmod and copy operations.
+ */
+export interface ExtendedFileSystem extends FileSystem {
+  chmod(path: string, mode: number): void;
+  copy(src: string, dest: string, options?: CopyOptions): void;
+}
 
 /**
  * Real FileSystem implementation using Node.js fs module.
  * This is passed to cli-engine functions for actual file operations.
  */
-export function createFileSystem(): FileSystem {
+export function createFileSystem(): ExtendedFileSystem {
   return {
     readFile: (path: string) => readFileSync(path, "utf-8"),
     readFileBinary: (path: string) => readFileSync(path),
@@ -41,6 +60,10 @@ export function createFileSystem(): FileSystem {
     },
     copyFile: (src: string, dest: string) => copyFileSync(src, dest),
     rename: (src: string, dest: string) => renameSync(src, dest),
+    chmod: (path: string, mode: number) => chmodSync(path, mode),
+    copy: (src: string, dest: string, options?: CopyOptions) => {
+      cpSync(src, dest, options);
+    },
   };
 }
 

@@ -1,7 +1,6 @@
-import { existsSync, writeFileSync } from "fs";
 import { join } from "path";
 import { ARTIFACTS_DIR, INDEX_FILE } from "#/config/paths/paths";
-import { fs as cliFs, getLockfile } from "#/context";
+import { fs, getLockfile } from "#/context";
 import {
   scanArtifact,
   generateIndex,
@@ -51,24 +50,24 @@ export function generateArtifactIndex(projectRoot: string, config: ProjectConfig
   const inputs: IndexGeneratorInput[] = [];
 
   // Only scan if artifacts directory exists
-  if (existsSync(artifactsDir)) {
+  if (fs.exists(artifactsDir)) {
     // Get all artifact directories (scoped: @scope/name)
-    const scopes = cliFs.readdir(artifactsDir);
+    const scopes = fs.readdir(artifactsDir);
     for (const scope of scopes) {
       if (!scope.startsWith("@")) continue;
 
       const scopeDir = join(artifactsDir, scope);
-      const stat = cliFs.stat(scopeDir);
+      const stat = fs.stat(scopeDir);
       if (!stat.isDirectory) continue;
 
-      const names = cliFs.readdir(scopeDir);
+      const names = fs.readdir(scopeDir);
       for (const name of names) {
         const artifactDir = join(scopeDir, name);
-        const artifactStat = cliFs.stat(artifactDir);
+        const artifactStat = fs.stat(artifactDir);
         if (!artifactStat.isDirectory) continue;
 
         const artifactId = `${scope}/${name}`;
-        const scanned = scanArtifact(cliFs, artifactDir);
+        const scanned = scanArtifact(fs, artifactDir);
 
         if (!scanned) continue;
 
@@ -97,7 +96,7 @@ export function generateArtifactIndex(projectRoot: string, config: ProjectConfig
   const serialized = serializeIndex(index, { includeTerminology: true });
   const indexPath = join(projectRoot, INDEX_FILE);
 
-  writeFileSync(indexPath, serialized, "utf-8");
+  fs.writeFile(indexPath, serialized);
 }
 
 /**
@@ -109,5 +108,5 @@ export function createEmptyIndex(projectRoot: string): void {
   const serialized = serializeIndex(index, { includeTerminology: true });
   const indexPath = join(projectRoot, INDEX_FILE);
 
-  writeFileSync(indexPath, serialized, "utf-8");
+  fs.writeFile(indexPath, serialized);
 }

@@ -1,5 +1,5 @@
-import { existsSync, unlinkSync, readdirSync, rmSync } from "fs";
 import { join } from "path";
+import { fs } from "#/context";
 import type { ArtifactInfo } from "#/context";
 import type { ComponentSelection } from "#/artifact/selector/selector";
 import { CATEGORIES } from "@grekt-labs/cli-engine";
@@ -17,8 +17,8 @@ export function removeUnselectedFiles(
     for (const file of artifactInfo[category]) {
       if (!selection[category].includes(file.path)) {
         const filePath = join(artifactDir, file.path);
-        if (existsSync(filePath)) {
-          unlinkSync(filePath);
+        if (fs.exists(filePath)) {
+          fs.unlink(filePath);
         }
       }
     }
@@ -34,21 +34,26 @@ export function removeUnselectedFiles(
  */
 export function cleanEmptyDirs(dir: string): void {
   try {
-    const entries = readdirSync(dir, { withFileTypes: true });
+    const entries = fs.readdir(dir);
 
     for (const entry of entries) {
-      if (entry.isDirectory()) {
-        const subdir = join(dir, entry.name);
-        cleanEmptyDirs(subdir);
+      const subdir = join(dir, entry);
+      try {
+        const stat = fs.stat(subdir);
+        if (stat.isDirectory) {
+          cleanEmptyDirs(subdir);
 
-        try {
-          const remaining = readdirSync(subdir);
-          if (remaining.length === 0) {
-            rmSync(subdir, { recursive: true });
+          try {
+            const remaining = fs.readdir(subdir);
+            if (remaining.length === 0) {
+              fs.rmdir(subdir, { recursive: true });
+            }
+          } catch {
+            // Directory may have been removed or is inaccessible, skip it
           }
-        } catch {
-          // Directory may have been removed or is inaccessible, skip it
         }
+      } catch {
+        // Entry may have been removed or is inaccessible, skip it
       }
     }
   } catch {

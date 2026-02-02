@@ -1,5 +1,4 @@
-import { existsSync } from "fs";
-import { getLockfile, verifyIntegrity, getDirectorySize } from "#/context";
+import { getLockfile, verifyIntegrity, getDirectorySize, fs } from "#/context";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
 import { formatBytes, estimateTokens } from "@grekt-labs/cli-engine";
 import { success, warning, log, newline, colors, symbols } from "#/shared/ui/ui";
@@ -44,7 +43,7 @@ export function runCheck(projectRoot: string): CheckSummary {
       issues: [],
     };
 
-    if (!existsSync(artifactDir)) {
+    if (!fs.exists(artifactDir)) {
       result.status = "missing";
       result.issues.push("Directory not found");
       results.push(result);

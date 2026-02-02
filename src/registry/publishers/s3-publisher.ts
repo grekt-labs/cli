@@ -1,6 +1,6 @@
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-import { readFileSync } from "fs";
 import type { S3Credentials } from "@grekt-labs/cli-engine";
+import { fs } from "#/context";
 import {
   getArtifactMetadata,
   saveArtifactMetadata,
@@ -109,7 +109,7 @@ export class S3Publisher implements Publisher {
     });
 
     const key = `artifacts/${ctx.artifactId}/${ctx.version}.tar.gz`;
-    const body = readFileSync(ctx.tarballPath);
+    const body = fs.readFileBinary(ctx.tarballPath);
 
     try {
       await client.send(

@@ -1,7 +1,6 @@
 import { Command } from "commander";
-import { existsSync } from "fs";
 import { isInitialized } from "#/config/project/project";
-import { getLockfile, getDirectorySize } from "#/context";
+import { getLockfile, getDirectorySize, fs } from "#/context";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
 import { formatBytes, estimateTokens } from "@grekt-labs/cli-engine";
 import { error, info, log, colors, newline } from "#/shared/ui/ui";
@@ -44,7 +43,7 @@ export const listCommand = new Command("list")
       let size = 0;
       let sizeStr = "";
 
-      if (existsSync(artifactDir)) {
+      if (fs.exists(artifactDir)) {
         size = getDirectorySize(artifactDir);
         totalSize += size;
         sizeStr = formatBytes(size);

@@ -1,8 +1,7 @@
-import { execFileSync } from "child_process";
-import { existsSync, mkdirSync, cpSync, rmSync, readFileSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import { basename, dirname, join } from "path";
 import { parse, stringify } from "yaml";
+import { fs, shell } from "#/context";
 import type { Components } from "@grekt-labs/cli-engine";
 
 const TARBALL_DIR = ".grekt/tmp";
@@ -23,8 +22,8 @@ export interface CreateTarballOptions {
 
 function ensureTarballDir(projectRoot: string): string {
   const tarballDir = join(projectRoot, TARBALL_DIR);
-  if (!existsSync(tarballDir)) {
-    mkdirSync(tarballDir, { recursive: true });
+  if (!fs.exists(tarballDir)) {
+    fs.mkdir(tarballDir, { recursive: true });
   }
   return tarballDir;
 }
@@ -34,12 +33,12 @@ function injectComponentsIntoManifest(
   components: Components
 ): void {
   const manifestPath = join(artifactPath, "grekt.yaml");
-  const content = readFileSync(manifestPath, "utf-8");
+  const content = fs.readFile(manifestPath);
   const manifest = parse(content);
 
   manifest.components = components;
 
-  writeFileSync(manifestPath, stringify(manifest));
+  fs.writeFile(manifestPath, stringify(manifest));
 }
 
 export function createTarball(options: CreateTarballOptions): TarballResult {
@@ -59,8 +58,8 @@ export function createTarball(options: CreateTarballOptions): TarballResult {
       tempDir = join(tmpdir(), `grekt-tmp-${Date.now()}`);
       const tempArtifactPath = join(tempDir, artifactDirName);
 
-      mkdirSync(tempDir, { recursive: true });
-      cpSync(artifactPath, tempArtifactPath, {
+      fs.mkdir(tempDir, { recursive: true });
+      fs.copy(artifactPath, tempArtifactPath, {
         recursive: true,
         filter: (src) => !src.includes("/.grekt/"),
       });
@@ -72,11 +71,7 @@ export function createTarball(options: CreateTarballOptions): TarballResult {
     const artifactDir = basename(sourcePath);
     const parentDir = dirname(sourcePath);
 
-    execFileSync(
-      "tar",
-      ["-czf", outputPath, "--exclude=.grekt", "-C", parentDir, artifactDir],
-      { stdio: "pipe" }
-    );
+    shell.execFile("tar", ["-czf", outputPath, "--exclude=.grekt", "-C", parentDir, artifactDir]);
 
     return {
       success: true,
@@ -90,16 +85,16 @@ export function createTarball(options: CreateTarballOptions): TarballResult {
     };
   } finally {
     // Clean up temp directory
-    if (tempDir && existsSync(tempDir)) {
-      rmSync(tempDir, { recursive: true, force: true });
+    if (tempDir && fs.exists(tempDir)) {
+      fs.rmdir(tempDir, { recursive: true });
     }
   }
 }
 
 export function removeTarball(tarballPath: string): void {
   try {
-    if (existsSync(tarballPath)) {
-      rmSync(tarballPath);
+    if (fs.exists(tarballPath)) {
+      fs.unlink(tarballPath);
     }
   } catch {
     // Ignore cleanup errors

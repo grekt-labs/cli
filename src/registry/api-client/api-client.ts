@@ -1,19 +1,8 @@
-import { mkdirSync, writeFileSync, rmSync } from "fs";
-import { execFileSync } from "child_process";
-import { randomUUID } from "crypto";
-import type { ArtifactMetadata, ShellExecutor } from "@grekt-labs/cli-engine";
+import type { ArtifactMetadata } from "@grekt-labs/cli-engine";
 import { sortVersionsDesc, getHighestVersion, validateTarballContents } from "@grekt-labs/cli-engine";
 import { getSupabaseClient, getSession, getSupabaseUrl } from "#/auth/session/session";
+import { fs, shell, http, cryptoProvider } from "#/context";
 import { REGISTRY_URL } from "#/constants";
-
-/**
- * Minimal ShellExecutor adapter for validateTarballContents.
- */
-const shellAdapter: ShellExecutor = {
-  execFile: (command: string, args: string[]) => {
-    return execFileSync(command, args, { stdio: "pipe" }).toString();
-  },
-};
 
 
 
@@ -25,6 +14,7 @@ export interface VersionInfo {
 
 export interface DownloadResult {
   success: boolean;
+  error?: string;
   version?: string;
   resolved?: string;
   deprecationMessage?: string;
@@ -158,7 +148,7 @@ export class RegistryClient {
       const tarballUrl = `${REGISTRY_URL}/${artifactId}/${resolvedVersion}.tar.gz`;
       const deprecationMessage = metadata.deprecated[resolvedVersion];
 
-      const response = await fetch(tarballUrl, {
+      const response = await http.fetch(tarballUrl, {
         headers: { "User-Agent": "grekt-cli" },
       });
 
@@ -173,22 +163,20 @@ export class RegistryClient {
       }
 
       const buffer = await response.arrayBuffer();
-      const tempTarball = `/tmp/grekt-${randomUUID()}.tar.gz`;
-      writeFileSync(tempTarball, Buffer.from(buffer));
+      const tempTarball = `/tmp/grekt-${cryptoProvider.randomUUID()}.tar.gz`;
+      fs.writeFileBinary(tempTarball, Buffer.from(buffer));
 
       // Validate tarball contents BEFORE extraction (prevents path traversal)
       // stripComponents=1 matches the extraction below
-      const validation = validateTarballContents(shellAdapter, tempTarball, targetDir, 1);
+      const validation = validateTarballContents(shell, tempTarball, targetDir, 1);
       if (!validation.safe) {
-        rmSync(tempTarball, { force: true });
+        fs.unlink(tempTarball);
         return { success: false, error: "Security: tarball failed validation" };
       }
 
-      mkdirSync(targetDir, { recursive: true });
-      execFileSync("tar", ["-xzf", tempTarball, "-C", targetDir, "--strip-components=1"], {
-        stdio: "pipe",
-      });
-      rmSync(tempTarball, { force: true });
+      fs.mkdir(targetDir, { recursive: true });
+      shell.execFile("tar", ["-xzf", tempTarball, "-C", targetDir, "--strip-components=1"]);
+      fs.unlink(tempTarball);
 
       return {
         success: true,
@@ -254,7 +242,7 @@ export class RegistryClient {
       throw new Error("Not authenticated");
     }
 
-    const response = await fetch(`${this.edgeFunctionUrl}/publish`, {
+    const response = await http.fetch(`${this.edgeFunctionUrl}/publish`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

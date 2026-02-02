@@ -1,6 +1,6 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync, chmodSync } from "fs";
 import { dirname, resolve } from "path";
 import { parse, stringify } from "yaml";
+import { fs } from "#/context";
 import {
   ProjectConfigSchema,
   LocalConfigSchema,
@@ -18,16 +18,16 @@ const LOCAL_CONFIG_FILE = "config.yaml";
 
 function ensureDir(filepath: string): void {
   const dir = dirname(filepath);
-  if (!existsSync(dir)) {
-    mkdirSync(dir, { recursive: true });
+  if (!fs.exists(dir)) {
+    fs.mkdir(dir, { recursive: true });
   }
 }
 
 function readYaml<T>(filepath: string, defaultValue: T): T {
-  if (!existsSync(filepath)) {
+  if (!fs.exists(filepath)) {
     return defaultValue;
   }
-  const content = readFileSync(filepath, "utf-8");
+  const content = fs.readFile(filepath);
   const parsed = parse(content);
   if (parsed === null || parsed === undefined) {
     return defaultValue;
@@ -38,9 +38,9 @@ function readYaml<T>(filepath: string, defaultValue: T): T {
 function writeYaml(filepath: string, data: unknown, secure = false): void {
   ensureDir(filepath);
   const content = stringify(data);
-  writeFileSync(filepath, content, "utf-8");
+  fs.writeFile(filepath, content);
   if (secure) {
-    chmodSync(filepath, 0o600);
+    fs.chmod(filepath, 0o600);
   }
 }
 
@@ -64,7 +64,7 @@ export function setConfigValue(key: keyof ProjectConfig, value: unknown, project
 
 // Check if grekt is initialized
 export function isInitialized(projectRoot: string = process.cwd()): boolean {
-  return existsSync(`${projectRoot}/${GREKT_YAML}`);
+  return fs.exists(`${projectRoot}/${GREKT_YAML}`);
 }
 
 // Walk up directory tree to find .grekt/config.yaml
@@ -73,7 +73,7 @@ function findLocalConfigPath(startDir: string): string | null {
 
   while (true) {
     const configPath = `${current}/${GREKT_DIR}/${LOCAL_CONFIG_FILE}`;
-    if (existsSync(configPath)) {
+    if (fs.exists(configPath)) {
       return configPath;
     }
 
@@ -153,8 +153,8 @@ function writeLocalConfigWithComments(filepath: string, config: LocalConfig): vo
   }
 
   const content = lines.length > 0 ? lines.join("\n") : "{}\n";
-  writeFileSync(filepath, content, "utf-8");
-  chmodSync(filepath, 0o600);
+  fs.writeFile(filepath, content);
+  fs.chmod(filepath, 0o600);
 }
 
 // Session management
