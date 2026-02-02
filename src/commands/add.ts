@@ -238,8 +238,8 @@ export const addCommand = new Command("add")
       log(`  ${colors.dim(`${category}:`)} ${names.join(", ")}`);
     }
 
-    // Auto-sync when using --core
-    if (options.core && config.targets.length > 0) {
+    // Auto-sync to targets
+    if (config.targets.length > 0) {
       newline();
       for (const target of config.targets) {
         const plugin = getPlugin(target, config.customTargets);
@@ -264,8 +264,5 @@ export const addCommand = new Command("add")
           warning(`Skipped ${file}`);
         }
       }
-    } else if (!options.core) {
-      newline();
-      info("Run 'grekt sync' to sync with your AI tools");
     }
   });
