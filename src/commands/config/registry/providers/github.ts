@@ -1,19 +1,34 @@
-import { input, password } from "@inquirer/prompts";
+import { input, password, select } from "@inquirer/prompts";
 import type { RegistryProvider } from "#/registry/registry.types";
+
+const DEFAULT_HOST = "ghcr.io";
 
 export const githubProvider: RegistryProvider = {
   type: "github",
   label: "GitHub",
 
   async prompts() {
-    const hostInput = await input({
-      message: "GitHub Container Registry host (leave empty for ghcr.io):",
+    const hostChoice = await select({
+      message: "GitHub host:",
+      choices: [
+        { name: "ghcr.io", value: DEFAULT_HOST },
+        { name: "GitHub Enterprise (custom URL)", value: "custom" },
+      ],
     });
 
-    const host = hostInput.trim() || "ghcr.io";
+    let host = DEFAULT_HOST;
+    if (hostChoice === "custom") {
+      host = await input({
+        message: "GitHub Enterprise URL:",
+        validate: (value) => {
+          if (!value.trim()) return "URL is required";
+          return true;
+        },
+      });
+    }
 
     const project = await input({
-      message: "Namespace (your GitHub username or org, e.g., myorg):",
+      message: "Namespace (username or org):",
       validate: (value) => {
         if (!value.trim()) return "Namespace is required";
         return true;
