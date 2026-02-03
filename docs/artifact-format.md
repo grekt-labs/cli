@@ -21,25 +21,27 @@ More complex structures = slower scanning, so keep it reasonable.
 Every artifact needs a `grekt.yaml` at the root:
 
 ```yaml
-name: my-artifact
-author: author-name
+name: "@your-scope/my-artifact"
 version: 1.0.0
 description: What this artifact does
 keywords:
   - keyword1
   - keyword2
   - keyword3
+author: Your Name  # Optional, for credits
 ```
 
 | Field | Required | Description |
 |-------|----------|-------------|
-| `name` | Yes | Artifact name (lowercase, alphanumeric, dashes) |
-| `author` | Yes | Author/scope name (without @) |
+| `name` | Yes | Artifact name. Use `@scope/name` format for publishable artifacts |
 | `version` | Yes | Semver version |
 | `description` | Yes | Short description |
 | `keywords` | For publish | 3-5 keywords for discoverability |
+| `author` | No | Optional credits/metadata |
 
-The full artifact ID is `@{author}/{name}` (e.g., `@grekt/code-reviewer`).
+**Name formats:**
+- `@scope/name` - Scoped name (required for publishing). The scope determines which registry to use.
+- `name` - Unscoped name (local use only, cannot be published)
 
 ## Categories
 
@@ -114,8 +116,7 @@ Invalid files are tracked in `invalidFiles` array but don't fail the scan.
 During `grekt publish` or `grekt pack`, the `components` section is auto-generated:
 
 ```yaml
-name: my-artifact
-author: author-name
+name: "@your-scope/my-artifact"
 version: 1.0.0
 description: What this does
 keywords: [keyword1, keyword2, keyword3]
@@ -136,8 +137,7 @@ You don't write this section manually.
 
 **grekt.yaml:**
 ```yaml
-name: my-artifact
-author: myname
+name: "@myname/my-artifact"
 version: 1.0.0
 description: What it does
 keywords: [keyword1, keyword2, keyword3]
