@@ -6,7 +6,7 @@ import { ARTIFACTS_DIR } from "#/config/paths/paths";
 import { parseSource, downloadFromSource } from "#/registry/sources/sources";
 import { getSourceDisplayName } from "#/registry/registry";
 import { scanArtifact, hashDirectory } from "#/context";
-import { getArtifactId, calculateIntegrity } from "@grekt-labs/cli-engine";
+import { parseName, calculateIntegrity } from "@grekt-labs/cli-engine";
 import { selectComponents, isEmptySelection, isFullSelection, createEmptySelection, type ComponentSelection } from "#/artifact/selector/selector";
 import { removeUnselectedFiles } from "#/artifact/component-manager/component-manager";
 import { generateArtifactIndex } from "#/artifact/index/index";
@@ -99,7 +99,7 @@ export const addCommand = new Command("add")
       process.exit(1);
     }
 
-    const resolvedArtifactId = getArtifactId(artifactInfo.manifest.author, artifactInfo.manifest.name);
+    const resolvedArtifactId = parseName(artifactInfo.manifest.name).artifactId;
 
     // Validate artifact ID to prevent path traversal
     try {
