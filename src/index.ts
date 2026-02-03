@@ -24,6 +24,7 @@ import { whoamiCommand } from "#/commands/whoami";
 import { ASCII_LOGO } from "#/constants";
 import { colors } from "#/shared/ui/ui";
 import pkg from "../package.json";
+import { setupUpdateCheck, refreshUpdateCache } from "#/update-check/update-check";
 
 const program = new Command();
 
@@ -61,4 +62,7 @@ program.addCommand(outdatedCommand);
 // Authoring commands
 program.addCommand(versionCommand);
 
-program.parse();
+setupUpdateCheck(pkg.version);
+
+await program.parseAsync();
+refreshUpdateCache();
