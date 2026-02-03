@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import { setProjectRoot } from "#/auth/session/session";
-import { getLocalConfigPath } from "#/config/project/project";
+import { getLocalConfigPath, getLocalConfig } from "#/config/project/project";
 import {
   createPublisher,
   getPublisherTypeName,
@@ -89,6 +89,17 @@ export const publishCommand = new Command("publish")
 
     const { artifact } = result;
 
+    // Verify artifact has a scope (required for publishing)
+    if (!artifact.scope) {
+      error("Cannot publish: artifact name must include scope");
+      log("");
+      info("Update your grekt.yaml:");
+      log(colors.dim("  name: \"@your-scope/artifact-name\""));
+      log("");
+      log(colors.dim("The scope determines which registry to use for publishing."));
+      process.exit(1);
+    }
+
     setProjectRoot(projectRoot);
 
     logComponentSummary(
@@ -135,14 +146,44 @@ export const publishCommand = new Command("publish")
       process.exit(1);
     }
 
+    // Check if using default registry (no config found for this scope)
     if (publisher.type === "api") {
       const authenticated = await isApiAuthenticated();
       if (!authenticated) {
         removeTarball(tarballResult.path);
-        error("Not logged in");
-        info("Run 'grekt login' first");
-        log("");
-        log(colors.dim("For S3-compatible storage, use --s3 flag"));
+
+        // Check if there are other registries configured (possible typo)
+        const localConfig = getLocalConfig(projectRoot);
+        const configuredScopes = localConfig?.registries
+          ? Object.keys(localConfig.registries)
+          : [];
+
+        if (configuredScopes.length > 0) {
+          // User has registries configured, but not for this scope
+          error(`No registry configured for ${artifact.scope}`);
+          log("");
+          info("Available registries:");
+          for (const scope of configuredScopes) {
+            const entry = localConfig!.registries![scope];
+            log(`  ${scope} (${entry.type})`);
+          }
+          log("");
+          log(colors.dim(`Check if your artifact scope matches your config.`));
+          log(colors.dim(`Config file: ${getLocalConfigPath(projectRoot)}`));
+        } else {
+          // No registries configured at all
+          error(`No registry configured for ${artifact.scope}`);
+          log("");
+          info(`Add a registry to ${getLocalConfigPath(projectRoot)}:`);
+          log(colors.dim("  registries:"));
+          log(colors.dim(`    \"${artifact.scope}\":`));
+          log(colors.dim("      type: gitlab"));
+          log(colors.dim("      project: your-group/your-project"));
+          log(colors.dim("      token: your-token"));
+          log("");
+          log(colors.dim("For S3-compatible storage, use --s3 flag"));
+        }
+
         process.exit(1);
       }
     }
@@ -182,7 +223,7 @@ export const publishCommand = new Command("publish")
       if (publisher instanceof CustomPublisher) {
         const registry = publisher.getRegistry();
         if (registry.type === "gitlab" && !registry.token) {
-          showGitLabHelp(artifact.scope);
+          showGitLabHelp(artifact.scope, projectRoot);
         }
       }
 
@@ -213,16 +254,16 @@ function showS3CredentialsHelp(): void {
   log(colors.dim("Use 'grekt pack' to create tarball without uploading"));
 }
 
-function showGitLabHelp(scope: string): void {
+function showGitLabHelp(scope: string | null, projectRoot: string): void {
   log("");
   info("GitLab registry requires authentication.");
   log("");
   log(colors.dim("  Configure token in one of these ways:"));
-  log(`  1. Add token to ${getLocalConfigPath()}:`);
+  log(`  1. Add token to ${getLocalConfigPath(projectRoot)}:`);
   log(`     registries:`);
-  log(`       "${scope}":`);
+  log(`       "${scope ?? "@your-scope"}":`);
   log(`         type: gitlab`);
-  log(`         project: your/project`);
+  log(`         project: your-group/your-project`);
   log(`         token: glpat-xxx`);
   log("");
   log(`  2. Set GITLAB_TOKEN environment variable`);
