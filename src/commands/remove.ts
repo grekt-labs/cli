@@ -1,25 +1,19 @@
 import { Command } from "commander";
-import { join } from "path";
 import { fs } from "#/context";
 import { confirm } from "@inquirer/prompts";
 import { isInitialized, getConfig, saveConfig } from "#/config/project/project";
 import { getLockfile, saveLockfile } from "#/context";
-import { getSafeFilename, CATEGORIES, CATEGORY_CONFIG, type Category } from "@grekt-labs/cli-engine";
+import { getSafeFilename, CATEGORIES, getCategoriesForFormat, type Category } from "@grekt-labs/cli-engine";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
 import { generateArtifactIndex } from "#/artifact/index/index";
+import { scanArtifact } from "#/context";
 import { isSafeArtifactId } from "#/artifact/validation/validation";
 import { success, error, info, log, newline, colors } from "#/shared/ui/ui";
 import { withPromptHandler } from "#/shared/prompts/prompts";
+import { getSyncPaths } from "#/sync/manager/manager";
 
-// Claude target paths (TODO: should use sync manager for all targets)
-const CLAUDE_DIR = ".claude";
-const CLAUDE_CATEGORY_DIRS: Record<Category, string> = {
-  agents: join(CLAUDE_DIR, "agents"),
-  skills: join(CLAUDE_DIR, "skills"),
-  commands: join(CLAUDE_DIR, "commands"),
-  mcps: join(CLAUDE_DIR, "mcps"),
-  rules: join(CLAUDE_DIR, "rules"),
-};
+// Only MD categories are synced to target folders
+const SYNCABLE_CATEGORIES = getCategoriesForFormat("md");
 
 export const removeCommand = new Command("remove")
   .alias("rm")
@@ -60,16 +54,23 @@ export const removeCommand = new Command("remove")
       process.exit(1);
     }
 
-    const artifact = lockfile.artifacts[artifactId];
+    const lockfileEntry = lockfile.artifacts[artifactId];
     const artifactDir = `${projectRoot}/${ARTIFACTS_DIR}/${artifactId}`;
+
+    // Get component paths by scanning the artifact directory
+    const artifactInfo = scanArtifact(artifactDir);
+    const componentPaths: Record<Category, string[]> = {} as Record<Category, string[]>;
+    for (const category of CATEGORIES) {
+      componentPaths[category] = artifactInfo?.[category]?.map((f) => f.path) ?? [];
+    }
 
     // Show what will be removed
     log(colors.bold("Will remove:"));
     newline();
-    log(`  ${colors.highlight(artifactId)}@${colors.dim(artifact.version)}`);
+    log(`  ${colors.highlight(artifactId)}@${colors.dim(lockfileEntry.version)}`);
 
     for (const category of CATEGORIES) {
-      const paths = artifact[category];
+      const paths = componentPaths[category];
       if (paths && paths.length > 0) {
         log(`    ${colors.dim(`${category}:`)} ${paths.join(", ")}`);
       }
@@ -98,19 +99,25 @@ export const removeCommand = new Command("remove")
       removed.push(`${ARTIFACTS_DIR}/${artifactId}`);
     }
 
-    // Remove synced files from .claude/
-    const claudeDir = `${projectRoot}/${CLAUDE_DIR}`;
-    if (fs.exists(claudeDir)) {
-      for (const category of CATEGORIES) {
-        const categoryDir = CLAUDE_CATEGORY_DIRS[category];
-        const paths = artifact[category];
+    // Remove synced files from all configured targets
+    const allTargets = [...config.targets, ...Object.keys(config.customTargets ?? {})];
+
+    for (const target of allTargets) {
+      const syncPaths = getSyncPaths(target, config.customTargets);
+
+      // Skip targets that don't sync files (like cursor which only updates .cursorrules)
+      if (!syncPaths) continue;
+
+      for (const category of SYNCABLE_CATEGORIES) {
+        const categoryDir = syncPaths[category];
+        const paths = componentPaths[category];
 
         if (!paths || paths.length === 0) continue;
 
         for (const filePath of paths) {
           const targetName = getSafeFilename(artifactId, filePath);
-
           const targetPath = `${projectRoot}/${categoryDir}/${targetName}`;
+
           if (fs.exists(targetPath)) {
             fs.unlink(targetPath);
             removed.push(`${categoryDir}/${targetName}`);
@@ -140,8 +147,10 @@ export const removeCommand = new Command("remove")
       log(colors.dim(`  Cleaned: ${removed.length} files/directories`));
     }
 
-    newline();
-    info("Run 'grekt sync' to update CLAUDE.md");
+    if (allTargets.length > 0) {
+      newline();
+      info("Run 'grekt sync' to update context entry points");
+    }
     });
   });
 
