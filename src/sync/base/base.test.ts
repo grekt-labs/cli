@@ -41,7 +41,7 @@ describe("base", () => {
     // Create artifact manifest (required by scanArtifact)
     writeFileSync(
       join(artifactDir, "grekt.yaml"),
-      "name: artifact\nauthor: scope\nversion: 1.0.0\ndescription: Test artifact"
+      "name: \"@scope/artifact\"\nversion: 1.0.0\ndescription: Test artifact"
     );
 
     // Create agent file with valid frontmatter

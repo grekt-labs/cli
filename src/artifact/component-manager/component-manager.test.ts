@@ -24,8 +24,7 @@ describe("component-manager", () => {
 
   const createTestArtifactInfo = (): ArtifactInfo => ({
     manifest: {
-      name: "test",
-      author: "author",
+      name: "@scope/test",
       version: "1.0.0",
       description: "desc",
     },

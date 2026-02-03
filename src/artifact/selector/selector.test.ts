@@ -11,8 +11,7 @@ describe("selector", () => {
   }): ArtifactInfo => {
     const info: ArtifactInfo = {
       manifest: {
-        name: "test",
-        author: "author",
+        name: "@scope/test",
         version: "1.0.0",
         description: "desc",
       },
