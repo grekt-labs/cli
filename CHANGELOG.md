@@ -1,3 +1,10 @@
+## [5.15.2](https://github.com/grekt-labs/cli/compare/v5.15.1...v5.15.2) (2026-02-03)
+
+
+### Bug Fixes
+
+* **remove:** properly remove synced files from all targets ([#82](https://github.com/grekt-labs/cli/issues/82)) ([dbffd03](https://github.com/grekt-labs/cli/commit/dbffd03c3ab3ba1118bb09524a86a503bdc5fdff))
+
 ## [5.15.1](https://github.com/grekt-labs/cli/compare/v5.15.0...v5.15.1) (2026-02-03)
 
 
