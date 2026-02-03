@@ -1,3 +1,12 @@
+# [5.15.0](https://github.com/grekt-labs/cli/compare/v5.14.0...v5.15.0) (2026-02-03)
+
+
+### Features
+
+* auto-sync after add command ([2403c55](https://github.com/grekt-labs/cli/commit/2403c5589b536fffbd32644c0ebb987f1abdef55))
+* improve registry config prompts with host selection ([1943381](https://github.com/grekt-labs/cli/commit/19433819a9b61940e09d498765deef44e37f4619))
+* **publish:** improve error messages for scope and registry config ([b6e57e0](https://github.com/grekt-labs/cli/commit/b6e57e0112c6ae5a94ab5559c86a5c44217c237e))
+
 # [5.14.0](https://github.com/grekt-labs/cli/compare/v5.13.0...v5.14.0) (2026-02-03)
 
 
