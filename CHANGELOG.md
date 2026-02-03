@@ -1,3 +1,10 @@
+## [5.15.1](https://github.com/grekt-labs/cli/compare/v5.15.0...v5.15.1) (2026-02-03)
+
+
+### Bug Fixes
+
+* update imports for cli-engine v5.0.0 API changes ([7d832e1](https://github.com/grekt-labs/cli/commit/7d832e16343cda4159aa72bad9bda828c81b27f8))
+
 # [5.15.0](https://github.com/grekt-labs/cli/compare/v5.14.0...v5.15.0) (2026-02-03)
 
 
