@@ -9,7 +9,7 @@ export {
   type ParsedArtifact,
   getSafeFilename,
   toSafeName,
-  getArtifactId,
+  parseName,
   type ArtifactInfo,
   calculateIntegrity,
   type IntegrityResult,

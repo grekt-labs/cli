@@ -4,7 +4,7 @@ import { fs } from "#/context";
 import { parse as parseYaml } from "yaml";
 import {
   ArtifactManifestSchema,
-  getArtifactIdFromManifest,
+  parseName,
   bumpVersion,
   type BumpType,
 } from "@grekt-labs/cli-engine";
@@ -71,7 +71,7 @@ export const versionCommand = new Command("version")
       const manifestContent = fs.readFile(manifestPath);
       const parsed = parseYaml(manifestContent);
       const manifest = ArtifactManifestSchema.parse(parsed);
-      const artifactId = getArtifactIdFromManifest(manifest);
+      const { artifactId } = parseName(manifest.name);
 
       const newVersion = bumpVersion(manifest.version, bump);
 
