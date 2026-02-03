@@ -2,7 +2,7 @@ import { join, resolve } from "path";
 import { parse } from "yaml";
 import { isInitialized } from "#/config/project/project";
 import { fs } from "#/context";
-import { scanArtifact, ArtifactManifestSchema, isValidSemver, CATEGORIES } from "@grekt-labs/cli-engine";
+import { scanArtifact, ArtifactManifestSchema, isValidSemver, CATEGORIES, parseName } from "@grekt-labs/cli-engine";
 import type { InvalidFile } from "@grekt-labs/cli-engine";
 import type {
   ValidatedArtifact,
@@ -203,9 +203,7 @@ export function validateArtifact(
     };
   }
 
-  const authorName = manifest.author.startsWith("@") ? manifest.author.slice(1) : manifest.author;
-  const artifactId = `@${authorName}/${manifest.name}`;
-  const scope = `@${authorName}`;
+  const { scope, artifactId } = parseName(manifest.name);
 
   return {
     success: true,

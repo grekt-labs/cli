@@ -3,7 +3,7 @@ import type { ArtifactManifest, ArtifactInfo } from "@grekt-labs/cli-engine";
 export interface ValidatedArtifact {
   manifest: ArtifactManifest;
   artifactId: string;
-  scope: string;
+  scope: string | null; // null for unscoped artifacts (local only, cannot publish)
   scanned: ArtifactInfo;
   componentCount: number;
   fullPath: string;
