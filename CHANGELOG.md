@@ -1,3 +1,10 @@
+# [5.14.0](https://github.com/grekt-labs/cli/compare/v5.13.0...v5.14.0) (2026-02-03)
+
+
+### Features
+
+* publish install script to releases repo ([4d4f91e](https://github.com/grekt-labs/cli/commit/4d4f91ec1f3dbb5cd9abae1ae3589d861b1a7cc0))
+
 # [5.13.0](https://github.com/grekt-labs/cli/compare/v5.12.0...v5.13.0) (2026-02-02)
 
 
