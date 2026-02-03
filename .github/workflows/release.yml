@@ -12,7 +12,30 @@ permissions:
   packages: read
 
 jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Configure GitHub Packages auth
+        run: |
+          echo "@grekt-labs:registry=https://npm.pkg.github.com" >> .npmrc
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GREKT_PACKAGES_NPMRC }}" >> .npmrc
+
+      - run: bun install
+
+      - name: Run tests
+        run: bun test
+
+      - name: Validate build
+        run: bun build src/index.ts --compile --target=bun-linux-x64 --outfile grekt-test
+
   semantic-release:
+    needs: validate
     runs-on: ubuntu-latest
     outputs:
       new-release: ${{ steps.release.outputs.new-release }}
@@ -36,10 +59,7 @@ jobs:
           echo "@grekt-labs:registry=https://npm.pkg.github.com" >> .npmrc
           echo "//npm.pkg.github.com/:_authToken=${{ secrets.GREKT_PACKAGES_NPMRC }}" >> .npmrc
 
-      - run: bun install
-
-      - name: Run tests
-        run: bun test
+      - run: bun install --frozen-lockfile
 
       - name: Semantic Release
         id: release
