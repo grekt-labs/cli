@@ -1,3 +1,11 @@
+# [5.16.0](https://github.com/grekt-labs/cli/compare/v5.15.2...v5.16.0) (2026-02-04)
+
+
+### Features
+
+* add post-command update-check against GitHub Releases ([44c14af](https://github.com/grekt-labs/cli/commit/44c14af6cb68e0a042b44a12a18f7e5e577c7f38))
+* **update-check:** add brew upgrade option and improve notice styling ([83e7950](https://github.com/grekt-labs/cli/commit/83e7950f8aa899b7a0fbcef75fe1a960e9b3cf1c))
+
 ## [5.15.2](https://github.com/grekt-labs/cli/compare/v5.15.1...v5.15.2) (2026-02-03)
 
 
