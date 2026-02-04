@@ -1,10 +1,34 @@
-import { dirname, join } from "path";
+import { dirname, join, resolve } from "path";
 import { fs } from "#/context";
 import type { CustomTarget } from "@grekt-labs/cli-engine";
 
 export interface TargetPaths {
   targetDir: string;
   contextEntryPoint: string;
+}
+
+const DANGEROUS_PATHS = new Set([".", "..", "/", ""]);
+
+/**
+ * Check if a path is safe to delete (not root, not project root, not dangerous).
+ */
+function isSafeToDelete(projectRoot: string, relativePath: string): boolean {
+  if (DANGEROUS_PATHS.has(relativePath)) {
+    return false;
+  }
+
+  const absolutePath = resolve(projectRoot, relativePath);
+  const normalizedProjectRoot = resolve(projectRoot);
+
+  if (absolutePath === normalizedProjectRoot) {
+    return false;
+  }
+
+  if (!absolutePath.startsWith(normalizedProjectRoot + "/")) {
+    return false;
+  }
+
+  return true;
 }
 
 const builtInTargetPaths: Record<string, TargetPaths> = {
@@ -36,9 +60,14 @@ export function getTargetPaths(
 
   const customTarget = customTargets?.[targetId];
   if (customTarget) {
-    const targetDir = customTarget.paths
+    let targetDir = customTarget.paths
       ? dirname(customTarget.contextEntryPoint)
       : targetId;
+
+    // dirname returns "." for root-level files, treat as no directory
+    if (targetDir === ".") {
+      targetDir = "";
+    }
 
     return {
       targetDir,
@@ -71,8 +100,8 @@ export function cleanTargetPaths(
 
   const { targetDir, contextEntryPoint } = paths;
 
-  // Delete target directory if it exists
-  if (targetDir) {
+  // Delete target directory if it exists and is safe
+  if (targetDir && isSafeToDelete(projectRoot, targetDir)) {
     const fullPath = join(projectRoot, targetDir);
     if (fs.exists(fullPath)) {
       fs.rmdir(fullPath, { recursive: true });
@@ -82,8 +111,8 @@ export function cleanTargetPaths(
     }
   }
 
-  // Delete context entry point if it's outside the target directory
-  if (contextEntryPoint) {
+  // Delete context entry point if it's outside the target directory and is safe
+  if (contextEntryPoint && isSafeToDelete(projectRoot, contextEntryPoint)) {
     const isInsideTargetDir = targetDir && contextEntryPoint.startsWith(targetDir + "/");
 
     if (!isInsideTargetDir) {
