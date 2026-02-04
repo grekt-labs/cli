@@ -1,3 +1,10 @@
+# [5.18.0](https://github.com/grekt-labs/cli/compare/v5.17.1...v5.18.0) (2026-02-04)
+
+
+### Features
+
+* **workspace:** add monorepo workspace support ([#87](https://github.com/grekt-labs/cli/issues/87)) ([31b90b8](https://github.com/grekt-labs/cli/commit/31b90b826e47f172aedddba43e6fd15e13037301))
+
 ## [5.17.1](https://github.com/grekt-labs/cli/compare/v5.17.0...v5.17.1) (2026-02-04)
 
 
