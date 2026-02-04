@@ -1,3 +1,10 @@
+## [5.18.1](https://github.com/grekt-labs/cli/compare/v5.18.0...v5.18.1) (2026-02-04)
+
+
+### Bug Fixes
+
+* change rules format from json to md ([d850535](https://github.com/grekt-labs/cli/commit/d85053589d1e0d15725311217631c0f3ed07a1e5))
+
 # [5.18.0](https://github.com/grekt-labs/cli/compare/v5.17.1...v5.18.0) (2026-02-04)
 
 
