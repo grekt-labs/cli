@@ -1,11 +1,11 @@
 import { Command } from "commander";
 import { isInitialized, getConfig, saveConfig } from "#/config/project/project";
 import { getPluginChoices } from "#/sync/manager/manager";
-import { success, error, info, newline } from "#/shared/ui/ui";
-import { withPromptHandler, selectTargets } from "#/shared/prompts/prompts";
+import { success, error, info, newline, warn } from "#/shared/ui/ui";
+import { withPromptHandler, selectTargetsToAdd } from "#/shared/prompts/prompts";
 
 export const addTargetCommand = new Command("add-target")
-  .description("Add or configure sync targets interactively")
+  .description("Add new sync targets interactively")
   .action(async () => {
     await withPromptHandler(async () => {
       const projectRoot = process.cwd();
@@ -20,22 +20,26 @@ export const addTargetCommand = new Command("add-target")
       const pluginChoices = getPluginChoices();
 
       newline();
-      const { targets, customTargets } = await selectTargets(pluginChoices, {
-        currentTargets: config.targets,
-        currentCustomTargets: config.customTargets,
-      });
+      const { newTargets, newCustomTargets } = await selectTargetsToAdd(
+        pluginChoices,
+        config.targets,
+        config.customTargets ?? {}
+      );
 
-      config.targets = targets;
-      config.customTargets = customTargets;
-      saveConfig(config, projectRoot);
-
-      if (targets.length === 0) {
-        info("No targets selected");
+      if (newTargets.length === 0) {
+        info("No new targets added");
         return;
       }
 
+      config.targets = [...config.targets, ...newTargets];
+      config.customTargets = {
+        ...config.customTargets,
+        ...newCustomTargets,
+      };
+      saveConfig(config, projectRoot);
+
       newline();
-      success(`Targets configured: ${targets.join(", ")}`);
+      success(`Added targets: ${newTargets.join(", ")}`);
       info("Run 'grekt sync' to sync artifacts to these targets");
     });
   });

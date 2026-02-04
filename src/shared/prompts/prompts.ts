@@ -101,6 +101,7 @@ const OTHER_TARGET_VALUE = "__other__";
 /**
  * Interactive prompt to select sync targets.
  * Handles built-in plugins and custom target configuration.
+ * Used during init to configure targets from scratch.
  */
 export async function selectTargets(
   pluginChoices: Array<{ name: string; value: string }>,
@@ -148,4 +149,120 @@ export async function selectTargets(
   }
 
   return { targets, customTargets };
+}
+
+export interface SelectTargetsToAddResult {
+  newTargets: string[];
+  newCustomTargets: Record<string, CustomTarget>;
+}
+
+/**
+ * Interactive prompt to add new sync targets.
+ * Shows existing targets as disabled ("already added").
+ * Only allows adding new targets.
+ */
+export async function selectTargetsToAdd(
+  pluginChoices: Array<{ name: string; value: string }>,
+  currentTargets: string[],
+  currentCustomTargets: Record<string, CustomTarget>
+): Promise<SelectTargetsToAddResult> {
+  const currentTargetSet = new Set(currentTargets);
+  const builtInIds = pluginChoices.map((p) => p.value);
+
+  const existingCustomTargetIds = Object.keys(currentCustomTargets).filter(
+    (id) => currentTargets.includes(id)
+  );
+
+  const choices = [
+    ...pluginChoices.map((choice) => {
+      const isAlreadyAdded = currentTargetSet.has(choice.value);
+      return {
+        name: isAlreadyAdded ? `${choice.name} (already added)` : choice.name,
+        value: choice.value,
+        disabled: isAlreadyAdded,
+      };
+    }),
+    ...existingCustomTargetIds.map((id) => {
+      const customTarget = currentCustomTargets[id];
+      return {
+        name: `${customTarget.name} (already added)`,
+        value: id,
+        disabled: true,
+      };
+    }),
+    {
+      name: "Other (custom)",
+      value: OTHER_TARGET_VALUE,
+      disabled: false,
+    },
+  ];
+
+  const hasAvailableTargets = choices.some((c) => !c.disabled);
+  if (!hasAvailableTargets) {
+    return { newTargets: [], newCustomTargets: {} };
+  }
+
+  const selected = await checkbox<string>({
+    message: "Select AI tools to add:",
+    choices,
+  });
+
+  const newCustomTargets: Record<string, CustomTarget> = {};
+  let newTargets: string[];
+
+  if (selected.includes(OTHER_TARGET_VALUE)) {
+    const allExistingIds = [...builtInIds, ...Object.keys(currentCustomTargets)];
+    const { id: customId, config: customTarget } = await promptCustomTarget(allExistingIds);
+
+    newCustomTargets[customId] = customTarget;
+
+    newTargets = selected.filter((t) => t !== OTHER_TARGET_VALUE);
+    newTargets.push(customId);
+  } else {
+    newTargets = selected;
+  }
+
+  return { newTargets, newCustomTargets };
+}
+
+/**
+ * Interactive prompt to remove existing sync targets.
+ * Shows only currently configured targets.
+ */
+export async function selectTargetsToRemove(
+  pluginChoices: Array<{ name: string; value: string }>,
+  currentTargets: string[],
+  currentCustomTargets: Record<string, CustomTarget>
+): Promise<string[]> {
+  if (currentTargets.length === 0) {
+    return [];
+  }
+
+  const builtInMap = new Map(pluginChoices.map((p) => [p.value, p.name]));
+
+  const choices = currentTargets.map((targetId) => {
+    const builtInName = builtInMap.get(targetId);
+    const customTarget = currentCustomTargets[targetId];
+
+    let displayName: string;
+    if (builtInName) {
+      displayName = builtInName;
+    } else if (customTarget) {
+      displayName = `${customTarget.name} (custom)`;
+    } else {
+      displayName = targetId;
+    }
+
+    return {
+      name: displayName,
+      value: targetId,
+    };
+  });
+
+  const selected = await checkbox<string>({
+    message: "Select targets to remove:",
+    choices,
+  });
+
+  return selected;
 }
