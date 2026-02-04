@@ -1,3 +1,10 @@
+## [5.17.1](https://github.com/grekt-labs/cli/compare/v5.17.0...v5.17.1) (2026-02-04)
+
+
+### Bug Fixes
+
+* **cleaner:** prevent deletion of dangerous paths like project root ([#86](https://github.com/grekt-labs/cli/issues/86)) ([e63719d](https://github.com/grekt-labs/cli/commit/e63719d8fb2e9dd04afbfb0a1ac169ca363959ca))
+
 # [5.17.0](https://github.com/grekt-labs/cli/compare/v5.16.0...v5.17.0) (2026-02-04)
 
 
