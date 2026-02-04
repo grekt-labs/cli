@@ -97,11 +97,17 @@ export function compareVersions(a: string, b: string): number {
 }
 
 function printNotice(currentVersion: string, latestVersion: string): void {
+  const line = colors.dim("-".repeat(44));
+
   console.log();
+  console.log(`  ${line}`);
   console.log(
-    `  ${colors.warning("⚠ A new version of grekt is available:")} ${colors.dim(currentVersion)} ${colors.dim("→")} ${colors.highlight(latestVersion)}`
+    `  ${colors.info("Update available:")} ${colors.dim(currentVersion)} ${colors.dim("→")} ${colors.highlight(latestVersion)}`
   );
-  console.log(`  ${colors.dim("Update: curl https://grekt.com/install.sh | sh")}`);
+  console.log();
+  console.log(`  ${colors.dim("curl -fsSL https://grekt.com/install.sh | sh")}`);
+  console.log(`  ${colors.dim("brew upgrade grekt")}`);
+  console.log(`  ${line}`);
   console.log();
 }
 
