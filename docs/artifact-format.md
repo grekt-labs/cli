@@ -53,7 +53,7 @@ Components are categorized by their `grk-type`. Current categories:
 | `skills` | .md | Reusable capabilities |
 | `commands` | .md | User-invoked actions |
 | `mcps` | .json | MCP server configurations |
-| `rules` | .json | Static rules/configurations |
+| `rules` | .md | Coding guidelines and instructions |
 
 **Categories are extensible.** Defined in `cli-engine/src/categories/categories.ts`. Adding a new category there propagates everywhere.
 
@@ -61,7 +61,7 @@ Components are categorized by their `grk-type`. Current categories:
 
 ### Markdown Components (.md)
 
-For `agents`, `skills`, and `commands`. Use YAML frontmatter with `grk-` prefixed fields:
+For `agents`, `skills`, `commands`, and `rules`. Use YAML frontmatter with `grk-` prefixed fields:
 
 ```markdown
 ---
@@ -75,7 +75,7 @@ Instructions for the AI...
 
 | Field | Required | Description |
 |-------|----------|-------------|
-| `grk-type` | Yes | One of: `agents`, `skills`, `commands` |
+| `grk-type` | Yes | One of: `agents`, `skills`, `commands`, `rules` |
 | `grk-name` | Yes | Component name |
 | `grk-description` | Yes | What this component does |
 | `grk-agents` | No | Associate with an agent (for skills/commands) |
@@ -86,7 +86,7 @@ Avoids collisions with other tools that use frontmatter (Jekyll, Hugo, etc.).
 
 ### JSON Components (.json)
 
-For `mcps` and `rules`. Same fields but as JSON properties:
+For `mcps`. Same fields but as JSON properties:
 
 ```json
 {
@@ -186,7 +186,7 @@ Instructions...
 }
 ```
 
-**Problem:** Each category has allowed formats. `agents`, `skills`, `commands` must be `.md`. While `mcps`, `rules` must be `.json`. Using the wrong format causes the file to be marked invalid.
+**Problem:** Each category has allowed formats. `agents`, `skills`, `commands`, `rules` must be `.md`. While `mcps` must be `.json`. Using the wrong format causes the file to be marked invalid.
 
 **Fix:** Check `CATEGORY_CONFIG` in `cli-engine/src/categories/categories.ts` for allowed formats.
 
