@@ -3,7 +3,7 @@ import { confirm } from "@inquirer/prompts";
 import { isInitialized, getConfig, saveConfig } from "#/config/project/project";
 import { getPluginChoices } from "#/sync/manager/manager";
 import { cleanTargetPaths } from "#/sync/cleaner/cleaner";
-import { success, error, info, newline, warn } from "#/shared/ui/ui";
+import { success, error, info, newline, warning } from "#/shared/ui/ui";
 import { withPromptHandler, selectTargetsToRemove } from "#/shared/prompts/prompts";
 
 export const removeTargetCommand = new Command("remove-target")
@@ -21,7 +21,7 @@ export const removeTargetCommand = new Command("remove-target")
       const config = getConfig(projectRoot);
 
       if (config.targets.length === 0) {
-        warn("No targets configured");
+        warning("No targets configured");
         info("Run 'grekt add-target' to add targets");
         return;
       }

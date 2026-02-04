@@ -6,38 +6,51 @@ import {
   ArtifactManifestSchema,
   parseName,
   bumpVersion,
+  bumpPrerelease,
   type BumpType,
 } from "@grekt-labs/cli-engine";
 import { success, error, info, log, colors } from "#/shared/ui/ui";
 
 const MANIFEST_FILE = "grekt.yaml";
-const BUMP_TYPES = ["patch", "minor", "major"] as const;
+const BUMP_TYPES = ["patch", "minor", "major", "prerelease"] as const;
+const PRERELEASE_IDENTIFIER = "beta";
+
+type ExtendedBumpType = BumpType | "prerelease";
 
 interface VersionCommandOptions {
   dryRun?: boolean;
+  beta?: boolean;
 }
 
-function isBumpType(value: string): value is BumpType {
-  return BUMP_TYPES.includes(value as BumpType);
+function isValidBumpType(value: string): value is ExtendedBumpType {
+  return BUMP_TYPES.includes(value as ExtendedBumpType);
 }
 
 export const versionCommand = new Command("version")
-  .description("Bump artifact versions (patch, minor, major)")
-  .argument("[bump]", "Bump type: patch, minor, or major")
+  .description("Bump artifact versions (patch, minor, major, prerelease)")
+  .argument("[bump]", "Bump type: patch, minor, major, or prerelease")
   .argument("[path]", "Path to artifact or directory containing artifacts", ".")
   .option("--dry-run", "Show what would happen without applying changes")
+  .option("--beta", "Use beta identifier for prerelease (required with prerelease)")
   .action(async (bump: string | undefined, targetPath: string, options: VersionCommandOptions) => {
     if (!bump) {
       error("Bump type required. Usage:");
       info("  grekt version patch");
       info("  grekt version minor");
       info("  grekt version major");
+      info("  grekt version prerelease --beta");
       process.exit(1);
     }
 
-    if (!isBumpType(bump)) {
+    if (!isValidBumpType(bump)) {
       error(`Invalid bump type: ${bump}`);
-      info("Use: patch, minor, or major");
+      info("Use: patch, minor, major, or prerelease");
+      process.exit(1);
+    }
+
+    if (bump === "prerelease" && !options.beta) {
+      error("Prerelease requires --beta flag");
+      info("Usage: grekt version prerelease --beta");
       process.exit(1);
     }
 
@@ -73,7 +86,9 @@ export const versionCommand = new Command("version")
       const manifest = ArtifactManifestSchema.parse(parsed);
       const { artifactId } = parseName(manifest.name);
 
-      const newVersion = bumpVersion(manifest.version, bump);
+      const newVersion = bump === "prerelease"
+        ? bumpPrerelease(manifest.version, PRERELEASE_IDENTIFIER)
+        : bumpVersion(manifest.version, bump);
 
       log(`  ${artifactId}: ${manifest.version} → ${newVersion}`);
 
