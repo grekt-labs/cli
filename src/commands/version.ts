@@ -1,5 +1,6 @@
 import { Command } from "commander";
 import { join, resolve } from "path";
+import { spawnSync } from "child_process";
 import { fs } from "#/context";
 import { parse as parseYaml } from "yaml";
 import {
@@ -7,9 +8,16 @@ import {
   parseName,
   bumpVersion,
   bumpPrerelease,
+  isWorkspaceRoot,
   type BumpType,
 } from "@grekt-labs/cli-engine";
-import { success, error, info, log, colors } from "#/shared/ui/ui";
+import { success, error, info, log, colors, spinner } from "#/shared/ui/ui";
+import {
+  loadWorkspace,
+  generatePackageJsonFiles,
+  syncVersionsToManifest,
+  cleanPackageJsonFiles,
+} from "./workspace";
 
 const MANIFEST_FILE = "grekt.yaml";
 const BUMP_TYPES = ["patch", "minor", "major", "prerelease"] as const;
@@ -20,6 +28,7 @@ type ExtendedBumpType = BumpType | "prerelease";
 interface VersionCommandOptions {
   dryRun?: boolean;
   beta?: boolean;
+  exec?: string;
 }
 
 function isValidBumpType(value: string): value is ExtendedBumpType {
@@ -32,13 +41,26 @@ export const versionCommand = new Command("version")
   .argument("[path]", "Path to artifact or directory containing artifacts", ".")
   .option("--dry-run", "Show what would happen without applying changes")
   .option("--beta", "Use beta identifier for prerelease (required with prerelease)")
+  .option("--exec <command>", "Run external versioning command (generates temp package.json for compatibility)")
   .action(async (bump: string | undefined, targetPath: string, options: VersionCommandOptions) => {
+    const cwd = process.cwd();
+
+    // --exec mode: delegate to external tool with package.json compatibility
+    if (options.exec) {
+      await handleExecMode(cwd, options.exec, options.dryRun);
+      return;
+    }
+
+    // Standard bump mode
     if (!bump) {
       error("Bump type required. Usage:");
       info("  grekt version patch");
       info("  grekt version minor");
       info("  grekt version major");
       info("  grekt version prerelease --beta");
+      info("");
+      info("Or use external versioning tool:");
+      info("  grekt version --exec \"npx changeset version\"");
       process.exit(1);
     }
 
@@ -110,6 +132,97 @@ export const versionCommand = new Command("version")
       success(`Updated ${updated} artifact(s)`);
     }
   });
+
+/**
+ * Handle --exec mode: generate package.json, run command, sync back, cleanup.
+ */
+async function handleExecMode(cwd: string, command: string, dryRun?: boolean): Promise<void> {
+  if (!isWorkspaceRoot(fs, cwd)) {
+    error("--exec requires a workspace (grekt-workspace.yaml not found)");
+    info("Run this command from your workspace root");
+    process.exit(1);
+  }
+
+  const workspace = await loadWorkspace(cwd);
+
+  if (!workspace || workspace.artifacts.length === 0) {
+    error("No artifacts found in workspace");
+    process.exit(1);
+  }
+
+  log("");
+  info(`Workspace: ${workspace.artifacts.length} artifact(s)`);
+
+  if (dryRun) {
+    log(colors.dim("  (dry-run mode - no changes will be made)"));
+    log("");
+    info("Would generate package.json files for:");
+    for (const artifact of workspace.artifacts) {
+      log(`  ${artifact.manifest.name} ${colors.dim(`v${artifact.manifest.version}`)}`);
+    }
+    log("");
+    info(`Would run: ${command}`);
+    return;
+  }
+
+  // Step 1: Generate package.json files
+  const genSpin = spinner("Generating package.json files...");
+  genSpin.start();
+  generatePackageJsonFiles(workspace.artifacts);
+  genSpin.stop();
+  success(`Generated ${workspace.artifacts.length} package.json file(s)`);
+
+  // Step 2: Run external command
+  log("");
+  info(`Running: ${command}`);
+  log("");
+
+  const result = spawnSync(command, {
+    shell: true,
+    cwd,
+    stdio: "inherit",
+  });
+
+  if (result.status !== 0) {
+    // Cleanup on failure
+    cleanPackageJsonFiles(workspace.artifacts);
+    error(`Command failed with exit code ${result.status}`);
+    process.exit(result.status ?? 1);
+  }
+
+  // Step 3: Sync versions back to grekt.yaml
+  log("");
+  const syncSpin = spinner("Syncing versions to grekt.yaml...");
+  syncSpin.start();
+
+  // Reload workspace to get updated artifacts
+  const updatedWorkspace = await loadWorkspace(cwd);
+  if (!updatedWorkspace) {
+    syncSpin.stop();
+    cleanPackageJsonFiles(workspace.artifacts);
+    error("Failed to reload workspace");
+    process.exit(1);
+  }
+
+  const updated = syncVersionsToManifest(updatedWorkspace.artifacts);
+  syncSpin.stop();
+
+  if (updated > 0) {
+    success(`Updated ${updated} grekt.yaml file(s)`);
+  } else {
+    info("No version changes detected");
+  }
+
+  // Step 4: Cleanup
+  const cleanSpin = spinner("Cleaning up...");
+  cleanSpin.start();
+  cleanPackageJsonFiles(workspace.artifacts);
+  cleanSpin.stop();
+  success("Removed temporary package.json files");
+
+  log("");
+  success("Version update complete");
+}
 
 /**
  * Find all directories containing grekt.yaml

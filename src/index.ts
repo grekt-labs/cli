@@ -19,6 +19,7 @@ import { infoCommand } from "#/commands/info";
 import { versionsCommand } from "#/commands/versions";
 import { outdatedCommand } from "#/commands/outdated";
 import { versionCommand } from "#/commands/version";
+import { workspaceCommand } from "#/commands/workspace";
 import { loginCommand } from "#/commands/login";
 import { logoutCommand } from "#/commands/logout";
 import { whoamiCommand } from "#/commands/whoami";
@@ -63,6 +64,9 @@ program.addCommand(outdatedCommand);
 
 // Authoring commands
 program.addCommand(versionCommand);
+
+// Workspace commands
+program.addCommand(workspaceCommand);
 
 setupUpdateCheck(pkg.version);
 
