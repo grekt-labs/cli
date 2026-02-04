@@ -1,3 +1,11 @@
+# [5.17.0](https://github.com/grekt-labs/cli/compare/v5.16.0...v5.17.0) (2026-02-04)
+
+
+### Features
+
+* add remove-target command and make add-target additive ([05dd2ee](https://github.com/grekt-labs/cli/commit/05dd2eeb3a56ad743540b2fca1fe4bf29a2b64b4))
+* **version:** add prerelease --beta support ([#85](https://github.com/grekt-labs/cli/issues/85)) ([cb56944](https://github.com/grekt-labs/cli/commit/cb56944f69453c122524da5b548fb22409aca3ab))
+
 # [5.16.0](https://github.com/grekt-labs/cli/compare/v5.15.2...v5.16.0) (2026-02-04)
 
 
