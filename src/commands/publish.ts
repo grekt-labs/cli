@@ -143,7 +143,7 @@ async function handleChangedMode(cwd: string, options: PublishOptions): Promise<
         localVersion,
         registryVersion,
       });
-      log(`  ${colors.green("↑")} ${artifact.manifest.name} ${localVersion} ${registryVersion ? `(registry: ${registryVersion})` : "(new)"}`);
+      log(`  ${colors.success("↑")} ${artifact.manifest.name} ${localVersion} ${registryVersion ? `(registry: ${registryVersion})` : "(new)"}`);
     } else {
       log(`  ${colors.dim("=")} ${artifact.manifest.name} ${localVersion} (up to date)`);
     }
