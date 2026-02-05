@@ -52,10 +52,6 @@ export const removeTargetCommand = new Command("remove-target")
             delete config.customTargets[targetId];
           }
         }
-
-        if (Object.keys(config.customTargets).length === 0) {
-          delete config.customTargets;
-        }
       }
 
       saveConfig(config, projectRoot);

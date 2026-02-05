@@ -375,8 +375,10 @@ function showRegistryConfigHelp(scope: string | null, projectRoot: string): void
     log("");
     info("Available registries:");
     for (const s of configuredScopes) {
-      const entry = localConfig!.registries![s];
-      log(`  ${s} (${entry.type})`);
+      const entry = localConfig?.registries?.[s];
+      if (entry) {
+        log(`  ${s} (${entry.type})`);
+      }
     }
     log("");
     log(colors.dim(`Check if your artifact scope matches your config.`));
