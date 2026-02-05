@@ -1,3 +1,10 @@
+## [5.19.9](https://github.com/grekt-labs/cli/compare/v5.19.8...v5.19.9) (2026-02-05)
+
+
+### Bug Fixes
+
+* rename folder to prefix in registry config ([12e2c92](https://github.com/grekt-labs/cli/commit/12e2c92a07da289525d519fed6657fbe3154e2e0))
+
 ## [5.19.8](https://github.com/grekt-labs/cli/compare/v5.19.7...v5.19.8) (2026-02-05)
 
 
