@@ -1,3 +1,10 @@
+## [5.19.3](https://github.com/grekt-labs/cli/compare/v5.19.2...v5.19.3) (2026-02-05)
+
+
+### Bug Fixes
+
+* resolve type errors and add typecheck to build pipeline ([#94](https://github.com/grekt-labs/cli/issues/94)) ([3a45bf9](https://github.com/grekt-labs/cli/commit/3a45bf928065b0f732d49029e19bf4f7e6fdb5db))
+
 ## [5.19.2](https://github.com/grekt-labs/cli/compare/v5.19.1...v5.19.2) (2026-02-05)
 
 
