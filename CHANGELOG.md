@@ -1,3 +1,10 @@
+## [5.18.2](https://github.com/grekt-labs/cli/compare/v5.18.1...v5.18.2) (2026-02-05)
+
+
+### Bug Fixes
+
+* validate manifest fields before version bump ([60f8169](https://github.com/grekt-labs/cli/commit/60f816900cfa29b528f96f0964017fffb25ce9dc))
+
 ## [5.18.1](https://github.com/grekt-labs/cli/compare/v5.18.0...v5.18.1) (2026-02-04)
 
 
