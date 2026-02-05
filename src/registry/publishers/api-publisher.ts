@@ -23,6 +23,20 @@ export class ApiPublisher implements Publisher {
     }
   }
 
+  async getLatestVersion(ctx: PublishContext): Promise<string | null> {
+    const authenticated = await isAuthenticated();
+    if (!authenticated) {
+      return null;
+    }
+
+    const client = createRegistryClient();
+    try {
+      return await client.getLatestVersion(ctx.artifactId);
+    } catch {
+      return null;
+    }
+  }
+
   async publish(ctx: PublishContext): Promise<PublishResult> {
     const authenticated = await isAuthenticated();
 

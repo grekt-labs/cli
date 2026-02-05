@@ -36,4 +36,10 @@ export interface Publisher {
    * Publish the artifact.
    */
   publish(ctx: PublishContext): Promise<PublishResult>;
+
+  /**
+   * Get the latest published version of an artifact.
+   * Returns null if artifact has never been published.
+   */
+  getLatestVersion(ctx: PublishContext): Promise<string | null>;
 }

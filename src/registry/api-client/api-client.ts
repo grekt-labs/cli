@@ -213,6 +213,14 @@ export class RegistryClient {
     }
   }
 
+  /**
+   * Get the latest version of an artifact
+   */
+  async getLatestVersion(artifactId: string): Promise<string | null> {
+    const metadata = await this.getArtifact(artifactId);
+    return metadata?.latest ?? null;
+  }
+
   // ============================================================================
   // Authenticated endpoints - Supabase Auth + RLS / Edge Functions
   // ============================================================================

@@ -89,6 +89,20 @@ export class S3Publisher implements Publisher {
     }
   }
 
+  async getLatestVersion(ctx: PublishContext): Promise<string | null> {
+    const credentials = this.getCredentials();
+    if (!credentials) {
+      return null;
+    }
+
+    try {
+      const metadata = await getArtifactMetadata(credentials, ctx.artifactId);
+      return metadata?.latest ?? null;
+    } catch {
+      return null;
+    }
+  }
+
   async publish(ctx: PublishContext): Promise<PublishResult> {
     const credentials = this.getCredentials();
 
