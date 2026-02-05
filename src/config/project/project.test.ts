@@ -133,7 +133,40 @@ describe("project", () => {
       expect(config!.tokens!.github).toBe("gh-token");
     });
 
-    test("walks up directory tree to find config (monorepo support)", () => {
+    test("walks up directory tree to find config when workspace exists", () => {
+      // Create workspace root with config and workspace file
+      mkdirSync(join(testDir, ".grekt"), { recursive: true });
+      const localConfigData: LocalConfig = {
+        registries: {
+          "@parent": {
+            type: "gitlab",
+            project: "parent/artifacts",
+          },
+        },
+      };
+      writeFileSync(
+        join(testDir, ".grekt", "config.yaml"),
+        stringify(localConfigData)
+      );
+
+      // Create workspace file at root (indicates this is a monorepo)
+      writeFileSync(
+        join(testDir, "grekt-workspace.yaml"),
+        stringify({ workspaces: ["packages/*"] })
+      );
+
+      // Create nested subdirectory (an artifact inside the workspace)
+      const nestedDir = join(testDir, "packages", "subpackage");
+      mkdirSync(nestedDir, { recursive: true });
+
+      // Should find parent config from nested dir because workspace exists
+      const config = getLocalConfig(nestedDir);
+
+      expect(config).not.toBeNull();
+      expect(config!.registries!["@parent"].type).toBe("gitlab");
+    });
+
+    test("does NOT walk up directory tree without workspace file", () => {
       // Create parent with config
       mkdirSync(join(testDir, ".grekt"), { recursive: true });
       const localConfigData: LocalConfig = {
@@ -149,15 +182,14 @@ describe("project", () => {
         stringify(localConfigData)
       );
 
-      // Create nested subdirectory without config
+      // Create nested subdirectory without config and WITHOUT workspace file
       const nestedDir = join(testDir, "packages", "subpackage");
       mkdirSync(nestedDir, { recursive: true });
 
-      // Should find parent config from nested dir
+      // Should NOT find parent config (no workspace = no walk up)
       const config = getLocalConfig(nestedDir);
 
-      expect(config).not.toBeNull();
-      expect(config!.registries!["@parent"].type).toBe("gitlab");
+      expect(config).toBeNull();
     });
   });
 

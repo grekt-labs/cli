@@ -71,13 +71,28 @@ export function isInitialized(projectRoot: string = process.cwd()): boolean {
 }
 
 // Walk up directory tree to find .grekt/config.yaml
+// Only inherits config from parent directories if they have grekt-workspace.yaml
+// This prevents separate projects from inheriting config from unrelated parent folders
 function findLocalConfigPath(startDir: string): string | null {
-  let current = resolve(startDir);
+  const start = resolve(startDir);
+  let current = start;
 
   while (true) {
     const configPath = `${current}/${GREKT_DIR}/${LOCAL_CONFIG_FILE}`;
+
     if (fs.exists(configPath)) {
-      return configPath;
+      // Config found. Only use it if:
+      // 1. We're at start dir (our own local config), OR
+      // 2. There's a workspace file here (this is a workspace root with shared config)
+      const isStartDir = current === start;
+      const hasWorkspace = fs.exists(`${current}/grekt-workspace.yaml`);
+
+      if (isStartDir || hasWorkspace) {
+        return configPath;
+      }
+
+      // Config exists but no workspace = separate project, don't inherit
+      return null;
     }
 
     const parent = dirname(current);
@@ -85,6 +100,7 @@ function findLocalConfigPath(startDir: string): string | null {
       // Reached filesystem root
       return null;
     }
+
     current = parent;
   }
 }
