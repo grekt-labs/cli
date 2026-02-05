@@ -19,7 +19,12 @@ import { LOCKFILE } from "#/config/paths/paths";
 // Lockfile operations
 export function getLockfile(projectRoot: string = process.cwd()): Lockfile {
   const lockfilePath = `${projectRoot}/${LOCKFILE}`;
-  return _getLockfile(fs, lockfilePath);
+  const result = _getLockfile(fs, lockfilePath);
+  if (!result.success) {
+    const details = result.error.details?.join("\n  ") ?? "";
+    throw new Error(`${result.error.message}${details ? `\n  ${details}` : ""}`);
+  }
+  return result.data;
 }
 
 export function saveLockfile(data: Lockfile, projectRoot: string = process.cwd()): void {
