@@ -7,7 +7,6 @@ import {
   safeParseYaml,
   type ProjectConfig,
   type LocalConfig,
-  type StoredSession,
 } from "@grekt-labs/cli-engine";
 import {
   GREKT_YAML,
@@ -71,28 +70,14 @@ export function isInitialized(projectRoot: string = process.cwd()): boolean {
 }
 
 // Walk up directory tree to find .grekt/config.yaml
-// Only inherits config from parent directories if they have grekt-workspace.yaml
-// This prevents separate projects from inheriting config from unrelated parent folders
 function findLocalConfigPath(startDir: string): string | null {
-  const start = resolve(startDir);
-  let current = start;
+  let current = resolve(startDir);
 
   while (true) {
     const configPath = `${current}/${GREKT_DIR}/${LOCAL_CONFIG_FILE}`;
 
     if (fs.exists(configPath)) {
-      // Config found. Only use it if:
-      // 1. We're at start dir (our own local config), OR
-      // 2. There's a workspace file here (this is a workspace root with shared config)
-      const isStartDir = current === start;
-      const hasWorkspace = fs.exists(`${current}/grekt-workspace.yaml`);
-
-      if (isStartDir || hasWorkspace) {
-        return configPath;
-      }
-
-      // Config exists but no workspace = separate project, don't inherit
-      return null;
+      return configPath;
     }
 
     const parent = dirname(current);
@@ -152,19 +137,6 @@ function writeLocalConfigWithComments(filepath: string, config: LocalConfig): vo
     lines.push("");
   }
 
-  // Session section
-  if (config.session) {
-    lines.push("# Session for the public registry (grekt login)");
-    lines.push("# Generated automatically by grekt login");
-    lines.push("session:");
-    lines.push(`  access_token: ${config.session.access_token}`);
-    lines.push(`  refresh_token: ${config.session.refresh_token}`);
-    if (config.session.expires_at !== undefined) {
-      lines.push(`  expires_at: ${config.session.expires_at}`);
-    }
-    lines.push("");
-  }
-
   // Tokens section
   if (config.tokens && Object.keys(config.tokens).length > 0) {
     lines.push("# Tokens for git sources (github:owner/repo, gitlab:owner/repo)");
@@ -179,26 +151,6 @@ function writeLocalConfigWithComments(filepath: string, config: LocalConfig): vo
   const content = lines.length > 0 ? lines.join("\n") : "{}\n";
   fs.writeFile(filepath, content);
   fs.chmod(filepath, 0o600);
-}
-
-// Session management
-export function getSession(projectRoot: string = process.cwd()): StoredSession | null {
-  const config = getLocalConfig(projectRoot);
-  return config?.session ?? null;
-}
-
-export function saveSession(session: StoredSession, projectRoot: string = process.cwd()): void {
-  const config = getLocalConfig(projectRoot) ?? {};
-  config.session = session;
-  saveLocalConfig(config, projectRoot);
-}
-
-export function clearSession(projectRoot: string = process.cwd()): void {
-  const config = getLocalConfig(projectRoot);
-  if (config) {
-    delete config.session;
-    saveLocalConfig(config, projectRoot);
-  }
 }
 
 // Token management for git sources

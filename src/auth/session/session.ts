@@ -1,9 +1,9 @@
 import { createClient, type SupabaseClient, type Session } from "@supabase/supabase-js";
 import {
-  getSession as getStoredSession,
-  saveSession as saveStoredSession,
-  clearSession as clearStoredSession,
-} from "#/config/project/project";
+  getGlobalSession,
+  saveGlobalSession,
+  clearGlobalSession,
+} from "#/config/user/user";
 import type { StoredSession } from "@grekt-labs/cli-engine";
 import {
   SUPABASE_PROJECT_URL,
@@ -28,19 +28,19 @@ export function isSupabaseConfigured(): boolean {
   return Boolean(getSupabaseUrl() && getSupabaseAnonKey());
 }
 
-// Current project root for session persistence
+// Deprecated: project root is no longer used for session storage
+// Session is now stored globally in ~/.grekt/session.yaml
 let _projectRoot: string = process.cwd();
 
 /**
- * Set the project root for session operations.
- * Call this before any auth operations.
+ * @deprecated Session is now stored globally. This function is kept for backwards compatibility.
  */
 export function setProjectRoot(projectRoot: string): void {
   _projectRoot = projectRoot;
 }
 
 /**
- * Get the current project root.
+ * @deprecated Session is now stored globally. This function is kept for backwards compatibility.
  */
 export function getProjectRoot(): string {
   return _projectRoot;
@@ -67,8 +67,8 @@ export function getSupabaseClient(): SupabaseClient {
     },
   });
 
-  // Restore session from project config if exists
-  const stored = getStoredSession(_projectRoot);
+  // Restore session from global config
+  const stored = getGlobalSession();
   if (stored) {
     _client.auth.setSession({
       access_token: stored.access_token,
@@ -76,7 +76,7 @@ export function getSupabaseClient(): SupabaseClient {
     });
   }
 
-  // Listen for auth changes to persist to project config
+  // Listen for auth changes to persist to global config
   _client.auth.onAuthStateChange((event, session) => {
     if (session) {
       const toStore: StoredSession = {
@@ -84,9 +84,9 @@ export function getSupabaseClient(): SupabaseClient {
         refresh_token: session.refresh_token,
         expires_at: session.expires_at,
       };
-      saveStoredSession(toStore, _projectRoot);
+      saveGlobalSession(toStore);
     } else if (event === "SIGNED_OUT") {
-      clearStoredSession(_projectRoot);
+      clearGlobalSession();
     }
   });
 
@@ -118,8 +118,8 @@ export async function isAuthenticated(): Promise<boolean> {
 }
 
 /**
- * Clear session from project config.
+ * Clear session from global config.
  */
 export function clearSession(): void {
-  clearStoredSession(_projectRoot);
+  clearGlobalSession();
 }
