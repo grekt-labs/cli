@@ -1,3 +1,10 @@
+## [5.19.1](https://github.com/grekt-labs/cli/compare/v5.19.0...v5.19.1) (2026-02-05)
+
+
+### Bug Fixes
+
+* add global error handler for cleaner error output ([#92](https://github.com/grekt-labs/cli/issues/92)) ([c729bfa](https://github.com/grekt-labs/cli/commit/c729bfa659c7b47a2885c83227a57f2f676f59cd))
+
 # [5.19.0](https://github.com/grekt-labs/cli/compare/v5.18.2...v5.19.0) (2026-02-05)
 
 
