@@ -273,6 +273,8 @@ async function publishSingleArtifact(
     tarballPath: tarballResult.path,
     scope: artifact.scope,
     projectRoot,
+    description: artifact.manifest.description,
+    keywords: artifact.manifest.keywords,
   };
 
   if (publisher instanceof S3Publisher && !publisher.hasCredentials()) {

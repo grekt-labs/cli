@@ -2,9 +2,6 @@ import type { ArtifactMetadata } from "@grekt-labs/cli-engine";
 import { sortVersionsDesc, getHighestVersion, validateTarballContents } from "@grekt-labs/cli-engine";
 import { getSupabaseClient, getSession, getSupabaseUrl } from "#/auth/session/session";
 import { fs, shell, http, cryptoProvider } from "#/context";
-import { REGISTRY_URL } from "#/constants";
-
-
 
 export interface VersionInfo {
   version: string;
@@ -20,8 +17,17 @@ export interface DownloadResult {
   deprecationMessage?: string;
 }
 
+export interface PublishRequest {
+  artifactId: string;
+  version: string;
+  description?: string;
+  keywords?: string[];
+  private?: boolean;
+}
+
 export interface PublishResult {
   uploadUrl: string;
+  expiresAt: string;
 }
 
 export interface WhoamiResult {
@@ -131,35 +137,71 @@ export class RegistryClient {
   }
 
   /**
-   * Download artifact tarball
+   * Download artifact tarball using Edge Function for signed URLs
    */
   async download(artifactId: string, version: string | undefined, targetDir: string): Promise<DownloadResult> {
     try {
-      const metadata = await this.getArtifact(artifactId);
-      if (!metadata) {
-        return { success: false, error: "Artifact not found in registry" };
-      }
-
-      const resolvedVersion = version || metadata.latest;
+      // If no version specified, get latest from metadata
+      let resolvedVersion = version;
       if (!resolvedVersion) {
-        return { success: false, error: "No versions available for this artifact" };
+        const metadata = await this.getArtifact(artifactId);
+        if (!metadata) {
+          return { success: false, error: "Artifact not found in registry" };
+        }
+        resolvedVersion = metadata.latest;
+        if (!resolvedVersion) {
+          return { success: false, error: "No versions available for this artifact" };
+        }
       }
 
-      const tarballUrl = `${REGISTRY_URL}/${artifactId}/${resolvedVersion}.tar.gz`;
-      const deprecationMessage = metadata.deprecated[resolvedVersion];
+      // Build download URL with optional auth
+      const session = await getSession();
+      const downloadUrl = new URL(`${this.edgeFunctionUrl}/download`);
+      downloadUrl.searchParams.set("artifact", artifactId);
+      downloadUrl.searchParams.set("version", resolvedVersion);
 
+      const headers: Record<string, string> = {
+        "Accept": "application/json",
+        "User-Agent": "grekt-cli",
+      };
+
+      if (session) {
+        headers["Authorization"] = `Bearer ${session.access_token}`;
+      }
+
+      // Get signed URL from Edge Function
+      const urlResponse = await http.fetch(downloadUrl.toString(), { headers });
+
+      if (!urlResponse.ok) {
+        const errorData = await urlResponse.json().catch(() => null);
+        if (urlResponse.status === 404) {
+          const code = errorData?.code;
+          if (code === "ARTIFACT_NOT_FOUND") {
+            return { success: false, error: "Artifact not found in registry" };
+          }
+          if (code === "VERSION_NOT_FOUND") {
+            return { success: false, error: `Version ${resolvedVersion} not found` };
+          }
+          if (code === "FILE_NOT_FOUND") {
+            return { success: false, error: "Artifact file not found in storage" };
+          }
+          return { success: false, error: errorData?.error || "Not found" };
+        }
+        if (urlResponse.status === 401 || urlResponse.status === 403) {
+          return { success: false, error: "Access denied (check authentication)" };
+        }
+        return { success: false, error: errorData?.error || `Registry returned ${urlResponse.status}` };
+      }
+
+      const { url: tarballUrl, deprecated } = await urlResponse.json();
+
+      // Download the actual tarball from signed URL
       const response = await http.fetch(tarballUrl, {
         headers: { "User-Agent": "grekt-cli" },
       });
 
       if (!response.ok) {
-        if (response.status === 404) {
-          return { success: false, error: `Version ${resolvedVersion} not found` };
-        }
-        if (response.status === 401 || response.status === 403) {
-          return { success: false, error: "Access denied (check authentication)" };
-        }
-        return { success: false, error: `Registry returned ${response.status}` };
+        return { success: false, error: `Download failed: ${response.status}` };
       }
 
       const buffer = await response.arrayBuffer();
@@ -182,7 +224,7 @@ export class RegistryClient {
         success: true,
         version: resolvedVersion,
         resolved: tarballUrl,
-        deprecationMessage,
+        deprecationMessage: deprecated || undefined,
       };
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown error";
@@ -236,7 +278,7 @@ export class RegistryClient {
   /**
    * Request upload URL for publishing (calls Edge Function)
    */
-  async publish(artifactId: string, version: string): Promise<PublishResult> {
+  async publish(request: PublishRequest): Promise<PublishResult> {
     const session = await getSession();
     if (!session) {
       throw new Error("Not authenticated");
@@ -248,48 +290,63 @@ export class RegistryClient {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${session.access_token}`,
       },
-      body: JSON.stringify({ artifactId, version }),
+      body: JSON.stringify(request),
     });
 
     if (!response.ok) {
-      const error = await response.text();
-      throw new Error(error || `Failed to get upload URL: ${response.status}`);
+      const errorData = await response.json().catch(() => null);
+      const errorMessage = errorData?.error || `Failed to get upload URL: ${response.status}`;
+      throw new Error(errorMessage);
     }
 
     return await response.json();
   }
 
   /**
-   * Deprecate a version (direct Supabase update, RLS checks ownership)
+   * Deprecate a version (calls Edge Function for ownership validation)
    */
   async deprecate(artifactId: string, version: string, message: string): Promise<void> {
-    const supabase = getSupabaseClient();
+    const session = await getSession();
+    if (!session) {
+      throw new Error("Not authenticated");
+    }
 
-    const { error } = await supabase
-      .from("versions")
-      .update({ deprecated_message: message })
-      .eq("artifact_id", artifactId)
-      .eq("version", version);
+    const response = await http.fetch(`${this.edgeFunctionUrl}/deprecate`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ artifactId, version, message }),
+    });
 
-    if (error) {
-      throw new Error(`Failed to deprecate: ${error.message}`);
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      throw new Error(errorData?.error || `Failed to deprecate: ${response.status}`);
     }
   }
 
   /**
-   * Remove deprecation from a version (direct Supabase update, RLS checks ownership)
+   * Remove deprecation from a version (calls Edge Function for ownership validation)
    */
   async undeprecate(artifactId: string, version: string): Promise<void> {
-    const supabase = getSupabaseClient();
+    const session = await getSession();
+    if (!session) {
+      throw new Error("Not authenticated");
+    }
 
-    const { error } = await supabase
-      .from("versions")
-      .update({ deprecated_message: null })
-      .eq("artifact_id", artifactId)
-      .eq("version", version);
+    const response = await http.fetch(`${this.edgeFunctionUrl}/undeprecate`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ artifactId, version }),
+    });
 
-    if (error) {
-      throw new Error(`Failed to undeprecate: ${error.message}`);
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      throw new Error(errorData?.error || `Failed to undeprecate: ${response.status}`);
     }
   }
 }

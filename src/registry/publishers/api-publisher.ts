@@ -36,7 +36,13 @@ export class ApiPublisher implements Publisher {
     const client = createRegistryClient();
 
     try {
-      const { uploadUrl } = await client.publish(ctx.artifactId, ctx.version);
+      const { uploadUrl } = await client.publish({
+        artifactId: ctx.artifactId,
+        version: ctx.version,
+        description: ctx.description,
+        keywords: ctx.keywords,
+        private: ctx.isPrivate,
+      });
 
       // Upload tarball to signed URL
       const fileBuffer = fs.readFileBinary(ctx.tarballPath);

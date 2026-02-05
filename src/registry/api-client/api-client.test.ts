@@ -155,20 +155,25 @@ describe("api-client", () => {
     const { RegistryClient } = await import("./api-client");
     const client = new RegistryClient();
 
-    await expect(client.publish("@org/tool", "1.0.0")).rejects.toThrow("Not authenticated");
+    await expect(client.publish({ artifactId: "@org/tool", version: "1.0.0" })).rejects.toThrow("Not authenticated");
   });
 
   test("publish calls edge function with bearer token", async () => {
     mockSession = { access_token: "token" };
     globalThis.fetch = vi.fn(async () => ({
       ok: true,
-      json: async () => ({ uploadUrl: "https://upload.test" }),
+      json: async () => ({ uploadUrl: "https://upload.test", expiresAt: "2024-01-01T00:05:00Z" }),
     })) as unknown as typeof fetch;
 
     const { RegistryClient } = await import("./api-client");
     const client = new RegistryClient();
 
-    const result = await client.publish("@org/tool", "1.0.0");
+    const result = await client.publish({
+      artifactId: "@org/tool",
+      version: "1.0.0",
+      description: "A test artifact",
+      keywords: ["test", "demo", "example"],
+    });
 
     expect(result.uploadUrl).toBe("https://upload.test");
     expect(globalThis.fetch).toHaveBeenCalledWith(
@@ -182,16 +187,81 @@ describe("api-client", () => {
     );
   });
 
-  test("deprecate throws on error", async () => {
-    mockSupabase = createSupabaseMock({
-      versions: {
-        update: { data: null, error: { message: "fail" } },
-      },
-    });
+  test("deprecate throws when not authenticated", async () => {
+    mockSession = null;
 
     const { RegistryClient } = await import("./api-client");
     const client = new RegistryClient();
 
-    await expect(client.deprecate("@org/tool", "1.0.0", "no")).rejects.toThrow("Failed to deprecate");
+    await expect(client.deprecate("@org/tool", "1.0.0", "no")).rejects.toThrow("Not authenticated");
+  });
+
+  test("deprecate calls edge function with bearer token", async () => {
+    mockSession = { access_token: "token" };
+    globalThis.fetch = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ success: true }),
+    })) as unknown as typeof fetch;
+
+    const { RegistryClient } = await import("./api-client");
+    const client = new RegistryClient();
+
+    await client.deprecate("@org/tool", "1.0.0", "Use v2");
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      "https://supabase.test/functions/v1/deprecate",
+      expect.objectContaining({
+        method: "POST",
+        headers: expect.objectContaining({
+          Authorization: "Bearer token",
+        }),
+      })
+    );
+  });
+
+  test("deprecate throws on error response", async () => {
+    mockSession = { access_token: "token" };
+    globalThis.fetch = vi.fn(async () => ({
+      ok: false,
+      status: 403,
+      json: async () => ({ error: "You don't have permission" }),
+    })) as unknown as typeof fetch;
+
+    const { RegistryClient } = await import("./api-client");
+    const client = new RegistryClient();
+
+    await expect(client.deprecate("@org/tool", "1.0.0", "no")).rejects.toThrow("You don't have permission");
+  });
+
+  test("undeprecate throws when not authenticated", async () => {
+    mockSession = null;
+
+    const { RegistryClient } = await import("./api-client");
+    const client = new RegistryClient();
+
+    await expect(client.undeprecate("@org/tool", "1.0.0")).rejects.toThrow("Not authenticated");
+  });
+
+  test("undeprecate calls edge function with bearer token", async () => {
+    mockSession = { access_token: "token" };
+    globalThis.fetch = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ success: true }),
+    })) as unknown as typeof fetch;
+
+    const { RegistryClient } = await import("./api-client");
+    const client = new RegistryClient();
+
+    await client.undeprecate("@org/tool", "1.0.0");
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      "https://supabase.test/functions/v1/undeprecate",
+      expect.objectContaining({
+        method: "POST",
+        headers: expect.objectContaining({
+          Authorization: "Bearer token",
+        }),
+      })
+    );
   });
 });
