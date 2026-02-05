@@ -4,7 +4,8 @@ import { spawnSync } from "child_process";
 import { fs } from "#/context";
 import { parse as parseYaml } from "yaml";
 import {
-  ArtifactManifestSchema,
+  ProjectConfigSchema,
+  hasManifestFields,
   parseName,
   bumpVersion,
   bumpPrerelease,
@@ -105,14 +106,22 @@ export const versionCommand = new Command("version")
       const manifestPath = join(artifactPath, MANIFEST_FILE);
       const manifestContent = fs.readFile(manifestPath);
       const parsed = parseYaml(manifestContent);
-      const manifest = ArtifactManifestSchema.parse(parsed);
-      const { artifactId } = parseName(manifest.name);
+      const config = ProjectConfigSchema.parse(parsed);
+
+      if (!hasManifestFields(config)) {
+        error(`Cannot bump version: ${manifestPath}`);
+        info("Missing required fields: name, version, description");
+        info("This grekt.yaml is not a publishable artifact");
+        process.exit(1);
+      }
+
+      const { artifactId } = parseName(config.name);
 
       const newVersion = bump === "prerelease"
-        ? bumpPrerelease(manifest.version, PRERELEASE_IDENTIFIER)
-        : bumpVersion(manifest.version, bump);
+        ? bumpPrerelease(config.version, PRERELEASE_IDENTIFIER)
+        : bumpVersion(config.version, bump);
 
-      log(`  ${artifactId}: ${manifest.version} → ${newVersion}`);
+      log(`  ${artifactId}: ${config.version} → ${newVersion}`);
 
       if (!options.dryRun) {
         const updatedContent = manifestContent.replace(
