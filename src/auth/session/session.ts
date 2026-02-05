@@ -5,14 +5,19 @@ import {
   clearSession as clearStoredSession,
 } from "#/config/project/project";
 import type { StoredSession } from "@grekt-labs/cli-engine";
+import {
+  SUPABASE_PROJECT_URL,
+  SUPABASE_ANON_KEY as DEFAULT_ANON_KEY,
+} from "#/constants";
 
-// Supabase project config - loaded from environment
+// Supabase project config - defaults to official grekt registry
+// Env vars allow override for development or self-hosted registries
 export function getSupabaseUrl(): string {
-  return process.env.GREKT_SUPABASE_URL || process.env.SUPABASE_URL || "";
+  return process.env.GREKT_SUPABASE_URL || SUPABASE_PROJECT_URL;
 }
 
 export function getSupabaseAnonKey(): string {
-  return process.env.GREKT_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || "";
+  return process.env.GREKT_SUPABASE_ANON_KEY || DEFAULT_ANON_KEY;
 }
 
 /**
@@ -118,6 +123,3 @@ export async function isAuthenticated(): Promise<boolean> {
 export function clearSession(): void {
   clearStoredSession(_projectRoot);
 }
-
-export const SUPABASE_URL = getSupabaseUrl();
-export const SUPABASE_ANON_KEY = getSupabaseAnonKey();

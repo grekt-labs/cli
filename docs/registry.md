@@ -53,7 +53,7 @@ registries:
     type: gitlab
     host: gitlab.mycompany.com
     project: artifacts/registry
-    token: glpat-xxxx  # Or use env var
+    token: gldt-xxxx  # Deploy Token (recommended) or use env var
 
   "@another":
     type: github
@@ -76,6 +76,59 @@ For authentication, tokens are resolved in this order:
 2. **Environment variables**:
    - GitHub: `GITHUB_TOKEN` or `GH_TOKEN`
    - GitLab: `GITLAB_TOKEN` or `GL_TOKEN`
+
+## GitLab Authentication
+
+grekt uses GitLab's Generic Package Registry API, which supports both Deploy Tokens and Personal Access Tokens (PAT).
+
+### Deploy Tokens (Recommended)
+
+Deploy Tokens provide minimum necessary permissions without access to your repository code. This is the recommended authentication method for grekt.
+
+**Create a Deploy Token:** Project Settings → Repository → Deploy tokens
+
+**Required scopes:**
+
+| Operation | Scope |
+|-----------|-------|
+| Download | `read_package_registry` |
+| Publish | `write_package_registry` |
+
+**Example token:** `gldt-xxxxxxxxxxxx`
+
+```yaml
+# .grekt/config.yaml
+registries:
+  "@mycompany":
+    type: gitlab
+    host: gitlab.mycompany.com
+    project: artifacts/registry
+    token: gldt-xxxxxxxxxxxx
+```
+
+### Personal Access Tokens (PAT)
+
+PATs work but require broader permissions than grekt actually needs. GitLab's API design couples the Package Registry with repository permissions, forcing you to grant more access than necessary.
+
+**Required scopes:**
+
+| Operation | Scope |
+|-----------|-------|
+| Download | `read_api` |
+| Publish | `write_repository` |
+
+**Example token:** `glpat-xxxxxxxxxxxx`
+
+### Which one to use?
+
+| Scenario | Recommendation |
+|----------|----------------|
+| Self-hosted GitLab registry | Deploy Token |
+| CI/CD pipelines | Deploy Token |
+| Need API access beyond registry | PAT |
+| Older GitLab versions with issues | PAT (fallback) |
+
+Deploy Tokens are scoped to the project and cannot access repository code, making them safer for artifact-only operations.
 
 ## Architecture
 
