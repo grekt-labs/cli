@@ -133,6 +133,37 @@ describe("resolver", () => {
 
       expect(result.token).toBe("env-github-token");
     });
+
+    test("includes folder when configured", () => {
+      const localConfig: LocalConfig = {
+        registries: {
+          "@myorg": {
+            type: "gitlab",
+            project: "myorg/artifacts",
+            folder: "frontend",
+          },
+        },
+      };
+
+      const result = resolveRegistry("@myorg", localConfig);
+
+      expect(result.folder).toBe("frontend");
+    });
+
+    test("folder is undefined when not configured", () => {
+      const localConfig: LocalConfig = {
+        registries: {
+          "@myorg": {
+            type: "gitlab",
+            project: "myorg/artifacts",
+          },
+        },
+      };
+
+      const result = resolveRegistry("@myorg", localConfig);
+
+      expect(result.folder).toBeUndefined();
+    });
   });
 
   describe("resolveRegistryForArtifact", () => {
