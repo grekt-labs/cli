@@ -1,3 +1,10 @@
+# [5.19.0](https://github.com/grekt-labs/cli/compare/v5.18.2...v5.19.0) (2026-02-05)
+
+
+### Features
+
+* use friendly-errors for human-readable parsing errors ([#91](https://github.com/grekt-labs/cli/issues/91)) ([4b5b1b5](https://github.com/grekt-labs/cli/commit/4b5b1b5a7cc4001fa5c3add86d03a1de81dba770))
+
 ## [5.18.2](https://github.com/grekt-labs/cli/compare/v5.18.1...v5.18.2) (2026-02-05)
 
 
