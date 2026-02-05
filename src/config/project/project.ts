@@ -1,9 +1,10 @@
 import { dirname, resolve } from "path";
-import { parse, stringify } from "yaml";
+import { stringify } from "yaml";
 import { fs } from "#/context";
 import {
   ProjectConfigSchema,
   LocalConfigSchema,
+  safeParseYaml,
   type ProjectConfig,
   type LocalConfig,
   type StoredSession,
@@ -23,18 +24,6 @@ function ensureDir(filepath: string): void {
   }
 }
 
-function readYaml<T>(filepath: string, defaultValue: T): T {
-  if (!fs.exists(filepath)) {
-    return defaultValue;
-  }
-  const content = fs.readFile(filepath);
-  const parsed = parse(content);
-  if (parsed === null || parsed === undefined) {
-    return defaultValue;
-  }
-  return parsed as T;
-}
-
 function writeYaml(filepath: string, data: unknown, secure = false): void {
   ensureDir(filepath);
   const content = stringify(data);
@@ -47,8 +36,22 @@ function writeYaml(filepath: string, data: unknown, secure = false): void {
 // Project config (grekt.yaml)
 export function getConfig(projectRoot: string = process.cwd()): ProjectConfig {
   const filepath = `${projectRoot}/${GREKT_YAML}`;
-  const raw = readYaml(filepath, {});
-  return ProjectConfigSchema.parse(raw);
+  if (!fs.exists(filepath)) {
+    // Return empty config if file doesn't exist (will be validated by schema)
+    const result = safeParseYaml("{}", ProjectConfigSchema, filepath);
+    if (!result.success) {
+      const details = result.error.details?.join("\n  ") ?? "";
+      throw new Error(`${result.error.message}${details ? `\n  ${details}` : ""}`);
+    }
+    return result.data;
+  }
+  const content = fs.readFile(filepath);
+  const result = safeParseYaml(content, ProjectConfigSchema, filepath);
+  if (!result.success) {
+    const details = result.error.details?.join("\n  ") ?? "";
+    throw new Error(`${result.error.message}${details ? `\n  ${details}` : ""}`);
+  }
+  return result.data;
 }
 
 export function saveConfig(config: ProjectConfig, projectRoot: string = process.cwd()): void {
@@ -93,8 +96,13 @@ export function getLocalConfig(projectRoot: string = process.cwd()): LocalConfig
   if (!filepath) {
     return null;
   }
-  const raw = readYaml(filepath, {});
-  return LocalConfigSchema.parse(raw);
+  const content = fs.readFile(filepath);
+  const result = safeParseYaml(content, LocalConfigSchema, filepath);
+  if (!result.success) {
+    const details = result.error.details?.join("\n  ") ?? "";
+    throw new Error(`${result.error.message}${details ? `\n  ${details}` : ""}`);
+  }
+  return result.data;
 }
 
 export function saveLocalConfig(config: LocalConfig, projectRoot: string = process.cwd()): void {

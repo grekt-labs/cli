@@ -29,8 +29,15 @@ async function loadWorkspace(cwd: string): Promise<WorkspaceData | null> {
 
   const configPath = join(cwd, WORKSPACE_CONFIG_FILE);
   const configContent = fs.readFile(configPath);
-  const config = parseWorkspaceConfig(configContent);
+  const result = parseWorkspaceConfig(configContent, configPath);
 
+  if (!result.success) {
+    error(result.error.message);
+    result.error.details?.forEach((detail) => info(`  ${detail}`));
+    process.exit(1);
+  }
+
+  const config = result.data;
   const artifactPaths: string[] = [];
 
   for (const pattern of config.workspaces) {
@@ -48,11 +55,11 @@ async function loadWorkspace(cwd: string): Promise<WorkspaceData | null> {
     }
   }
 
-  const result = discoverWorkspaceArtifacts(fs, cwd, artifactPaths);
+  const discovered = discoverWorkspaceArtifacts(fs, cwd, artifactPaths);
 
   return {
-    root: result.root,
-    artifacts: result.artifacts,
+    root: discovered.root,
+    artifacts: discovered.artifacts,
   };
 }
 

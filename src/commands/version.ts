@@ -2,9 +2,9 @@ import { Command } from "commander";
 import { join, resolve } from "path";
 import { spawnSync } from "child_process";
 import { fs } from "#/context";
-import { parse as parseYaml } from "yaml";
 import {
   ProjectConfigSchema,
+  safeParseYaml,
   hasManifestFields,
   parseName,
   bumpVersion,
@@ -105,8 +105,15 @@ export const versionCommand = new Command("version")
     for (const artifactPath of artifactPaths) {
       const manifestPath = join(artifactPath, MANIFEST_FILE);
       const manifestContent = fs.readFile(manifestPath);
-      const parsed = parseYaml(manifestContent);
-      const config = ProjectConfigSchema.parse(parsed);
+      const result = safeParseYaml(manifestContent, ProjectConfigSchema, manifestPath);
+
+      if (!result.success) {
+        error(result.error.message);
+        result.error.details?.forEach((detail) => info(`  ${detail}`));
+        process.exit(1);
+      }
+
+      const config = result.data;
 
       if (!hasManifestFields(config)) {
         error(`Cannot bump version: ${manifestPath}`);
