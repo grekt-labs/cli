@@ -20,18 +20,17 @@ describe("session", () => {
   });
 
   describe("isSupabaseConfigured", () => {
-    test("returns false when env vars not set", () => {
+    test("returns true with defaults (no env vars needed)", () => {
       delete process.env.GREKT_SUPABASE_URL;
       delete process.env.GREKT_SUPABASE_ANON_KEY;
-      delete process.env.SUPABASE_URL;
-      delete process.env.SUPABASE_ANON_KEY;
 
-      expect(isSupabaseConfigured()).toBe(false);
+      // Now always returns true because we have hardcoded defaults
+      expect(isSupabaseConfigured()).toBe(true);
     });
 
-    test("returns true when GREKT_SUPABASE vars are set", () => {
-      process.env.GREKT_SUPABASE_URL = "https://test.supabase.co";
-      process.env.GREKT_SUPABASE_ANON_KEY = "test-key";
+    test("returns true when GREKT_SUPABASE vars override defaults", () => {
+      process.env.GREKT_SUPABASE_URL = "https://custom.supabase.co";
+      process.env.GREKT_SUPABASE_ANON_KEY = "custom-key";
       expect(isSupabaseConfigured()).toBe(true);
     });
   });
