@@ -70,5 +70,11 @@ program.addCommand(workspaceCommand);
 
 setupUpdateCheck(pkg.version);
 
-await program.parseAsync();
-refreshUpdateCache();
+try {
+  await program.parseAsync();
+  refreshUpdateCache();
+} catch (err) {
+  const message = err instanceof Error ? err.message : String(err);
+  console.error(`\n${colors.red("error:")} ${message}\n`);
+  process.exit(1);
+}
