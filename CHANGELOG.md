@@ -1,3 +1,10 @@
+## [5.19.6](https://github.com/grekt-labs/cli/compare/v5.19.5...v5.19.6) (2026-02-05)
+
+
+### Bug Fixes
+
+* trigger release ([a03b443](https://github.com/grekt-labs/cli/commit/a03b4438c32950aa17c3ebaf04328d42f6fc5bb8))
+
 ## [5.19.5](https://github.com/grekt-labs/cli/compare/v5.19.4...v5.19.5) (2026-02-05)
 
 
