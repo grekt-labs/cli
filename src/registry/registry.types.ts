@@ -17,7 +17,7 @@ export interface ResolvedRegistry {
   host: string;
   project?: string;
   token?: string;
-  folder?: string;
+  prefix?: string;
 }
 
 /**
@@ -86,7 +86,7 @@ export interface RegistryEntry {
   project?: string;
   host?: string;
   token?: string;
-  folder?: string;
+  prefix?: string;
 }
 
 /**
