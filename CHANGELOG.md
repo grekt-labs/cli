@@ -1,3 +1,10 @@
+## [5.19.4](https://github.com/grekt-labs/cli/compare/v5.19.3...v5.19.4) (2026-02-05)
+
+
+### Bug Fixes
+
+* **deps:** bump cli-engine to 5.3.3 ([c2118e3](https://github.com/grekt-labs/cli/commit/c2118e3cf03e43e1a5d2e09366e67ab01fee5783))
+
 ## [5.19.3](https://github.com/grekt-labs/cli/compare/v5.19.2...v5.19.3) (2026-02-05)
 
 
