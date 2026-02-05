@@ -75,6 +75,6 @@ try {
   refreshUpdateCache();
 } catch (err) {
   const message = err instanceof Error ? err.message : String(err);
-  console.error(`\n${colors.red("error:")} ${message}\n`);
+  console.error(`\n${colors.error("error:")} ${message}\n`);
   process.exit(1);
 }

@@ -182,14 +182,16 @@ export async function selectTargetsToAdd(
         disabled: isAlreadyAdded,
       };
     }),
-    ...existingCustomTargetIds.map((id) => {
-      const customTarget = currentCustomTargets[id];
-      return {
-        name: `${customTarget.name} (already added)`,
-        value: id,
-        disabled: true,
-      };
-    }),
+    ...existingCustomTargetIds
+      .filter((id) => currentCustomTargets[id] !== undefined)
+      .map((id) => {
+        const customTarget = currentCustomTargets[id]!;
+        return {
+          name: `${customTarget.name} (already added)`,
+          value: id,
+          disabled: true,
+        };
+      }),
     {
       name: "Other (custom)",
       value: OTHER_TARGET_VALUE,

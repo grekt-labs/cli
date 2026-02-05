@@ -143,7 +143,7 @@ async function handleChangedMode(cwd: string, options: PublishOptions): Promise<
         localVersion,
         registryVersion,
       });
-      log(`  ${colors.green("↑")} ${artifact.manifest.name} ${localVersion} ${registryVersion ? `(registry: ${registryVersion})` : "(new)"}`);
+      log(`  ${colors.success("↑")} ${artifact.manifest.name} ${localVersion} ${registryVersion ? `(registry: ${registryVersion})` : "(new)"}`);
     } else {
       log(`  ${colors.dim("=")} ${artifact.manifest.name} ${localVersion} (up to date)`);
     }
@@ -375,8 +375,10 @@ function showRegistryConfigHelp(scope: string | null, projectRoot: string): void
     log("");
     info("Available registries:");
     for (const s of configuredScopes) {
-      const entry = localConfig!.registries![s];
-      log(`  ${s} (${entry.type})`);
+      const entry = localConfig?.registries?.[s];
+      if (entry) {
+        log(`  ${s} (${entry.type})`);
+      }
     }
     log("");
     log(colors.dim(`Check if your artifact scope matches your config.`));

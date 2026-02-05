@@ -1,10 +1,10 @@
 import { Command } from "commander";
+import { parse } from "yaml";
 import { isInitialized } from "#/config/project/project";
 import { getLockfile, getDirectorySize, fs } from "#/context";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
-import { formatBytes, estimateTokens } from "@grekt-labs/cli-engine";
+import { formatBytes, estimateTokens, ArtifactManifestSchema, CATEGORIES } from "@grekt-labs/cli-engine";
 import { error, info, log, colors, newline } from "#/shared/ui/ui";
-import { CATEGORIES } from "@grekt-labs/cli-engine";
 
 export const listCommand = new Command("list")
   .alias("ls")
@@ -51,10 +51,19 @@ export const listCommand = new Command("list")
 
       log(`  ${colors.highlight(name)}${colors.dim(`@${artifact.version}`)}  ${colors.dim(sizeStr)}`);
 
-      for (const category of CATEGORIES) {
-        const paths = artifact[category];
-        if (paths && paths.length > 0) {
-          log(`    ${colors.dim(`${category}:`)} ${paths.join(", ")}`);
+      const manifestPath = `${artifactDir}/grekt.yaml`;
+      if (fs.exists(manifestPath)) {
+        const rawManifest = parse(fs.readFile(manifestPath));
+        const manifestResult = ArtifactManifestSchema.safeParse(rawManifest);
+
+        if (manifestResult.success && manifestResult.data.components) {
+          for (const category of CATEGORIES) {
+            const components = manifestResult.data.components[category];
+            if (components && components.length > 0) {
+              const names = components.map(c => c.name);
+              log(`    ${colors.dim(`${category}:`)} ${names.join(", ")}`);
+            }
+          }
         }
       }
 

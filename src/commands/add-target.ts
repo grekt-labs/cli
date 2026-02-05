@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import { isInitialized, getConfig, saveConfig } from "#/config/project/project";
 import { getPluginChoices } from "#/sync/manager/manager";
-import { success, error, info, newline, warn } from "#/shared/ui/ui";
+import { success, error, info, newline } from "#/shared/ui/ui";
 import { withPromptHandler, selectTargetsToAdd } from "#/shared/prompts/prompts";
 
 export const addTargetCommand = new Command("add-target")

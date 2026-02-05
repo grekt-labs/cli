@@ -23,6 +23,15 @@ export class CustomPublisher implements Publisher {
     }
   }
 
+  async getLatestVersion(ctx: PublishContext): Promise<string | null> {
+    const client = createRegistryClient(this.registry);
+    try {
+      return await client.getLatestVersion(ctx.artifactId);
+    } catch {
+      return null;
+    }
+  }
+
   async publish(ctx: PublishContext): Promise<PublishResult> {
     const client = createRegistryClient(this.registry);
 
