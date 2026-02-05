@@ -105,7 +105,7 @@ export function resolveRegistry(
     host: entry.host || getDefaultHost(entry.type),
     project: entry.project,
     token,
-    folder: entry.folder,
+    prefix: entry.prefix,
   };
 }
 
