@@ -1,3 +1,10 @@
+## [5.19.7](https://github.com/grekt-labs/cli/compare/v5.19.6...v5.19.7) (2026-02-05)
+
+
+### Bug Fixes
+
+* **registry:** add folder field to resolver and types ([1b49335](https://github.com/grekt-labs/cli/commit/1b49335521bcc35c4165a00f82eb8ccf58527cbd))
+
 ## [5.19.6](https://github.com/grekt-labs/cli/compare/v5.19.5...v5.19.6) (2026-02-05)
 
 
