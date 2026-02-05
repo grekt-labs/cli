@@ -10,14 +10,11 @@ import {
   isInitialized,
   getLocalConfig,
   saveLocalConfig,
-  getSession,
-  saveSession,
-  clearSession,
   getToken,
   setToken,
   removeToken,
 } from "./project";
-import type { ProjectConfig, LocalConfig, StoredSession } from "@grekt-labs/cli-engine";
+import type { ProjectConfig, LocalConfig } from "@grekt-labs/cli-engine";
 
 describe("project", () => {
   // Use system temp to avoid finding .grekt/config.yaml in parent directories
@@ -133,40 +130,7 @@ describe("project", () => {
       expect(config!.tokens!.github).toBe("gh-token");
     });
 
-    test("walks up directory tree to find config when workspace exists", () => {
-      // Create workspace root with config and workspace file
-      mkdirSync(join(testDir, ".grekt"), { recursive: true });
-      const localConfigData: LocalConfig = {
-        registries: {
-          "@parent": {
-            type: "gitlab",
-            project: "parent/artifacts",
-          },
-        },
-      };
-      writeFileSync(
-        join(testDir, ".grekt", "config.yaml"),
-        stringify(localConfigData)
-      );
-
-      // Create workspace file at root (indicates this is a monorepo)
-      writeFileSync(
-        join(testDir, "grekt-workspace.yaml"),
-        stringify({ workspaces: ["packages/*"] })
-      );
-
-      // Create nested subdirectory (an artifact inside the workspace)
-      const nestedDir = join(testDir, "packages", "subpackage");
-      mkdirSync(nestedDir, { recursive: true });
-
-      // Should find parent config from nested dir because workspace exists
-      const config = getLocalConfig(nestedDir);
-
-      expect(config).not.toBeNull();
-      expect(config!.registries!["@parent"].type).toBe("gitlab");
-    });
-
-    test("does NOT walk up directory tree without workspace file", () => {
+    test("walks up directory tree to find config", () => {
       // Create parent with config
       mkdirSync(join(testDir, ".grekt"), { recursive: true });
       const localConfigData: LocalConfig = {
@@ -182,14 +146,15 @@ describe("project", () => {
         stringify(localConfigData)
       );
 
-      // Create nested subdirectory without config and WITHOUT workspace file
+      // Create nested subdirectory
       const nestedDir = join(testDir, "packages", "subpackage");
       mkdirSync(nestedDir, { recursive: true });
 
-      // Should NOT find parent config (no workspace = no walk up)
+      // Should find parent config from nested dir
       const config = getLocalConfig(nestedDir);
 
-      expect(config).toBeNull();
+      expect(config).not.toBeNull();
+      expect(config!.registries!["@parent"].type).toBe("gitlab");
     });
   });
 
@@ -202,43 +167,6 @@ describe("project", () => {
       saveLocalConfig(localConfig, testDir);
 
       expect(existsSync(join(testDir, ".grekt", "config.yaml"))).toBe(true);
-    });
-  });
-
-  describe("session management", () => {
-    test("getSession returns null when no session", () => {
-      const session = getSession(testDir);
-
-      expect(session).toBeNull();
-    });
-
-    test("saveSession and getSession work together", () => {
-      const session: StoredSession = {
-        access_token: "access",
-        refresh_token: "refresh",
-        expires_at: 12345,
-      };
-
-      saveSession(session, testDir);
-      const retrieved = getSession(testDir);
-
-      expect(retrieved).not.toBeNull();
-      expect(retrieved!.access_token).toBe("access");
-      expect(retrieved!.refresh_token).toBe("refresh");
-    });
-
-    test("clearSession removes session without breaking config parsing", () => {
-      const session: StoredSession = {
-        access_token: "access",
-        refresh_token: "refresh",
-        expires_at: 12345,
-      };
-
-      saveSession(session, testDir);
-      clearSession(testDir);
-
-      const retrieved = getSession(testDir);
-      expect(retrieved).toBeNull();
     });
   });
 
