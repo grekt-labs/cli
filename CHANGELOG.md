@@ -1,3 +1,10 @@
+## [5.19.8](https://github.com/grekt-labs/cli/compare/v5.19.7...v5.19.8) (2026-02-05)
+
+
+### Bug Fixes
+
+* **monorepos:** update cli-engine 5.5.1 ([e10eef3](https://github.com/grekt-labs/cli/commit/e10eef335d6e84b9a0bc78fddf08922e6cf79c1e))
+
 ## [5.19.7](https://github.com/grekt-labs/cli/compare/v5.19.6...v5.19.7) (2026-02-05)
 
 
