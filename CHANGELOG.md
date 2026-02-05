@@ -1,3 +1,34 @@
+# [6.0.0](https://github.com/grekt-labs/cli/compare/v5.19.9...v6.0.0) (2026-02-05)
+
+
+* feat(auth)!: move session storage to global ~/.grekt/session.yaml ([cc2981f](https://github.com/grekt-labs/cli/commit/cc2981f2eb638e5ff562720f8fa6777dffb1423c))
+
+
+### Bug Fixes
+
+* **config:** only inherit config from workspace roots ([7d7c48f](https://github.com/grekt-labs/cli/commit/7d7c48f42fbb5ad345ea0380b70490ec99348a9f))
+
+
+### Features
+
+* integrate with public registry via Edge Functions ([1598f5f](https://github.com/grekt-labs/cli/commit/1598f5f574aa81f7ca349347b44006b8e553f7a1))
+
+
+### BREAKING CHANGES
+
+* Session storage moved from project .grekt/config.yaml
+to global ~/.grekt/session.yaml. Users need to run `grekt login` again.
+
+- Add new config/user module for global session management
+- Update auth/session to use global storage instead of project config
+- Simplify config inheritance (remove workspace check for walk-up)
+- Remove session functions from project config (registries/tokens only)
+- Update tests for new session location
+
+This separates auth (user-level) from registries (project-level):
+- Session: ~/.grekt/session.yaml (accessible from anywhere)
+- Registries: .grekt/config.yaml (project-specific)
+
 ## [5.19.9](https://github.com/grekt-labs/cli/compare/v5.19.8...v5.19.9) (2026-02-05)
 
 
