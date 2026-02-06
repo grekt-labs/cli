@@ -205,6 +205,71 @@ export async function selectComponents(artifactInfo: ArtifactInfo): Promise<Comp
 }
 
 /**
+ * Build choices array with separators, using a previous selection
+ * to determine the checked state of each item.
+ * Items in previousSelection get checked: true, others get checked: false.
+ */
+function buildGroupedChoicesWithPrecheck(
+  groups: Map<string, Array<{ file: ScannedFile; category: Category; singular: string }>>,
+  previousSelection: ComponentSelection
+): ChoiceItem[] {
+  const choices: ChoiceItem[] = [];
+
+  const sortedGroups = Array.from(groups.keys()).sort((a, b) => {
+    if (a === ROOT_GROUP) return 1;
+    if (b === ROOT_GROUP) return -1;
+    return a.localeCompare(b);
+  });
+
+  for (const groupName of sortedGroups) {
+    const groupComponents = groups.get(groupName)!;
+
+    if (groups.size > 1) {
+      choices.push(new Separator(`── ${groupName} ──`));
+    }
+
+    for (const { file, category, singular } of groupComponents) {
+      choices.push({
+        name: buildChoiceName(file, singular),
+        value: { category, path: file.path },
+        checked: previousSelection[category].includes(file.path),
+      });
+    }
+  }
+
+  return choices;
+}
+
+/**
+ * Prompt user to select components, pre-checking items from a previous selection.
+ * Previously selected components that still exist are checked.
+ * New components default to unchecked.
+ */
+export async function selectComponentsWithPrecheck(
+  artifactInfo: ArtifactInfo,
+  previousSelection: ComponentSelection
+): Promise<ComponentSelection> {
+  return withPromptHandler(async () => {
+    const components = collectComponents(artifactInfo);
+    const groups = groupComponents(components);
+    const choices = buildGroupedChoicesWithPrecheck(groups, previousSelection);
+
+    const selected = await checkbox({
+      message: "Select components to install:",
+      choices,
+    });
+
+    const result = createEmptySelection();
+
+    for (const item of selected) {
+      result[item.category].push(item.path);
+    }
+
+    return result;
+  });
+}
+
+/**
  * Check if all components in the artifact were selected.
  */
 export function isFullSelection(artifactInfo: ArtifactInfo, selection: ComponentSelection): boolean {

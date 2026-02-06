@@ -18,6 +18,7 @@ import { undeprecateCommand } from "#/commands/undeprecate";
 import { infoCommand } from "#/commands/info";
 import { versionsCommand } from "#/commands/versions";
 import { outdatedCommand } from "#/commands/outdated";
+import { upgradeCommand } from "#/commands/upgrade";
 import { versionCommand } from "#/commands/version";
 import { workspaceCommand } from "#/commands/workspace";
 import { loginCommand } from "#/commands/login";
@@ -61,6 +62,7 @@ program.addCommand(undeprecateCommand);
 program.addCommand(infoCommand);
 program.addCommand(versionsCommand);
 program.addCommand(outdatedCommand);
+program.addCommand(upgradeCommand);
 
 // Authoring commands
 program.addCommand(versionCommand);

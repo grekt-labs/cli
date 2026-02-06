@@ -101,7 +101,7 @@ export const outdatedCommand = new Command("outdated")
       }
 
       log("");
-      info(`Run 'grekt add <artifact>' to update`);
+      info(`Run 'grekt upgrade' to upgrade`);
     }
 
     if (upToDate.length > 0 && outdated.length === 0) {
