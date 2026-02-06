@@ -1,3 +1,10 @@
+## [6.2.1](https://github.com/grekt-labs/cli/compare/v6.2.0...v6.2.1) (2026-02-06)
+
+
+### Bug Fixes
+
+* **publish:** show login prompt instead of GitLab config when not authenticated ([#105](https://github.com/grekt-labs/cli/issues/105)) ([c32440e](https://github.com/grekt-labs/cli/commit/c32440edb20288978d33713422051b92adaa5073))
+
 # [6.2.0](https://github.com/grekt-labs/cli/compare/v6.1.2...v6.2.0) (2026-02-06)
 
 
