@@ -43,7 +43,7 @@ function getGroupFromPath(filePath: string): string {
   if (segments.length === 1) {
     return ROOT_GROUP;
   }
-  return segments[0];
+  return segments[0] ?? ROOT_GROUP;
 }
 
 /**

@@ -11,6 +11,9 @@ import {
   renameSync,
   chmodSync,
   cpSync,
+  openSync,
+  writeSync,
+  closeSync,
 } from "fs";
 import type { FileSystem } from "@grekt-labs/cli-engine";
 
@@ -29,6 +32,12 @@ export interface CopyOptions {
 export interface ExtendedFileSystem extends FileSystem {
   chmod(path: string, mode: number): void;
   copy(src: string, dest: string, options?: CopyOptions): void;
+  /**
+   * Write file with specific permissions set atomically.
+   * Prevents race condition where file is created with default permissions
+   * before chmod is applied.
+   */
+  writeFileSecure(path: string, content: string, mode: number): void;
 }
 
 /**
@@ -63,6 +72,17 @@ export function createFileSystem(): ExtendedFileSystem {
     chmod: (path: string, mode: number) => chmodSync(path, mode),
     copy: (src: string, dest: string, options?: CopyOptions) => {
       cpSync(src, dest, options);
+    },
+    writeFileSecure: (path: string, content: string, mode: number) => {
+      // Use openSync with exclusive create flag and mode to set permissions atomically.
+      // This prevents the race condition where file exists with default permissions
+      // before chmod is applied.
+      const fd = openSync(path, "w", mode);
+      try {
+        writeSync(fd, content, null, "utf-8");
+      } finally {
+        closeSync(fd);
+      }
     },
   };
 }

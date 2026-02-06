@@ -42,14 +42,15 @@ export function getGlobalSession(): StoredSession | null {
 
 /**
  * Save session to ~/.grekt/session.yaml
+ * Uses atomic write with permissions to prevent race condition
+ * where tokens could be exposed with default permissions.
  */
 export function saveGlobalSession(session: StoredSession): void {
   const filepath = getSessionPath();
   ensureDir(filepath);
 
   const content = stringify(session);
-  fs.writeFile(filepath, content);
-  fs.chmod(filepath, 0o600);
+  fs.writeFileSecure(filepath, content, 0o600);
 }
 
 /**
