@@ -19,6 +19,8 @@ import {
   compareSemver,
 } from "@grekt-labs/cli-engine";
 import { success, error, info, log, colors, spinner } from "#/shared/ui/ui";
+import { formatBytes } from "#/shared/format";
+import { ARTIFACT_MAX_BYTES, ARTIFACT_WARNING_BYTES } from "#/constants";
 import { loadWorkspace } from "./workspace";
 import { fs } from "#/context";
 
@@ -257,8 +259,28 @@ async function publishSingleArtifact(
     throw new Error(`Failed to create tarball: ${tarballResult.error}`);
   }
 
+  const tarballSize = tarballResult.sizeBytes ?? 0;
+
+  // Check size limits
+  if (tarballSize > ARTIFACT_MAX_BYTES) {
+    removeTarball(tarballResult.path);
+    error(`Artifact too large: ${formatBytes(tarballSize)} (max: ${formatBytes(ARTIFACT_MAX_BYTES)})`);
+    log("");
+    info("Tips to reduce size:");
+    log(colors.dim("  - Remove unnecessary files"));
+    log(colors.dim("  - Check for accidentally included binaries or images"));
+    log(colors.dim("  - Use .grektignore to exclude files"));
+    throw new Error("Artifact exceeds size limit");
+  }
+
+  if (tarballSize > ARTIFACT_WARNING_BYTES && !silent) {
+    log("");
+    log(colors.yellow(`Warning: Artifact is ${formatBytes(tarballSize)} (approaching ${formatBytes(ARTIFACT_MAX_BYTES)} limit)`));
+    log("");
+  }
+
   if (!silent) {
-    success(`Created tarball: ${tarballResult.filename}`);
+    success(`Created tarball: ${tarballResult.filename} (${formatBytes(tarballSize)})`);
   }
 
   const publisher = createPublisher({

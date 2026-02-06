@@ -10,6 +10,7 @@ export interface TarballResult {
   success: boolean;
   path?: string;
   filename?: string;
+  sizeBytes?: number;
   error?: string;
 }
 
@@ -73,10 +74,14 @@ export function createTarball(options: CreateTarballOptions): TarballResult {
 
     shell.execFile("tar", ["-czf", outputPath, "--exclude=.grekt", "-C", parentDir, artifactDir]);
 
+    const stats = fs.stat(outputPath);
+    const sizeBytes = stats?.size ?? 0;
+
     return {
       success: true,
       path: outputPath,
       filename: tarballName,
+      sizeBytes,
     };
   } catch (err) {
     return {
