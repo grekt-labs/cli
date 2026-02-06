@@ -112,43 +112,50 @@ export const addCommand = new Command("add")
 
     // Now we know the artifact ID, create final target directory
     const targetDir = `${projectRoot}/${ARTIFACTS_DIR}/${resolvedArtifactId}`;
-
-    // Check if already installed - update if newer version, skip if same/older
     const lockfile = getLockfile(projectRoot);
-    if (fs.exists(targetDir)) {
-      const existing = lockfile.artifacts[resolvedArtifactId];
-      const newVersion = artifactInfo.manifest.version;
 
-      if (existing) {
-        try {
-          const comparison = compareSemver(newVersion, existing.version);
-          if (comparison <= 0) {
-            fs.rmdir(tempDir, { recursive: true });
-            info(`Already installed: ${colors.highlight(resolvedArtifactId)}@${existing.version}`);
-            if (comparison < 0) {
-              info(`Current version (${existing.version}) is newer than requested (${newVersion})`);
+    try {
+      // Check if already installed - update if newer version, skip if same/older
+      if (fs.exists(targetDir)) {
+        const existing = lockfile.artifacts[resolvedArtifactId];
+        const newVersion = artifactInfo.manifest.version;
+
+        if (existing) {
+          try {
+            const comparison = compareSemver(newVersion, existing.version);
+            if (comparison <= 0) {
+              fs.rmdir(tempDir, { recursive: true });
+              info(`Already installed: ${colors.highlight(resolvedArtifactId)}@${existing.version}`);
+              if (comparison < 0) {
+                info(`Current version (${existing.version}) is newer than requested (${newVersion})`);
+              }
+              process.exit(0);
             }
-            process.exit(0);
+            // New version is higher - proceed with update
+            log(`Updating ${colors.highlight(resolvedArtifactId)}: ${existing.version} → ${newVersion}`);
+          } catch {
+            // If comparison fails (invalid semver), proceed with replacement
           }
-          // New version is higher - proceed with update
-          log(`Updating ${colors.highlight(resolvedArtifactId)}: ${existing.version} → ${newVersion}`);
-        } catch {
-          // If comparison fails (invalid semver), proceed with replacement
         }
+
+        // Remove old version to replace with new
+        fs.rmdir(targetDir, { recursive: true });
       }
 
-      // Remove old version to replace with new
-      fs.rmdir(targetDir, { recursive: true });
-    }
+      // Ensure parent directory exists (for scoped artifacts like @scope/name)
+      const parentDir = targetDir.substring(0, targetDir.lastIndexOf("/"));
+      if (!fs.exists(parentDir)) {
+        fs.mkdir(parentDir, { recursive: true });
+      }
 
-    // Ensure parent directory exists (for scoped artifacts like @scope/name)
-    const parentDir = targetDir.substring(0, targetDir.lastIndexOf("/"));
-    if (!fs.exists(parentDir)) {
-      fs.mkdir(parentDir, { recursive: true });
+      // Move temp dir to final location
+      fs.rename(tempDir, targetDir);
+    } catch (err) {
+      if (fs.exists(tempDir)) {
+        fs.rmdir(tempDir, { recursive: true });
+      }
+      throw err;
     }
-
-    // Move temp dir to final location
-    fs.rename(tempDir, targetDir);
 
     // Determine which components to install (default: all)
     let selection: ComponentSelection = createEmptySelection();
