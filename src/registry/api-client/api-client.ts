@@ -357,6 +357,31 @@ export class RegistryClient {
       throw new Error(errorData?.error || `Failed to undeprecate: ${response.status}`);
     }
   }
+
+  /**
+   * Confirm publish and trigger tarball extraction (calls Edge Function)
+   * This extracts the tarball contents for file browsing in the web UI.
+   */
+  async confirmPublish(artifactId: string, version: string): Promise<void> {
+    const session = await getSession();
+    if (!session) {
+      throw new Error("Not authenticated");
+    }
+
+    const response = await http.fetch(`${this.edgeFunctionUrl}/publish-confirm`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ artifactId, version }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      throw new Error(errorData?.error || `Failed to confirm publish: ${response.status}`);
+    }
+  }
 }
 
 /**
