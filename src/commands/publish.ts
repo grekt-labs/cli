@@ -1,75 +1,28 @@
 import { Command } from "commander";
-import { setProjectRoot } from "#/auth/session/session";
 import { getLocalConfigPath, getLocalConfig } from "#/config/project/project";
 import {
-  createPublisher,
+  prepareArtifact,
+  isApproachingSizeLimit,
+  createArtifactPublisher,
+  verifyPublisherAuth,
+  checkVersionExists,
+  publishArtifact,
   getPublisherTypeName,
-} from "#/registry/publishers/factory";
-import { S3Publisher } from "#/registry/publishers/s3-publisher";
-import { CustomPublisher } from "#/registry/publishers/custom-publisher";
-import { isApiAuthenticated } from "#/registry/publishers/api-publisher";
+  removeTarball,
+  formatBytes,
+} from "#/artifact/publish/publish";
+import type { ValidationError } from "#/artifact/publish/publish";
 import type { PublishContext } from "#/registry/publishers/publisher.types";
-import type { Publisher } from "#/registry/publishers/publisher.types";
-import { createTarball, removeTarball } from "#/artifact/tarball/tarball";
-import { validateArtifact } from "#/artifact/validation/validation";
-import {
-  CATEGORIES,
-  generateComponents,
-  isWorkspaceRoot,
-  compareSemver,
-} from "@grekt-labs/cli-engine";
+import { CustomPublisher } from "#/registry/publishers/custom-publisher";
+import { CATEGORIES, isWorkspaceRoot, compareSemver } from "@grekt-labs/cli-engine";
 import { success, error, info, log, colors, spinner } from "#/shared/ui/ui";
-import { formatBytes } from "#/shared/format";
-import { ARTIFACT_MAX_BYTES, ARTIFACT_WARNING_BYTES } from "#/constants";
 import { loadWorkspace } from "./workspace";
 import { fs } from "#/context";
-
-const MIN_KEYWORDS = 3;
-const MAX_KEYWORDS = 5;
 
 interface PublishOptions {
   s3?: boolean;
   changed?: boolean;
   dryRun?: boolean;
-}
-
-function logComponentSummary(
-  artifactId: string,
-  version: string,
-  keywords: string[],
-  scanned: { agent?: unknown; skills: unknown[]; commands: unknown[]; mcps: unknown[]; rules: unknown[] },
-  componentCount: number
-): void {
-  log(colors.bold(`\nPublishing ${artifactId}@${version}...`));
-  log(colors.dim(`  Keywords: ${keywords.join(", ")}`));
-  log(colors.dim(`  Components: ${componentCount}`));
-  if (scanned.agent) log(colors.dim(`    - 1 agent`));
-  if (scanned.skills.length > 0) log(colors.dim(`    - ${scanned.skills.length} skill(s)`));
-  if (scanned.commands.length > 0) log(colors.dim(`    - ${scanned.commands.length} command(s)`));
-  if (scanned.mcps.length > 0) log(colors.dim(`    - ${scanned.mcps.length} mcp(s)`));
-  if (scanned.rules.length > 0) log(colors.dim(`    - ${scanned.rules.length} rule(s)`));
-  log("");
-}
-
-function showKeywordsExample(): void {
-  log("");
-  log(colors.dim("  Example:"));
-  log(colors.dim("    keywords:"));
-  log(colors.dim("      - git"));
-  log(colors.dim("      - commit"));
-  log(colors.dim("      - automation"));
-}
-
-function showFrontmatterExample(): void {
-  log("");
-  log(colors.dim("  Example frontmatter for .md files:"));
-  log(colors.dim("    ---"));
-  log(colors.dim(`    grk-type: ${CATEGORIES[0]}`));
-  log(colors.dim("    grk-name: My Component"));
-  log(colors.dim("    grk-description: What this component does"));
-  log(colors.dim("    ---"));
-  log("");
-  log(colors.dim(`  Valid types: ${CATEGORIES.join(", ")}`));
 }
 
 export const publishCommand = new Command("publish")
@@ -81,13 +34,11 @@ export const publishCommand = new Command("publish")
   .action(async (artifactPath: string, options: PublishOptions) => {
     const cwd = process.cwd();
 
-    // --changed mode: publish all workspace artifacts where local > registry
     if (options.changed) {
       await handleChangedMode(cwd, options);
       return;
     }
 
-    // Standard single artifact publish
     await publishSingleArtifact(artifactPath, cwd, options);
   });
 
@@ -115,7 +66,7 @@ async function handleChangedMode(cwd: string, options: PublishOptions): Promise<
   const toPublish: Array<{ path: string; name: string; localVersion: string; registryVersion: string | null }> = [];
 
   for (const artifact of workspace.artifacts) {
-    const publisher = createPublisher({
+    const publisher = createArtifactPublisher({
       s3: options.s3,
       scope: artifact.manifest.name.split("/")[0]!,
       projectRoot: cwd,
@@ -193,7 +144,7 @@ async function handleChangedMode(cwd: string, options: PublishOptions): Promise<
 }
 
 /**
- * Publish a single artifact.
+ * Publish a single artifact: validate, create tarball, check auth, publish.
  */
 async function publishSingleArtifact(
   artifactPath: string,
@@ -201,154 +152,98 @@ async function publishSingleArtifact(
   options: { s3?: boolean },
   silent: boolean = false
 ): Promise<void> {
-  const result = validateArtifact(artifactPath, projectRoot, {
-    requireKeywords: { min: MIN_KEYWORDS, max: MAX_KEYWORDS },
-  });
-
-  if (!result.success) {
-    error(result.error.message);
-    if (result.error.details) {
-      for (const detail of result.error.details) {
-        info(detail);
+  // Validate and create tarball
+  let prepared;
+  try {
+    prepared = prepareArtifact(artifactPath, projectRoot);
+  } catch (err) {
+    const validationError = (err as { validationError?: ValidationError }).validationError;
+    if (validationError) {
+      error(validationError.message);
+      if (validationError.details) {
+        for (const detail of validationError.details) {
+          info(detail);
+        }
       }
+      if (validationError.type === "keywords") showKeywordsExample();
+      if (validationError.type === "no-components") showFrontmatterExample();
+      if (validationError.type === "no-scope") showScopeHelp();
+      if (validationError.type === "size-limit") showSizeHelp();
     }
-    if (result.error.type === "keywords") {
-      showKeywordsExample();
-    }
-    if (result.error.type === "no-components") {
-      showFrontmatterExample();
-    }
-    throw new Error(result.error.message);
+    throw err;
   }
 
-  const { artifact } = result;
-
-  // Verify artifact has a scope (required for publishing)
-  if (!artifact.scope) {
-    error("Cannot publish: artifact name must include scope");
-    log("");
-    info("Update your grekt.yaml:");
-    log(colors.dim("  name: \"@your-scope/artifact-name\""));
-    log("");
-    log(colors.dim("The scope determines which registry to use for publishing."));
-    throw new Error("No scope");
-  }
-
-  setProjectRoot(projectRoot);
+  const { artifact, tarballPath, tarballFilename, tarballSize } = prepared;
 
   if (!silent) {
-    logComponentSummary(
-      artifact.artifactId,
-      artifact.manifest.version,
-      artifact.manifest.keywords ?? [],
-      artifact.scanned,
-      artifact.componentCount
-    );
+    logComponentSummary(artifact.artifactId, artifact.manifest.version, artifact.manifest.keywords ?? [], artifact.scanned, artifact.componentCount);
   }
 
-  const components = generateComponents(artifact.scanned);
-
-  const tarballResult = createTarball({
-    artifactPath: artifact.fullPath,
-    artifactId: artifact.artifactId,
-    projectRoot,
-    components,
-  });
-
-  if (!tarballResult.success || !tarballResult.path) {
-    throw new Error(`Failed to create tarball: ${tarballResult.error}`);
-  }
-
-  const tarballSize = tarballResult.sizeBytes ?? 0;
-
-  // Check size limits
-  if (tarballSize > ARTIFACT_MAX_BYTES) {
-    removeTarball(tarballResult.path);
-    error(`Artifact too large: ${formatBytes(tarballSize)} (max: ${formatBytes(ARTIFACT_MAX_BYTES)})`);
+  if (isApproachingSizeLimit(tarballSize) && !silent) {
     log("");
-    info("Tips to reduce size:");
-    log(colors.dim("  - Remove unnecessary files"));
-    log(colors.dim("  - Check for accidentally included binaries or images"));
-    log(colors.dim("  - Use .grektignore to exclude files"));
-    throw new Error("Artifact exceeds size limit");
-  }
-
-  if (tarballSize > ARTIFACT_WARNING_BYTES && !silent) {
-    log("");
-    log(colors.yellow(`Warning: Artifact is ${formatBytes(tarballSize)} (approaching ${formatBytes(ARTIFACT_MAX_BYTES)} limit)`));
+    log(colors.yellow(`Warning: Artifact is ${formatBytes(tarballSize)} (approaching limit)`));
     log("");
   }
 
   if (!silent) {
-    success(`Created tarball: ${tarballResult.filename} (${formatBytes(tarballSize)})`);
+    success(`Created tarball: ${tarballFilename} (${formatBytes(tarballSize)})`);
   }
 
-  const publisher = createPublisher({
+  // Create publisher and verify auth
+  const publisher = createArtifactPublisher({
     s3: options.s3,
     scope: artifact.scope,
     projectRoot,
   });
 
+  const authError = await verifyPublisherAuth(publisher, projectRoot);
+  if (authError) {
+    removeTarball(tarballPath);
+    if (authError === "no-s3-credentials") showS3CredentialsHelp();
+    if (authError === "not-authenticated") error("Not logged in. Run 'grekt login' first to publish to the default registry.");
+    throw new Error(authError);
+  }
+
   const ctx: PublishContext = {
     artifactId: artifact.artifactId,
     version: artifact.manifest.version,
-    tarballPath: tarballResult.path,
+    tarballPath,
     scope: artifact.scope,
     projectRoot,
     description: artifact.manifest.description,
     keywords: artifact.manifest.keywords,
   };
 
-  if (publisher instanceof S3Publisher && !publisher.hasCredentials()) {
-    removeTarball(tarballResult.path);
-    showS3CredentialsHelp();
-    throw new Error("No S3 credentials");
-  }
-
-  // Check if using default registry (no config found for this scope)
-  if (publisher.type === "api") {
-    const authenticated = await isApiAuthenticated();
-    if (!authenticated) {
-      removeTarball(tarballResult.path);
-      error("Not logged in. Run 'grekt login' first to publish to the default registry.");
-      throw new Error("Not authenticated");
-    }
-  }
-
+  // Check version existence (non-silent only)
   if (!silent) {
     const checkSpin = spinner("Checking if version exists...");
     checkSpin.start();
 
-    try {
-      const exists = await publisher.versionExists(ctx);
-      checkSpin.stop();
+    const versionCheck = await checkVersionExists(publisher, ctx);
+    checkSpin.stop();
 
-      if (exists) {
-        removeTarball(tarballResult.path);
-        error(`Version ${artifact.manifest.version} already exists for ${artifact.artifactId}`);
-        info("Bump the version in grekt.yaml and try again");
-        throw new Error("Version exists");
-      }
-    } catch (err) {
-      checkSpin.stop();
-      if (err instanceof Error && err.message === "Version exists") {
-        throw err;
-      }
-      // Version check failed, but we continue with publish attempt
-      const message = err instanceof Error ? err.message : "Unknown error";
-      info(`Could not verify version existence: ${message}`);
+    if (versionCheck.exists) {
+      removeTarball(tarballPath);
+      error(`Version ${artifact.manifest.version} already exists for ${artifact.artifactId}`);
+      info("Bump the version in grekt.yaml and try again");
+      throw new Error("Version exists");
+    }
+
+    if (versionCheck.checkFailed) {
+      info(`Could not verify version existence: ${versionCheck.error}`);
     }
   }
 
+  // Publish
   const publisherName = getPublisherTypeName(publisher);
   const spin = silent ? null : spinner(`Publishing to ${publisherName}...`);
   spin?.start();
 
-  const publishResult = await publisher.publish(ctx);
+  const publishResult = await publishArtifact(publisher, ctx);
   spin?.stop();
 
   if (!publishResult.success) {
-    removeTarball(tarballResult.path);
+    removeTarball(tarballPath);
 
     if (publisher instanceof CustomPublisher) {
       const registry = publisher.getRegistry();
@@ -360,7 +255,7 @@ async function publishSingleArtifact(
     throw new Error(`Publish failed: ${publishResult.error}`);
   }
 
-  removeTarball(tarballResult.path);
+  removeTarball(tarballPath);
 
   if (!silent) {
     log("");
@@ -372,6 +267,63 @@ async function publishSingleArtifact(
   } else {
     success(`Published ${artifact.artifactId}@${artifact.manifest.version}`);
   }
+}
+
+// Display helpers
+
+function logComponentSummary(
+  artifactId: string,
+  version: string,
+  keywords: string[],
+  scanned: { agent?: unknown; skills: unknown[]; commands: unknown[]; mcps: unknown[]; rules: unknown[] },
+  componentCount: number
+): void {
+  log(colors.bold(`\nPublishing ${artifactId}@${version}...`));
+  log(colors.dim(`  Keywords: ${keywords.join(", ")}`));
+  log(colors.dim(`  Components: ${componentCount}`));
+  if (scanned.agent) log(colors.dim(`    - 1 agent`));
+  if (scanned.skills.length > 0) log(colors.dim(`    - ${scanned.skills.length} skill(s)`));
+  if (scanned.commands.length > 0) log(colors.dim(`    - ${scanned.commands.length} command(s)`));
+  if (scanned.mcps.length > 0) log(colors.dim(`    - ${scanned.mcps.length} mcp(s)`));
+  if (scanned.rules.length > 0) log(colors.dim(`    - ${scanned.rules.length} rule(s)`));
+  log("");
+}
+
+function showKeywordsExample(): void {
+  log("");
+  log(colors.dim("  Example:"));
+  log(colors.dim("    keywords:"));
+  log(colors.dim("      - git"));
+  log(colors.dim("      - commit"));
+  log(colors.dim("      - automation"));
+}
+
+function showFrontmatterExample(): void {
+  log("");
+  log(colors.dim("  Example frontmatter for .md files:"));
+  log(colors.dim("    ---"));
+  log(colors.dim(`    grk-type: ${CATEGORIES[0]}`));
+  log(colors.dim("    grk-name: My Component"));
+  log(colors.dim("    grk-description: What this component does"));
+  log(colors.dim("    ---"));
+  log("");
+  log(colors.dim(`  Valid types: ${CATEGORIES.join(", ")}`));
+}
+
+function showScopeHelp(): void {
+  log("");
+  info("Update your grekt.yaml:");
+  log(colors.dim('  name: "@your-scope/artifact-name"'));
+  log("");
+  log(colors.dim("The scope determines which registry to use for publishing."));
+}
+
+function showSizeHelp(): void {
+  log("");
+  info("Tips to reduce size:");
+  log(colors.dim("  - Remove unnecessary files"));
+  log(colors.dim("  - Check for accidentally included binaries or images"));
+  log(colors.dim("  - Use .grektignore to exclude files"));
 }
 
 function showS3CredentialsHelp(): void {
@@ -386,39 +338,6 @@ function showS3CredentialsHelp(): void {
   log("  GREKT_STORAGE_PUBLIC_URL=https://... (optional)");
   log("");
   log(colors.dim("Use 'grekt pack' to create tarball without uploading"));
-}
-
-function showRegistryConfigHelp(scope: string | null, projectRoot: string): void {
-  const localConfig = getLocalConfig(projectRoot);
-  const configuredScopes = localConfig?.registries
-    ? Object.keys(localConfig.registries)
-    : [];
-
-  if (configuredScopes.length > 0) {
-    error(`No registry configured for ${scope}`);
-    log("");
-    info("Available registries:");
-    for (const s of configuredScopes) {
-      const entry = localConfig?.registries?.[s];
-      if (entry) {
-        log(`  ${s} (${entry.type})`);
-      }
-    }
-    log("");
-    log(colors.dim(`Check if your artifact scope matches your config.`));
-    log(colors.dim(`Config file: ${getLocalConfigPath(projectRoot)}`));
-  } else {
-    error(`No registry configured for ${scope}`);
-    log("");
-    info(`Add a registry to ${getLocalConfigPath(projectRoot)}:`);
-    log(colors.dim("  registries:"));
-    log(colors.dim(`    \"${scope}\":`));
-    log(colors.dim("      type: gitlab"));
-    log(colors.dim("      project: your-group/your-project"));
-    log(colors.dim("      token: your-token"));
-    log("");
-    log(colors.dim("For S3-compatible storage, use --s3 flag"));
-  }
 }
 
 function showGitLabHelp(scope: string | null, projectRoot: string): void {
