@@ -1,12 +1,18 @@
 import type { HttpClient } from "@grekt-labs/cli-engine";
 
+const DEFAULT_REQUEST_TIMEOUT_MS = 15_000;
+
 /**
  * Real HttpClient implementation using native fetch.
- * Used for HTTP requests to registries.
+ * Applies a default timeout to all requests unless the caller provides its own signal.
  */
 export function createHttpClient(): HttpClient {
   return {
-    fetch: (url: string, options?: RequestInit) => fetch(url, options),
+    fetch: (url: string, options?: RequestInit) => {
+      const signal =
+        options?.signal ?? AbortSignal.timeout(DEFAULT_REQUEST_TIMEOUT_MS);
+      return fetch(url, { ...options, signal });
+    },
   };
 }
 
