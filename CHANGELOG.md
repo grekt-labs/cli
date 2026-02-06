@@ -1,3 +1,10 @@
+# [6.2.0](https://github.com/grekt-labs/cli/compare/v6.1.2...v6.2.0) (2026-02-06)
+
+
+### Features
+
+* add upgrade command + preserve --choose selections ([#104](https://github.com/grekt-labs/cli/issues/104)) ([7ff9447](https://github.com/grekt-labs/cli/commit/7ff944721d03ad8d91ac31ccdff7fa7b10412983))
+
 ## [6.1.2](https://github.com/grekt-labs/cli/compare/v6.1.1...v6.1.2) (2026-02-06)
 
 
