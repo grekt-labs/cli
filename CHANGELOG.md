@@ -1,3 +1,10 @@
+# [6.1.0](https://github.com/grekt-labs/cli/compare/v6.0.0...v6.1.0) (2026-02-06)
+
+
+### Features
+
+* **selector:** group components by directory and show descriptions ([4cfd065](https://github.com/grekt-labs/cli/commit/4cfd065e433250f852d7a60008c1eb66c7463660))
+
 # [6.0.0](https://github.com/grekt-labs/cli/compare/v5.19.9...v6.0.0) (2026-02-05)
 
 
