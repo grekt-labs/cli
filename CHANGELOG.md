@@ -1,3 +1,10 @@
+# [6.4.0](https://github.com/grekt-labs/cli/compare/v6.3.0...v6.4.0) (2026-02-06)
+
+
+### Features
+
+* add publish-confirm call after upload ([cc00477](https://github.com/grekt-labs/cli/commit/cc004775b5cf2d75bd6cef4c0319c92974531462))
+
 # [6.3.0](https://github.com/grekt-labs/cli/compare/v6.2.1...v6.3.0) (2026-02-06)
 
 
