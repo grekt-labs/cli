@@ -1,5 +1,6 @@
 import { Command } from "commander";
-import { isInitialized, getConfig, getLocalConfig } from "#/config/project/project";
+import { getConfig, getLocalConfig } from "#/config/project/project";
+import { requireInitialized } from "#/shared/guards/guards";
 import { getLockfile, lockfileExists, fs } from "#/context";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
 import { parseSource, downloadFromSource, getSourceToken } from "#/registry/sources/sources";
@@ -44,11 +45,7 @@ export const installCommand = new Command("install")
   .action(async (options: { force?: boolean }) => {
     const projectRoot = process.cwd();
 
-    if (!isInitialized(projectRoot)) {
-      error("grekt is not initialized in this directory");
-      info("Run 'grekt init' first");
-      process.exit(1);
-    }
+    requireInitialized(projectRoot);
 
     // Check for lockfile
     if (!lockfileExists(projectRoot)) {

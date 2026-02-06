@@ -2,8 +2,8 @@ import { Command } from "commander";
 import {
   getConfig,
   setConfigValue,
-  isInitialized,
 } from "#/config/project/project";
+import { requireInitialized } from "#/shared/guards/guards";
 import { success, error, info, log, colors } from "#/shared/ui/ui";
 import {
   setRegistryInteractive,
@@ -22,11 +22,7 @@ configCommand
   .command("list")
   .description("Show current configuration")
   .action(() => {
-    if (!isInitialized()) {
-      error("grekt is not initialized in this directory");
-      info("Run 'grekt init' first");
-      process.exit(1);
-    }
+    requireInitialized();
 
     const config = getConfig();
     log(colors.bold("Configuration (grekt.yaml):"));
@@ -41,11 +37,7 @@ configCommand
   .command("set <key> <value>")
   .description("Set a configuration value")
   .action((key: string, value: string) => {
-    if (!isInitialized()) {
-      error("grekt is not initialized in this directory");
-      info("Run 'grekt init' first");
-      process.exit(1);
-    }
+    requireInitialized();
 
     if (!VALID_KEYS.includes(key as keyof ProjectConfig)) {
       error(`Invalid key: ${key}`);
@@ -62,11 +54,7 @@ configCommand
   .command("get <key>")
   .description("Get a configuration value")
   .action((key: string) => {
-    if (!isInitialized()) {
-      error("grekt is not initialized in this directory");
-      info("Run 'grekt init' first");
-      process.exit(1);
-    }
+    requireInitialized();
 
     const config = getConfig();
 

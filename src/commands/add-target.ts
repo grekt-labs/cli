@@ -1,5 +1,6 @@
 import { Command } from "commander";
-import { isInitialized, getConfig, saveConfig } from "#/config/project/project";
+import { getConfig, saveConfig } from "#/config/project/project";
+import { requireInitialized } from "#/shared/guards/guards";
 import { getPluginChoices } from "#/sync/manager/manager";
 import { success, error, info, newline } from "#/shared/ui/ui";
 import { withPromptHandler, selectTargetsToAdd } from "#/shared/prompts/prompts";
@@ -10,11 +11,7 @@ export const addTargetCommand = new Command("add-target")
     await withPromptHandler(async () => {
       const projectRoot = process.cwd();
 
-      if (!isInitialized(projectRoot)) {
-        error("grekt is not initialized in this directory");
-        info("Run 'grekt init' first");
-        process.exit(1);
-      }
+      requireInitialized(projectRoot);
 
       const config = getConfig(projectRoot);
       const pluginChoices = getPluginChoices();

@@ -1,5 +1,6 @@
 import { Command } from "commander";
-import { isInitialized, getConfig, saveConfig } from "#/config/project/project";
+import { getConfig, saveConfig } from "#/config/project/project";
+import { requireInitialized } from "#/shared/guards/guards";
 import { fs, cryptoProvider } from "#/context";
 import { getLockfile, saveLockfile } from "#/context";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
@@ -41,11 +42,7 @@ export const upgradeCommand = new Command("upgrade")
   .action(async (artifactArg: string | undefined) => {
     const projectRoot = process.cwd();
 
-    if (!isInitialized(projectRoot)) {
-      error("grekt is not initialized in this directory");
-      info("Run 'grekt init' first");
-      process.exit(1);
-    }
+    requireInitialized(projectRoot);
 
     const lockfile = getLockfile(projectRoot);
     const config = getConfig(projectRoot);

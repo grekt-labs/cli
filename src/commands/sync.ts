@@ -1,6 +1,7 @@
 import { Command } from "commander";
 import { confirm } from "@inquirer/prompts";
-import { isInitialized, getConfig } from "#/config/project/project";
+import { getConfig } from "#/config/project/project";
+import { requireInitialized } from "#/shared/guards/guards";
 import { getLockfile } from "#/context";
 import { getPlugin, getAvailableTargets } from "#/sync/manager/manager";
 import { success, error, info, warning, log, newline, colors, spinner } from "#/shared/ui/ui";
@@ -15,11 +16,7 @@ export const syncCommand = new Command("sync")
     await withPromptHandler(async () => {
       const projectRoot = process.cwd();
 
-      if (!isInitialized(projectRoot)) {
-        error("grekt is not initialized in this directory");
-        info("Run 'grekt init' first");
-        process.exit(1);
-      }
+      requireInitialized(projectRoot);
 
     const config = getConfig(projectRoot);
     const lockfile = getLockfile(projectRoot);
