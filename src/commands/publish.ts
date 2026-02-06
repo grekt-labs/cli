@@ -288,7 +288,7 @@ async function publishSingleArtifact(
     const authenticated = await isApiAuthenticated();
     if (!authenticated) {
       removeTarball(tarballResult.path);
-      showRegistryConfigHelp(artifact.scope, projectRoot);
+      error("Not logged in. Run 'grekt login' first to publish to the default registry.");
       throw new Error("Not authenticated");
     }
   }
