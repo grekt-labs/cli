@@ -1,3 +1,11 @@
+# [6.3.0](https://github.com/grekt-labs/cli/compare/v6.2.1...v6.3.0) (2026-02-06)
+
+
+### Features
+
+* add artifact size limit validation ([ed8cbb8](https://github.com/grekt-labs/cli/commit/ed8cbb88589111b189fc9e72defb4101fbf38ff1))
+* **http:** add default 15s timeout to all HTTP requests ([376c84c](https://github.com/grekt-labs/cli/commit/376c84c0b2e426816ae1cd542bc41fec872d71d0))
+
 ## [6.2.1](https://github.com/grekt-labs/cli/compare/v6.2.0...v6.2.1) (2026-02-06)
 
 
