@@ -1,3 +1,10 @@
+## [6.1.2](https://github.com/grekt-labs/cli/compare/v6.1.1...v6.1.2) (2026-02-06)
+
+
+### Bug Fixes
+
+* **add:** ensure temp directory cleanup on unexpected errors ([e4b6bad](https://github.com/grekt-labs/cli/commit/e4b6bad4fc82ded9ca0216ae7590032a8132c4ae))
+
 ## [6.1.1](https://github.com/grekt-labs/cli/compare/v6.1.0...v6.1.1) (2026-02-06)
 
 
