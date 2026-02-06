@@ -7,10 +7,22 @@ import { parseSource, downloadFromSource } from "#/registry/sources/sources";
 import { getSourceDisplayName } from "#/registry/registry";
 import { scanArtifact, hashDirectory } from "#/context";
 import { parseName, calculateIntegrity } from "@grekt-labs/cli-engine";
-import { selectComponents, isEmptySelection, isFullSelection, createEmptySelection, type ComponentSelection } from "#/artifact/selector/selector";
+import {
+  selectComponents,
+  selectComponentsWithPrecheck,
+  isEmptySelection,
+  isFullSelection,
+  createEmptySelection,
+  type ComponentSelection,
+} from "#/artifact/selector/selector";
 import { removeUnselectedFiles } from "#/artifact/component-manager/component-manager";
 import { generateArtifactIndex } from "#/artifact/index/index";
 import { assertSafeArtifactId } from "#/artifact/validation/validation";
+import {
+  getPreviousInstallation,
+  computeStructureDiff,
+  buildSelectionFromPrevious,
+} from "#/artifact/upgrade/upgrade";
 import { success, error, info, log, warning, newline, colors, spinner } from "#/shared/ui/ui";
 import { compareSemver, CATEGORIES, type Category } from "@grekt-labs/cli-engine";
 import { getPlugin } from "#/sync/manager/manager";
@@ -157,22 +169,64 @@ export const addCommand = new Command("add")
       throw err;
     }
 
+    // Read previous installation state (before modifying config)
+    const config = getConfig(projectRoot);
+    const previous = getPreviousInstallation(resolvedArtifactId, config);
+
     // Determine which components to install (default: all)
     let selection: ComponentSelection = createEmptySelection();
     for (const category of CATEGORIES) {
       selection[category] = artifactInfo[category].map((f) => f.path);
     }
 
-    // If --choose flag, let user select components
-    if (options.choose) {
-      const hasComponents = CATEGORIES.some((cat) => artifactInfo[cat].length > 0);
+    const hasComponents = CATEGORIES.some((cat) => artifactInfo[cat].length > 0);
 
-      if (hasComponents) {
-        newline();
-        log(`${colors.highlight(resolvedArtifactId)}@${artifactInfo.manifest.version}`);
-        newline();
+    if (options.choose && hasComponents) {
+      // Explicit --choose flag: show selector
+      newline();
+      log(`${colors.highlight(resolvedArtifactId)}@${artifactInfo.manifest.version}`);
+      newline();
 
+      // Pre-check previous selection if it was partial
+      if (previous && previous.mode === "partial" && previous.selection) {
+        selection = await selectComponentsWithPrecheck(artifactInfo, previous.selection);
+      } else {
         selection = await selectComponents(artifactInfo);
+      }
+
+      if (isEmptySelection(selection)) {
+        warning("No components selected");
+        fs.rmdir(targetDir, { recursive: true });
+        process.exit(0);
+      }
+
+      removeUnselectedFiles(targetDir, artifactInfo, selection);
+    } else if (!options.choose && previous && previous.mode === "partial" && previous.selection) {
+      // No --choose flag, but previous was partial: auto-preserve selection
+      const diff = computeStructureDiff(previous.selection, artifactInfo);
+
+      if (diff.hasStructuralChanges) {
+        // Structural changes detected - inform user and re-trigger selection
+        newline();
+        log(`${colors.highlight(resolvedArtifactId)}: component changes detected in new version`);
+
+        if (diff.removedComponents.length > 0) {
+          log(colors.dim("  Removed components:"));
+          for (const { category, path } of diff.removedComponents) {
+            log(`    ${colors.warning("-")} ${category}/${path}`);
+          }
+        }
+
+        if (diff.addedComponents.length > 0) {
+          log(colors.dim("  New components:"));
+          for (const { category, path } of diff.addedComponents) {
+            log(`    ${colors.success("+")} ${category}/${path}`);
+          }
+        }
+
+        newline();
+
+        selection = await selectComponentsWithPrecheck(artifactInfo, previous.selection);
 
         if (isEmptySelection(selection)) {
           warning("No components selected");
@@ -180,19 +234,23 @@ export const addCommand = new Command("add")
           process.exit(0);
         }
 
-        // Remove unselected files from artifact directory
+        removeUnselectedFiles(targetDir, artifactInfo, selection);
+      } else {
+        // No structural changes - silently apply previous selection
+        selection = buildSelectionFromPrevious(previous.selection, artifactInfo);
         removeUnselectedFiles(targetDir, artifactInfo, selection);
       }
     }
+    // else: no --choose, previous was full (or new install) - keep all components
 
-    // Update grekt.yaml with artifact info
-    const config = getConfig(projectRoot);
+    // Preserve core mode from previous installation
+    const isCore = options.core || previous?.isCore || false;
 
     // Check if all components were selected (no --choose or all selected)
     const allSelected = isFullSelection(artifactInfo, selection);
 
     // Use simple format only if all selected AND not core mode
-    if (allSelected && !options.core) {
+    if (allSelected && !isCore) {
       // Simple format: just version (LAZY mode by default)
       config.artifacts[resolvedArtifactId] = artifactInfo.manifest.version;
     } else {
@@ -200,7 +258,7 @@ export const addCommand = new Command("add")
       const entry: Record<string, unknown> = {
         version: artifactInfo.manifest.version,
       };
-      if (options.core) entry.mode = "core";
+      if (isCore) entry.mode = "core";
       // Add selected components by category
       for (const category of CATEGORIES) {
         if (selection[category].length > 0) {
@@ -221,7 +279,7 @@ export const addCommand = new Command("add")
       integrity,
       source: source.raw,
       resolved: downloadResult.resolved, // Full URL, immutable after write
-      mode: options.core ? "core" : "lazy",
+      mode: isCore ? "core" : "lazy",
       files: fileHashes,
     };
     saveLockfile(lockfile, projectRoot);
@@ -230,7 +288,7 @@ export const addCommand = new Command("add")
     generateArtifactIndex(projectRoot, config);
 
     newline();
-    const modeLabel = options.core ? ` ${colors.dim("(core)")}` : "";
+    const modeLabel = isCore ? ` ${colors.dim("(core)")}` : "";
     success(`Installed ${colors.highlight(resolvedArtifactId)}@${artifactInfo.manifest.version}${modeLabel}`);
 
     // Show what was actually installed
