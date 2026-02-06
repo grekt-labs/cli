@@ -10,6 +10,7 @@ Commands use [Commander.js](https://github.com/tj/commander.js). Each command li
 src/commands/
 ├── init.ts          # Initialize grekt in a directory
 ├── add.ts           # Add artifact from registry/GitHub/GitLab
+├── upgrade.ts       # Upgrade artifacts to latest versions
 ├── sync.ts          # Sync artifacts to AI tools
 ├── check.ts         # Verify artifact integrity
 ├── login.ts         # Authenticate with registry
@@ -415,6 +416,7 @@ For real-world examples, look at these commands in `src/commands/`:
 |---------|---------|--------------|
 | `check.ts` | Simple, no args | Basic flow, exit codes |
 | `add.ts` | Args + options | Spinners, error handling, index regeneration |
+| `upgrade.ts` | Batch operation | Iterating artifacts, selection preservation |
 | `init.ts` | Interactive | Prompts with `withPromptHandler` |
 | `sync.ts` | Multi-target | Iterating over plugins |
 
