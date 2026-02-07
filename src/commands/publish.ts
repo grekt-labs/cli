@@ -1,7 +1,8 @@
 import { Command } from "commander";
 import { getLocalConfigPath, getLocalConfig } from "#/config/project/project";
 import {
-  prepareArtifact,
+  validateForPublish,
+  createArtifactTarball,
   isApproachingSizeLimit,
   createArtifactPublisher,
   verifyPublisherAuth,
@@ -145,7 +146,7 @@ async function handleChangedMode(cwd: string, options: PublishOptions): Promise<
 }
 
 /**
- * Publish a single artifact: validate, create tarball, check auth, publish.
+ * Publish a single artifact: validate, check auth, check version, create tarball, publish.
  */
 async function publishSingleArtifact(
   artifactPath: string,
@@ -153,10 +154,10 @@ async function publishSingleArtifact(
   options: { s3?: boolean },
   silent: boolean = false
 ): Promise<void> {
-  // Validate and create tarball
-  let prepared;
+  // 1. Validate artifact (cheap, no tarball yet)
+  let validated;
   try {
-    prepared = prepareArtifact(artifactPath, projectRoot);
+    validated = validateForPublish(artifactPath, projectRoot);
   } catch (err) {
     const validationError = (err as { validationError?: ValidationError }).validationError;
     if (validationError) {
@@ -169,15 +170,77 @@ async function publishSingleArtifact(
       if (validationError.type === "keywords") showKeywordsExample();
       if (validationError.type === "no-components") showFrontmatterExample();
       if (validationError.type === "no-scope") showScopeHelp();
-      if (validationError.type === "size-limit") showSizeHelp();
     }
     throw err;
   }
 
-  const { artifact, tarballPath, tarballFilename, tarballSize } = prepared;
+  const { artifact } = validated;
 
+  // 2. Log component summary
   if (!silent) {
     logComponentSummary(artifact.artifactId, artifact.manifest.version, artifact.manifest.keywords ?? [], artifact.scanned, artifact.componentCount);
+  }
+
+  // 3. Create publisher and verify auth (fail fast before tarball)
+  const publisher = createArtifactPublisher({
+    s3: options.s3,
+    scope: artifact.scope,
+    projectRoot,
+  });
+
+  const authError = await verifyPublisherAuth(publisher, projectRoot);
+  if (authError) {
+    if (authError === "no-s3-credentials") showS3CredentialsHelp();
+    if (authError === "not-authenticated") error("Not logged in. Run 'grekt login' first to publish to the default registry.");
+    throw new Error(authError);
+  }
+
+  // 4. Check version existence (fail fast before tarball)
+  const preCheckCtx: PublishContext = {
+    artifactId: artifact.artifactId,
+    version: artifact.manifest.version,
+    tarballPath: "",
+    scope: artifact.scope,
+    projectRoot,
+    description: artifact.manifest.description,
+    keywords: artifact.manifest.keywords,
+  };
+
+  if (!silent) {
+    const checkSpin = spinner("Checking if version exists...");
+    checkSpin.start();
+
+    const versionCheck = await checkVersionExists(publisher, preCheckCtx);
+    checkSpin.stop();
+
+    if (versionCheck.exists) {
+      error(`Version ${artifact.manifest.version} already exists for ${artifact.artifactId}`);
+      info("Bump the version in grekt.yaml and try again");
+      throw new Error("Version exists");
+    }
+
+    if (versionCheck.checkFailed) {
+      info(`Could not verify version existence: ${versionCheck.error}`);
+    }
+  }
+
+  // 5. Create tarball (only after all checks pass)
+  let tarballPath: string;
+  let tarballFilename: string;
+  let tarballSize: number;
+
+  try {
+    const tarball = createArtifactTarball(validated, projectRoot);
+    tarballPath = tarball.tarballPath;
+    tarballFilename = tarball.tarballFilename;
+    tarballSize = tarball.tarballSize;
+  } catch (err) {
+    const validationError = (err as { validationError?: ValidationError }).validationError;
+    if (validationError?.type === "size-limit") {
+      error(validationError.message);
+      showSizeHelp();
+    }
+    throw err;
   }
 
   if (isApproachingSizeLimit(tarballSize) && !silent) {
@@ -190,21 +253,7 @@ async function publishSingleArtifact(
     success(`Created tarball: ${tarballFilename} (${formatBytes(tarballSize)})`);
   }
 
-  // Create publisher and verify auth
-  const publisher = createArtifactPublisher({
-    s3: options.s3,
-    scope: artifact.scope,
-    projectRoot,
-  });
-
-  const authError = await verifyPublisherAuth(publisher, projectRoot);
-  if (authError) {
-    removeTarball(tarballPath);
-    if (authError === "no-s3-credentials") showS3CredentialsHelp();
-    if (authError === "not-authenticated") error("Not logged in. Run 'grekt login' first to publish to the default registry.");
-    throw new Error(authError);
-  }
-
+  // 6. Publish
   const ctx: PublishContext = {
     artifactId: artifact.artifactId,
     version: artifact.manifest.version,
@@ -215,27 +264,6 @@ async function publishSingleArtifact(
     keywords: artifact.manifest.keywords,
   };
 
-  // Check version existence (non-silent only)
-  if (!silent) {
-    const checkSpin = spinner("Checking if version exists...");
-    checkSpin.start();
-
-    const versionCheck = await checkVersionExists(publisher, ctx);
-    checkSpin.stop();
-
-    if (versionCheck.exists) {
-      removeTarball(tarballPath);
-      error(`Version ${artifact.manifest.version} already exists for ${artifact.artifactId}`);
-      info("Bump the version in grekt.yaml and try again");
-      throw new Error("Version exists");
-    }
-
-    if (versionCheck.checkFailed) {
-      info(`Could not verify version existence: ${versionCheck.error}`);
-    }
-  }
-
-  // Publish
   const publisherName = getPublisherTypeName(publisher);
   const spin = silent ? null : spinner(`Publishing to ${publisherName}...`);
   spin?.start();
