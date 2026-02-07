@@ -1,7 +1,8 @@
 import { Command } from "commander";
 import { fs } from "#/context";
 import { confirm } from "@inquirer/prompts";
-import { isInitialized, getConfig, saveConfig } from "#/config/project/project";
+import { getConfig, saveConfig } from "#/config/project/project";
+import { requireInitialized } from "#/shared/guards/guards";
 import { getLockfile, saveLockfile } from "#/context";
 import { getSafeFilename, CATEGORIES, getCategoriesForFormat, type Category } from "@grekt-labs/cli-engine";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
@@ -31,11 +32,7 @@ export const removeCommand = new Command("remove")
         process.exit(1);
       }
 
-      if (!isInitialized(projectRoot)) {
-        error("grekt is not initialized in this directory");
-        info("Run 'grekt init' first");
-        process.exit(1);
-      }
+      requireInitialized(projectRoot);
 
     // Validate artifact ID to prevent path traversal
     if (!isSafeArtifactId(artifactId)) {

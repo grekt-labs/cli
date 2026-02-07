@@ -1,4 +1,4 @@
-import { dirname, join } from "path";
+import { basename, dirname, join } from "path";
 import type { SyncPlugin, SyncResult, SyncOptions, SyncPreview, FolderPluginConfig, RulesOnlyPluginConfig } from "#/sync/sync.types";
 import {
   type Lockfile,
@@ -25,6 +25,23 @@ export function ensureDir(filepath: string): void {
   if (!fs.exists(dir)) {
     fs.mkdir(dir, { recursive: true });
   }
+}
+
+/**
+ * Find the actual path of an entry point file, matching case-insensitively.
+ * Returns the real path if a case-variant exists, otherwise returns the canonical path.
+ */
+function findEntryPointPath(projectRoot: string, entryPoint: string): string {
+  const dir = dirname(entryPoint);
+  const filename = basename(entryPoint);
+  const fullDir = `${projectRoot}/${dir}`;
+
+  if (!fs.exists(fullDir)) return `${projectRoot}/${entryPoint}`;
+
+  const files = fs.readdir(fullDir);
+  const match = files.find((f) => f.toLowerCase() === filename.toLowerCase());
+
+  return match ? `${projectRoot}/${dir}/${match}` : `${projectRoot}/${entryPoint}`;
 }
 
 // Re-export for backwards compatibility
@@ -71,7 +88,7 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
   function updateContextEntryPoint(projectRoot: string, lockfile: Lockfile, result: SyncResult): void {
     if (!contextEntryPoint || !generateRulesContent) return;
 
-    const filepath = `${projectRoot}/${contextEntryPoint}`;
+    const filepath = findEntryPointPath(projectRoot, contextEntryPoint);
     const managedBlock = generateRulesContent(lockfile);
 
     if (!fs.exists(filepath)) {
@@ -90,7 +107,7 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
 
     // Prepend to file
     fs.writeFile(filepath, managedBlock + "\n\n" + content.trimStart());
-    result.updated.push(contextEntryPoint);
+    result.updated.push(basename(filepath));
   }
 
   function getTargetPath(artifactId: string, category: Category, filePath: string): string {
@@ -226,10 +243,11 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
       }
 
       if (contextEntryPoint) {
-        if (!fs.exists(`${projectRoot}/${contextEntryPoint}`)) {
+        const entryPath = findEntryPointPath(projectRoot, contextEntryPoint);
+        if (!fs.exists(entryPath)) {
           preview.willCreate.push(contextEntryPoint);
         } else {
-          preview.willUpdate.push(contextEntryPoint);
+          preview.willUpdate.push(basename(entryPath));
         }
       }
 
@@ -250,7 +268,8 @@ export function createRulesOnlyPlugin(config: RulesOnlyPluginConfig): SyncPlugin
     targetFile: contextEntryPoint,
 
     targetExists(projectRoot: string): boolean {
-      return fs.exists(`${projectRoot}/${contextEntryPoint}`);
+      const filepath = findEntryPointPath(projectRoot, contextEntryPoint);
+      return fs.exists(filepath);
     },
 
     async sync(lockfile: Lockfile, projectRoot: string, options: SyncOptions): Promise<SyncResult> {
@@ -265,7 +284,7 @@ export function createRulesOnlyPlugin(config: RulesOnlyPluginConfig): SyncPlugin
         };
       }
 
-      const filepath = `${projectRoot}/${contextEntryPoint}`;
+      const filepath = findEntryPointPath(projectRoot, contextEntryPoint);
       const managedBlock = generateRulesContent(lockfile);
 
       if (!fs.exists(filepath)) {
@@ -273,6 +292,7 @@ export function createRulesOnlyPlugin(config: RulesOnlyPluginConfig): SyncPlugin
           result.skipped.push(`${contextEntryPoint} (file doesn't exist)`);
           return result;
         }
+        ensureDir(filepath);
         fs.writeFile(filepath, managedBlock);
         result.created.push(contextEntryPoint);
         return result;
@@ -287,12 +307,12 @@ export function createRulesOnlyPlugin(config: RulesOnlyPluginConfig): SyncPlugin
 
       // Prepend to file
       fs.writeFile(filepath, managedBlock + "\n\n" + content.trimStart());
-      result.updated.push(contextEntryPoint);
+      result.updated.push(basename(filepath));
       return result;
     },
 
     preview(_lockfile: Lockfile, projectRoot: string, _options?: SyncOptions): SyncPreview {
-      const filepath = `${projectRoot}/${contextEntryPoint}`;
+      const filepath = findEntryPointPath(projectRoot, contextEntryPoint);
 
       if (!fs.exists(filepath)) {
         return {
@@ -304,7 +324,7 @@ export function createRulesOnlyPlugin(config: RulesOnlyPluginConfig): SyncPlugin
 
       return {
         willCreate: [],
-        willUpdate: [contextEntryPoint],
+        willUpdate: [basename(filepath)],
         willSkip: [],
       };
     },

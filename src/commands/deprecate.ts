@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import { createRegistryClient } from "#/registry/api-client/api-client";
 import { isAuthenticated, setProjectRoot } from "#/auth/session/session";
-import { isInitialized } from "#/config/project/project";
+import { requireInitialized } from "#/shared/guards/guards";
 import { getS3CredentialsFromEnv } from "#/registry/publishers/s3-publisher";
 import {
   getArtifactMetadata,
@@ -47,11 +47,7 @@ export const deprecateCommand = new Command("deprecate")
       process.exit(1);
     }
 
-    // Require project initialization
-    if (!isInitialized(projectRoot)) {
-      error("Not in a grekt project. Run 'grekt init' first.");
-      process.exit(1);
-    }
+    requireInitialized(projectRoot);
 
     // Set project root for session operations
     setProjectRoot(projectRoot);

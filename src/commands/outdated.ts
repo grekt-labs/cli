@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { isInitialized } from "#/config/project/project";
+import { requireInitialized } from "#/shared/guards/guards";
 import { getLockfile } from "#/context";
 import { createRegistryClient } from "#/registry/api-client/api-client";
 import { compareSemver } from "@grekt-labs/cli-engine";
@@ -17,11 +17,7 @@ export const outdatedCommand = new Command("outdated")
   .action(async () => {
     const projectRoot = process.cwd();
 
-    if (!isInitialized(projectRoot)) {
-      error("grekt is not initialized in this directory");
-      info("Run 'grekt init' first");
-      process.exit(1);
-    }
+    requireInitialized(projectRoot);
 
     const lockfile = getLockfile(projectRoot);
     const artifacts = Object.entries(lockfile.artifacts);

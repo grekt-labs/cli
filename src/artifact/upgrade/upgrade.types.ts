@@ -1,4 +1,29 @@
 import type { ComponentSelection } from "#/artifact/selector/selector";
+import type { ProjectConfig, Lockfile } from "@grekt-labs/cli-engine";
+
+export interface UpgradeResult {
+  artifactId: string;
+  fromVersion: string;
+  toVersion: string;
+  success: boolean;
+  skipped?: boolean;
+  reason?: string;
+  deprecationMessage?: string;
+}
+
+export interface PerformUpgradeParams {
+  artifactId: string;
+  currentVersion: string;
+  projectRoot: string;
+  config: ProjectConfig;
+  lockfile: Lockfile;
+  onStructuralChanges: (
+    artifactId: string,
+    diff: StructureDiff,
+    artifactInfo: import("@grekt-labs/cli-engine").ArtifactInfo,
+    previousSelection: ComponentSelection
+  ) => Promise<ComponentSelection>;
+}
 
 /**
  * Represents a previously installed artifact's state,

@@ -1,9 +1,20 @@
-import { createEmptySelection, type ComponentSelection } from "#/artifact/selector/selector";
+import { logger } from "#/shared/logger/logger";
+import {
+  createEmptySelection,
+  isEmptySelection,
+  isFullSelection,
+  type ComponentSelection,
+} from "#/artifact/selector/selector";
+import { removeUnselectedFiles } from "#/artifact/component-manager/component-manager";
 import { getLocalConfig } from "#/config/project/project";
 import { resolveRegistry, createRegistryClient } from "#/registry/factory/factory";
+import { ARTIFACTS_DIR } from "#/config/paths/paths";
+import { parseSource, downloadFromSource } from "#/registry/sources/sources";
+import { fs, cryptoProvider, scanArtifact, hashDirectory } from "#/context";
 import {
   CATEGORIES,
   compareSemver,
+  calculateIntegrity,
   parseArtifactId,
   type ArtifactEntry,
   type ArtifactInfo,
@@ -11,7 +22,13 @@ import {
   type LockfileEntry,
   type ProjectConfig,
 } from "@grekt-labs/cli-engine";
-import type { PreviousInstallation, StructureDiff, UpdateCheckResult } from "./upgrade.types";
+import type {
+  PreviousInstallation,
+  StructureDiff,
+  UpdateCheckResult,
+  UpgradeResult,
+  PerformUpgradeParams,
+} from "./upgrade.types";
 
 /**
  * Extract installation state from grekt.yaml config entry.
@@ -169,7 +186,165 @@ export async function checkForUpdate(
 
     const isOutdated = compareSemver(currentVersion, latestVersion) < 0;
     return { isOutdated, latestVersion };
-  } catch {
+  } catch (err) {
+    logger.debug("checkForUpdate failed:", artifactId, err);
     return null;
+  }
+}
+
+/**
+ * Perform the actual upgrade of a single artifact.
+ * Pure logic: downloads, validates, replaces files, updates config/lockfile.
+ * UI decisions (structural changes) are delegated via onStructuralChanges callback.
+ * Mutates config and lockfile in place.
+ */
+export async function performUpgrade(params: PerformUpgradeParams): Promise<UpgradeResult> {
+  const { artifactId, currentVersion, projectRoot, config, lockfile, onStructuralChanges } = params;
+  const targetDir = `${projectRoot}/${ARTIFACTS_DIR}/${artifactId}`;
+  const tempDir = `${projectRoot}/${ARTIFACTS_DIR}/.tmp-${cryptoProvider.randomUUID()}`;
+
+  try {
+    const source = parseSource(artifactId);
+
+    fs.mkdir(tempDir, { recursive: true });
+    const downloadResult = await downloadFromSource(source, tempDir, projectRoot);
+
+    if (!downloadResult.success) {
+      fs.rmdir(tempDir, { recursive: true });
+      return {
+        artifactId,
+        fromVersion: currentVersion,
+        toVersion: "",
+        success: false,
+        reason: downloadResult.error || "Download failed",
+      };
+    }
+
+    const artifactInfo = scanArtifact(tempDir);
+    if (!artifactInfo) {
+      fs.rmdir(tempDir, { recursive: true });
+      return {
+        artifactId,
+        fromVersion: currentVersion,
+        toVersion: "",
+        success: false,
+        reason: "Invalid artifact structure",
+      };
+    }
+
+    const newVersion = artifactInfo.manifest.version;
+
+    if (compareSemver(newVersion, currentVersion) <= 0) {
+      fs.rmdir(tempDir, { recursive: true });
+      return {
+        artifactId,
+        fromVersion: currentVersion,
+        toVersion: currentVersion,
+        success: false,
+        skipped: true,
+        reason: "Already up to date",
+      };
+    }
+
+    // Resolve component selection
+    const previous = getPreviousInstallation(artifactId, config);
+
+    let selection: ComponentSelection = createEmptySelection();
+    for (const category of CATEGORIES) {
+      selection[category] = artifactInfo[category].map((f) => f.path);
+    }
+
+    if (previous && previous.mode === "partial" && previous.selection) {
+      const diff = computeStructureDiff(previous.selection, artifactInfo);
+
+      if (diff.hasStructuralChanges) {
+        selection = await onStructuralChanges(artifactId, diff, artifactInfo, previous.selection);
+
+        if (isEmptySelection(selection)) {
+          fs.rmdir(tempDir, { recursive: true });
+          return {
+            artifactId,
+            fromVersion: currentVersion,
+            toVersion: currentVersion,
+            success: false,
+            skipped: true,
+            reason: "No components selected",
+          };
+        }
+      } else {
+        selection = buildSelectionFromPrevious(previous.selection, artifactInfo);
+      }
+    }
+
+    // Replace old artifact with new
+    if (fs.exists(targetDir)) {
+      fs.rmdir(targetDir, { recursive: true });
+    }
+
+    const parentDir = targetDir.substring(0, targetDir.lastIndexOf("/"));
+    if (!fs.exists(parentDir)) {
+      fs.mkdir(parentDir, { recursive: true });
+    }
+
+    fs.rename(tempDir, targetDir);
+
+    // Remove unselected files if partial
+    const allSelected = isFullSelection(artifactInfo, selection);
+    if (!allSelected) {
+      removeUnselectedFiles(targetDir, artifactInfo, selection);
+    }
+
+    // Update config entry
+    const isCore = previous?.isCore ?? false;
+
+    if (allSelected && !isCore) {
+      config.artifacts[artifactId] = artifactInfo.manifest.version;
+    } else {
+      const entry: Record<string, unknown> = {
+        version: artifactInfo.manifest.version,
+      };
+      if (isCore) entry.mode = "core";
+      for (const category of CATEGORIES) {
+        if (selection[category].length > 0) {
+          entry[category] = selection[category];
+        }
+      }
+      config.artifacts[artifactId] = entry as (typeof config.artifacts)[string];
+    }
+
+    // Update lockfile
+    const fileHashes = hashDirectory(targetDir);
+    const integrity = calculateIntegrity(fileHashes);
+    const previousLockEntry = lockfile.artifacts[artifactId];
+
+    lockfile.artifacts[artifactId] = {
+      version: artifactInfo.manifest.version,
+      integrity,
+      source: previousLockEntry?.source || artifactId,
+      resolved: downloadResult.resolved,
+      mode: isCore ? "core" : (previousLockEntry?.mode ?? "lazy"),
+      files: fileHashes,
+    };
+
+    return {
+      artifactId,
+      fromVersion: currentVersion,
+      toVersion: newVersion,
+      success: true,
+      deprecationMessage: downloadResult.deprecationMessage,
+    };
+  } catch (err) {
+    if (fs.exists(tempDir)) {
+      fs.rmdir(tempDir, { recursive: true });
+    }
+
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return {
+      artifactId,
+      fromVersion: currentVersion,
+      toVersion: "",
+      success: false,
+      reason: message,
+    };
   }
 }

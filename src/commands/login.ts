@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import { browserLogin, emailLogin } from "#/auth/oauth/oauth";
 import { setProjectRoot } from "#/auth/session/session";
-import { isInitialized } from "#/config/project/project";
+import { requireInitialized } from "#/shared/guards/guards";
 import { success, error, info, log, spinner } from "#/shared/ui/ui";
 
 export const loginCommand = new Command("login")
@@ -11,11 +11,7 @@ export const loginCommand = new Command("login")
   .action(async (options: { email?: string; password?: string }) => {
     const projectRoot = process.cwd();
 
-    // Require project initialization
-    if (!isInitialized(projectRoot)) {
-      error("Not in a grekt project. Run 'grekt init' first.");
-      process.exit(1);
-    }
+    requireInitialized(projectRoot);
 
     // Set project root for session persistence
     setProjectRoot(projectRoot);

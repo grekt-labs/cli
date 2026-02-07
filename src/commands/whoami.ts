@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import { getSupabaseClient, setProjectRoot, getSupabaseUrl } from "#/auth/session/session";
-import { isInitialized } from "#/config/project/project";
+import { requireInitialized } from "#/shared/guards/guards";
 import { log, colors, spinner, error as showError } from "#/shared/ui/ui";
 
 export const whoamiCommand = new Command("whoami")
@@ -8,11 +8,7 @@ export const whoamiCommand = new Command("whoami")
   .action(async () => {
     const projectRoot = process.cwd();
 
-    // Require project initialization
-    if (!isInitialized(projectRoot)) {
-      showError("Not in a grekt project. Run 'grekt init' first.");
-      process.exit(1);
-    }
+    requireInitialized(projectRoot);
 
     // Set project root for session operations
     setProjectRoot(projectRoot);
