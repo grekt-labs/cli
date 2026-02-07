@@ -204,6 +204,7 @@ async function publishSingleArtifact(
     projectRoot,
     description: artifact.manifest.description,
     keywords: artifact.manifest.keywords,
+    isPrivate: artifact.manifest.private,
   };
 
   if (!silent) {
@@ -262,6 +263,7 @@ async function publishSingleArtifact(
     projectRoot,
     description: artifact.manifest.description,
     keywords: artifact.manifest.keywords,
+    isPrivate: artifact.manifest.private,
   };
 
   const publisherName = getPublisherTypeName(publisher);

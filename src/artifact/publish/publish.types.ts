@@ -6,6 +6,7 @@ export interface ValidatedArtifact {
     version: string;
     description?: string;
     keywords?: string[];
+    private?: boolean;
   };
   scanned: {
     agent?: unknown;
