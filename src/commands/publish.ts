@@ -14,6 +14,7 @@ import {
 import type { ValidationError } from "#/artifact/publish/publish";
 import type { PublishContext } from "#/registry/publishers/publisher.types";
 import { CustomPublisher } from "#/registry/publishers/custom-publisher";
+import { RegistryError } from "#/registry/api-client/registry-error";
 import { CATEGORIES, isWorkspaceRoot, compareSemver } from "@grekt-labs/cli-engine";
 import { success, error, info, log, colors, spinner } from "#/shared/ui/ui";
 import { loadWorkspace } from "./workspace";
@@ -239,7 +240,21 @@ async function publishSingleArtifact(
   const spin = silent ? null : spinner(`Publishing to ${publisherName}...`);
   spin?.start();
 
-  const publishResult = await publishArtifact(publisher, ctx);
+  let publishResult;
+  try {
+    publishResult = await publishArtifact(publisher, ctx);
+  } catch (err) {
+    spin?.stop();
+    removeTarball(tarballPath);
+
+    if (err instanceof RegistryError) {
+      error(err.message);
+      showRegistryErrorHint(err);
+      throw err;
+    }
+
+    throw err;
+  }
   spin?.stop();
 
   if (!publishResult.success) {
@@ -338,6 +353,23 @@ function showS3CredentialsHelp(): void {
   log("  GREKT_STORAGE_PUBLIC_URL=https://... (optional)");
   log("");
   log(colors.dim("Use 'grekt pack' to create tarball without uploading"));
+}
+
+const REGISTRY_ERROR_HINTS: Record<string, string> = {
+  SCOPE_NOT_FOUND: "Make sure the scope matches your username or an organization you belong to",
+  SCOPE_NOT_OWNED: "You are not a member of this organization",
+};
+
+function showRegistryErrorHint(err: RegistryError): void {
+  const hint = REGISTRY_ERROR_HINTS[err.code];
+  if (hint) {
+    info(hint);
+    return;
+  }
+
+  if (err.code === "INSERT_FAILED" && err.details) {
+    info(`Details: ${err.details}`);
+  }
 }
 
 function showGitLabHelp(scope: string | null, projectRoot: string): void {

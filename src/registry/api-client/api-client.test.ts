@@ -1,4 +1,5 @@
 import { describe, test, expect, beforeEach, afterEach, vi } from "bun:test";
+import { RegistryError } from "./registry-error";
 
 let mockSupabase: any;
 let mockSession: any;
@@ -219,18 +220,25 @@ describe("api-client", () => {
     );
   });
 
-  test("deprecate throws on error response", async () => {
+  test("deprecate throws RegistryError on error response", async () => {
     mockSession = { access_token: "token" };
     globalThis.fetch = vi.fn(async () => ({
       ok: false,
       status: 403,
-      json: async () => ({ error: "You don't have permission" }),
+      json: async () => ({ error: "You don't have permission", code: "SCOPE_NOT_OWNED" }),
     })) as unknown as typeof fetch;
 
     const { RegistryClient } = await import("./api-client");
     const client = new RegistryClient();
 
-    await expect(client.deprecate("@org/tool", "1.0.0", "no")).rejects.toThrow("You don't have permission");
+    try {
+      await client.deprecate("@org/tool", "1.0.0", "no");
+      expect.unreachable("Should have thrown");
+    } catch (err) {
+      expect(err).toBeInstanceOf(RegistryError);
+      expect((err as RegistryError).message).toBe("You don't have permission");
+      expect((err as RegistryError).code).toBe("SCOPE_NOT_OWNED");
+    }
   });
 
   test("undeprecate throws when not authenticated", async () => {
@@ -263,5 +271,73 @@ describe("api-client", () => {
         }),
       })
     );
+  });
+
+  test("publish throws RegistryError with code and details on error response", async () => {
+    mockSession = { access_token: "token" };
+    globalThis.fetch = vi.fn(async () => ({
+      ok: false,
+      status: 400,
+      json: async () => ({
+        error: "Insert failed",
+        code: "INSERT_FAILED",
+        details: "duplicate key on artifact_id",
+      }),
+    })) as unknown as typeof fetch;
+
+    const { RegistryClient } = await import("./api-client");
+    const client = new RegistryClient();
+
+    try {
+      await client.publish({ artifactId: "@org/tool", version: "1.0.0" });
+      expect.unreachable("Should have thrown");
+    } catch (err) {
+      expect(err).toBeInstanceOf(RegistryError);
+      expect((err as RegistryError).message).toBe("Insert failed");
+      expect((err as RegistryError).code).toBe("INSERT_FAILED");
+      expect((err as RegistryError).details).toBe("duplicate key on artifact_id");
+    }
+  });
+
+  test("publish throws RegistryError with UNKNOWN code when JSON has no code field", async () => {
+    mockSession = { access_token: "token" };
+    globalThis.fetch = vi.fn(async () => ({
+      ok: false,
+      status: 500,
+      json: async () => ({ message: "something broke" }),
+    })) as unknown as typeof fetch;
+
+    const { RegistryClient } = await import("./api-client");
+    const client = new RegistryClient();
+
+    try {
+      await client.publish({ artifactId: "@org/tool", version: "1.0.0" });
+      expect.unreachable("Should have thrown");
+    } catch (err) {
+      expect(err).toBeInstanceOf(RegistryError);
+      expect((err as RegistryError).code).toBe("UNKNOWN");
+      expect((err as RegistryError).message).toBe("Request failed with status 500");
+    }
+  });
+
+  test("undeprecate throws RegistryError with UNKNOWN code when JSON parsing fails", async () => {
+    mockSession = { access_token: "token" };
+    globalThis.fetch = vi.fn(async () => ({
+      ok: false,
+      status: 502,
+      json: async () => { throw new Error("not json"); },
+    })) as unknown as typeof fetch;
+
+    const { RegistryClient } = await import("./api-client");
+    const client = new RegistryClient();
+
+    try {
+      await client.undeprecate("@org/tool", "1.0.0");
+      expect.unreachable("Should have thrown");
+    } catch (err) {
+      expect(err).toBeInstanceOf(RegistryError);
+      expect((err as RegistryError).code).toBe("UNKNOWN");
+      expect((err as RegistryError).message).toBe("Request failed with status 502");
+    }
   });
 });

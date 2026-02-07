@@ -3,6 +3,8 @@ import type { ArtifactMetadata } from "@grekt-labs/cli-engine";
 import { sortVersionsDesc, getHighestVersion, validateTarballContents } from "@grekt-labs/cli-engine";
 import { getSupabaseClient, getSession, getSupabaseUrl } from "#/auth/session/session";
 import { fs, shell, http, cryptoProvider } from "#/context";
+import type { RegistryErrorResponse } from "./api-client.types";
+import { RegistryError } from "./registry-error";
 
 export interface VersionInfo {
   version: string;
@@ -44,6 +46,22 @@ export class RegistryClient {
 
   constructor(edgeFunctionUrl?: string) {
     this.edgeFunctionUrl = edgeFunctionUrl || `${getSupabaseUrl()}/functions/v1`;
+  }
+
+  private async parseErrorResponse(response: Response): Promise<RegistryErrorResponse> {
+    try {
+      const body = await response.json();
+      if (body && typeof body.error === "string" && typeof body.code === "string") {
+        return body as RegistryErrorResponse;
+      }
+    } catch (err) {
+      logger.debug("Failed to parse error response JSON:", err);
+    }
+
+    return {
+      error: `Request failed with status ${response.status}`,
+      code: "UNKNOWN",
+    };
   }
 
   // ============================================================================
@@ -307,9 +325,8 @@ export class RegistryClient {
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => null);
-      const errorMessage = errorData?.error || `Failed to get upload URL: ${response.status}`;
-      throw new Error(errorMessage);
+      const errorData = await this.parseErrorResponse(response);
+      throw new RegistryError(errorData.error, errorData.code, errorData.details);
     }
 
     return await response.json();
@@ -334,8 +351,8 @@ export class RegistryClient {
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => null);
-      throw new Error(errorData?.error || `Failed to deprecate: ${response.status}`);
+      const errorData = await this.parseErrorResponse(response);
+      throw new RegistryError(errorData.error, errorData.code, errorData.details);
     }
   }
 
@@ -358,8 +375,8 @@ export class RegistryClient {
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => null);
-      throw new Error(errorData?.error || `Failed to undeprecate: ${response.status}`);
+      const errorData = await this.parseErrorResponse(response);
+      throw new RegistryError(errorData.error, errorData.code, errorData.details);
     }
   }
 
@@ -383,8 +400,8 @@ export class RegistryClient {
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => null);
-      throw new Error(errorData?.error || `Failed to confirm publish: ${response.status}`);
+      const errorData = await this.parseErrorResponse(response);
+      throw new RegistryError(errorData.error, errorData.code, errorData.details);
     }
   }
 }
