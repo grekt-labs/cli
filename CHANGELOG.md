@@ -1,3 +1,10 @@
+## [6.4.2](https://github.com/grekt-labs/cli/compare/v6.4.1...v6.4.2) (2026-02-07)
+
+
+### Bug Fixes
+
+* correct license reference in README to BSL 1.1 ([eb8fd9f](https://github.com/grekt-labs/cli/commit/eb8fd9fb4c9c2def88d0f5768580512ec77c54a7))
+
 ## [6.4.1](https://github.com/grekt-labs/cli/compare/v6.4.0...v6.4.1) (2026-02-07)
 
 
