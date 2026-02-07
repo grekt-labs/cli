@@ -81,7 +81,7 @@ export class ApiPublisher implements Publisher {
         await client.confirmPublish(ctx.artifactId, ctx.version);
       } catch (confirmErr) {
         // Log but don't fail the publish - extraction is optional for MVP
-        console.error("Warning: Failed to extract files for browsing:", confirmErr);
+        logger.debug("Failed to extract files for browsing:", confirmErr);
       }
 
       return { success: true };
