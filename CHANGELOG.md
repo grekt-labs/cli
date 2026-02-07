@@ -1,3 +1,10 @@
+# [6.5.0](https://github.com/grekt-labs/cli/compare/v6.4.3...v6.5.0) (2026-02-07)
+
+
+### Features
+
+* add interactive login method selection ([e0f584f](https://github.com/grekt-labs/cli/commit/e0f584f3fafe36ff6bdf5060512484da6fe47e3a))
+
 ## [6.4.3](https://github.com/grekt-labs/cli/compare/v6.4.2...v6.4.3) (2026-02-07)
 
 
