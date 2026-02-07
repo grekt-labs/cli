@@ -2,6 +2,7 @@ import { logger } from "#/shared/logger/logger";
 import { isAuthenticated, isSupabaseConfigured } from "#/auth/session/session";
 import { fs, http } from "#/context";
 import { createRegistryClient } from "#/registry/api-client/api-client";
+import { RegistryError } from "#/registry/api-client/registry-error";
 import type { Publisher, PublishContext, PublishResult } from "./publisher.types";
 
 /**
@@ -86,6 +87,10 @@ export class ApiPublisher implements Publisher {
 
       return { success: true };
     } catch (err) {
+      if (err instanceof RegistryError) {
+        throw err;
+      }
+
       return {
         success: false,
         error: err instanceof Error ? err.message : "Unknown error",
