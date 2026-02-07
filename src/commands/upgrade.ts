@@ -2,7 +2,7 @@ import { Command } from "commander";
 import { getConfig, saveConfig } from "#/config/project/project";
 import { requireInitialized } from "#/shared/guards/guards";
 import { getLockfile, saveLockfile } from "#/context";
-import { selectComponentsWithPrecheck } from "#/artifact/selector/selector";
+import { promptStructuralChanges } from "#/artifact/upgrade/display";
 import { generateArtifactIndex } from "#/artifact/index/index";
 import {
   isRegistrySource,
@@ -11,7 +11,7 @@ import {
 } from "#/artifact/upgrade/upgrade";
 import type { UpgradeResult } from "#/artifact/upgrade/upgrade.types";
 import { success, error, info, log, warning, newline, colors, spinner } from "#/shared/ui/ui";
-import { getPlugin } from "#/sync/manager/manager";
+import { syncToTargets } from "#/sync/helpers/helpers";
 
 export const upgradeCommand = new Command("upgrade")
   .description("Upgrade artifacts to their latest versions (registry only)")
@@ -88,27 +88,7 @@ export const upgradeCommand = new Command("upgrade")
         lockfile,
         onStructuralChanges: async (id, diff, artifactInfo, previousSelection) => {
           downloadSpin.stop();
-
-          newline();
-          log(`${colors.highlight(id)}: structural changes detected`);
-
-          if (diff.removedComponents.length > 0) {
-            log(colors.dim("  Removed components:"));
-            for (const { category, path } of diff.removedComponents) {
-              log(`    ${colors.warning("-")} ${category}/${path}`);
-            }
-          }
-
-          if (diff.addedComponents.length > 0) {
-            log(colors.dim("  New components:"));
-            for (const { category, path } of diff.addedComponents) {
-              log(`    ${colors.success("+")} ${category}/${path}`);
-            }
-          }
-
-          newline();
-
-          return selectComponentsWithPrecheck(artifactInfo, previousSelection);
+          return promptStructuralChanges(id, diff, artifactInfo, previousSelection);
         },
       });
 
@@ -129,7 +109,8 @@ export const upgradeCommand = new Command("upgrade")
     generateArtifactIndex(projectRoot, config);
 
     // Auto-sync to targets
-    syncToTargets(config, lockfile, projectRoot);
+    newline();
+    await syncToTargets(config, lockfile, projectRoot);
 
     // Summary
     displayUpgradeSummary(results);
@@ -171,42 +152,6 @@ function resolveArtifactsToCheck(
   }
 
   return registryArtifacts;
-}
-
-/**
- * Sync upgraded artifacts to all configured targets.
- */
-async function syncToTargets(
-  config: ReturnType<typeof getConfig>,
-  lockfile: ReturnType<typeof getLockfile>,
-  projectRoot: string
-) {
-  if (config.targets.length === 0) return;
-
-  newline();
-  for (const target of config.targets) {
-    const plugin = getPlugin(target, config.customTargets);
-    const syncSpin = spinner(`Syncing ${plugin.name}...`);
-    syncSpin.start();
-
-    const syncResult = await plugin.sync(lockfile, projectRoot, {
-      createTarget: true,
-      force: true,
-      projectConfig: config,
-    });
-
-    syncSpin.stop();
-
-    for (const file of syncResult.created) {
-      success(`Created ${file}`);
-    }
-    for (const file of syncResult.updated) {
-      info(`Updated ${file}`);
-    }
-    for (const file of syncResult.skipped) {
-      warning(`Skipped ${file}`);
-    }
-  }
 }
 
 /**

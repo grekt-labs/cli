@@ -10,7 +10,6 @@ import { scanArtifact, hashDirectory } from "#/context";
 import { parseName, calculateIntegrity } from "@grekt-labs/cli-engine";
 import {
   selectComponents,
-  selectComponentsWithPrecheck,
   isEmptySelection,
   isFullSelection,
   createEmptySelection,
@@ -24,9 +23,10 @@ import {
   computeStructureDiff,
   buildSelectionFromPrevious,
 } from "#/artifact/upgrade/upgrade";
+import { promptStructuralChanges } from "#/artifact/upgrade/display";
 import { success, error, info, log, warning, newline, colors, spinner } from "#/shared/ui/ui";
 import { compareSemver, CATEGORIES, type Category } from "@grekt-labs/cli-engine";
-import { getPlugin } from "#/sync/manager/manager";
+import { syncToTargets } from "#/sync/helpers/helpers";
 
 
 export const addCommand = new Command("add")
@@ -203,27 +203,7 @@ export const addCommand = new Command("add")
       const diff = computeStructureDiff(previous.selection, artifactInfo);
 
       if (diff.hasStructuralChanges) {
-        // Structural changes detected - inform user and re-trigger selection
-        newline();
-        log(`${colors.highlight(resolvedArtifactId)}: component changes detected in new version`);
-
-        if (diff.removedComponents.length > 0) {
-          log(colors.dim("  Removed components:"));
-          for (const { category, path } of diff.removedComponents) {
-            log(`    ${colors.warning("-")} ${category}/${path}`);
-          }
-        }
-
-        if (diff.addedComponents.length > 0) {
-          log(colors.dim("  New components:"));
-          for (const { category, path } of diff.addedComponents) {
-            log(`    ${colors.success("+")} ${category}/${path}`);
-          }
-        }
-
-        newline();
-
-        selection = await selectComponentsWithPrecheck(artifactInfo, previous.selection);
+        selection = await promptStructuralChanges(resolvedArtifactId, diff, artifactInfo, previous.selection);
 
         if (isEmptySelection(selection)) {
           warning("No components selected");
@@ -301,30 +281,5 @@ export const addCommand = new Command("add")
     }
 
     // Auto-sync to targets
-    if (config.targets.length > 0) {
-      newline();
-      for (const target of config.targets) {
-        const plugin = getPlugin(target, config.customTargets);
-        const spin = spinner(`Syncing ${plugin.name}...`);
-        spin.start();
-
-        const result = await plugin.sync(lockfile, projectRoot, {
-          createTarget: true,
-          force: true,
-          projectConfig: config,
-        });
-
-        spin.stop();
-
-        for (const file of result.created) {
-          success(`Created ${file}`);
-        }
-        for (const file of result.updated) {
-          info(`Updated ${file}`);
-        }
-        for (const file of result.skipped) {
-          warning(`Skipped ${file}`);
-        }
-      }
-    }
+    await syncToTargets(config, lockfile, projectRoot);
   });
