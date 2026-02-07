@@ -1,3 +1,4 @@
+import { logger } from "#/shared/logger/logger";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import type { S3Credentials } from "@grekt-labs/cli-engine";
 import { fs } from "#/context";
@@ -84,7 +85,8 @@ export class S3Publisher implements Publisher {
 
     try {
       return await checkS3VersionExists(credentials, ctx.artifactId, ctx.version);
-    } catch {
+    } catch (err) {
+      logger.debug("S3Publisher.versionExists failed:", ctx.artifactId, ctx.version, err);
       return false;
     }
   }
@@ -98,7 +100,8 @@ export class S3Publisher implements Publisher {
     try {
       const metadata = await getArtifactMetadata(credentials, ctx.artifactId);
       return metadata?.latest ?? null;
-    } catch {
+    } catch (err) {
+      logger.debug("S3Publisher.getLatestVersion failed:", ctx.artifactId, err);
       return null;
     }
   }

@@ -1,3 +1,4 @@
+import { logger } from "#/shared/logger/logger";
 import {
   createEmptySelection,
   isEmptySelection,
@@ -185,7 +186,8 @@ export async function checkForUpdate(
 
     const isOutdated = compareSemver(currentVersion, latestVersion) < 0;
     return { isOutdated, latestVersion };
-  } catch {
+  } catch (err) {
+    logger.debug("checkForUpdate failed:", artifactId, err);
     return null;
   }
 }

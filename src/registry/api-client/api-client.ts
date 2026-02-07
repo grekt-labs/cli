@@ -1,3 +1,4 @@
+import { logger } from "#/shared/logger/logger";
 import type { ArtifactMetadata } from "@grekt-labs/cli-engine";
 import { sortVersionsDesc, getHighestVersion, validateTarballContents } from "@grekt-labs/cli-engine";
 import { getSupabaseClient, getSession, getSupabaseUrl } from "#/auth/session/session";
@@ -98,7 +99,8 @@ export class RegistryClient {
         createdAt: artifact.created_at,
         updatedAt: sortedByDate[0]?.published_at || artifact.created_at,
       };
-    } catch {
+    } catch (err) {
+      logger.debug("getArtifact failed:", artifactId, err);
       return null;
     }
   }
@@ -131,7 +133,8 @@ export class RegistryClient {
       const sortedVersions = sortVersionsDesc(versions.map(v => v.version));
 
       return sortedVersions.map(version => versionMap.get(version)!);
-    } catch {
+    } catch (err) {
+      logger.debug("getVersions failed:", artifactId, err);
       return [];
     }
   }
@@ -250,7 +253,8 @@ export class RegistryClient {
         .single();
 
       return !error && !!data;
-    } catch {
+    } catch (err) {
+      logger.debug("versionExists failed:", artifactId, version, err);
       return false;
     }
   }
@@ -278,7 +282,8 @@ export class RegistryClient {
       if (error || !user) return null;
 
       return { email: user.email || "" };
-    } catch {
+    } catch (err) {
+      logger.debug("whoami failed:", err);
       return null;
     }
   }

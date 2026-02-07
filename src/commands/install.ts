@@ -1,3 +1,4 @@
+import { logger } from "#/shared/logger/logger";
 import { Command } from "commander";
 import { getConfig, getLocalConfig } from "#/config/project/project";
 import { requireInitialized } from "#/shared/guards/guards";
@@ -33,7 +34,8 @@ function getHeadersForArtifact(artifactId: string, projectRoot: string): Record<
     }
 
     return {};
-  } catch {
+  } catch (err) {
+    logger.verbose("Failed to resolve headers for artifact:", artifactId, err);
     return {};
   }
 }

@@ -1,3 +1,4 @@
+import { logger } from "#/shared/logger/logger";
 import { createRegistryClient } from "#/registry/factory/factory";
 import type { ResolvedRegistry } from "#/registry/registry.types";
 import type { Publisher, PublishContext, PublishResult } from "./publisher.types";
@@ -18,7 +19,8 @@ export class CustomPublisher implements Publisher {
     const client = createRegistryClient(this.registry);
     try {
       return await client.versionExists(ctx.artifactId, ctx.version);
-    } catch {
+    } catch (err) {
+      logger.debug("CustomPublisher.versionExists failed:", ctx.artifactId, ctx.version, err);
       return false;
     }
   }
@@ -27,7 +29,8 @@ export class CustomPublisher implements Publisher {
     const client = createRegistryClient(this.registry);
     try {
       return await client.getLatestVersion(ctx.artifactId);
-    } catch {
+    } catch (err) {
+      logger.debug("CustomPublisher.getLatestVersion failed:", ctx.artifactId, err);
       return null;
     }
   }

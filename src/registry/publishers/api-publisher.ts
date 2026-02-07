@@ -1,3 +1,4 @@
+import { logger } from "#/shared/logger/logger";
 import { isAuthenticated, isSupabaseConfigured } from "#/auth/session/session";
 import { fs, http } from "#/context";
 import { createRegistryClient } from "#/registry/api-client/api-client";
@@ -18,7 +19,8 @@ export class ApiPublisher implements Publisher {
     const client = createRegistryClient();
     try {
       return await client.versionExists(ctx.artifactId, ctx.version);
-    } catch {
+    } catch (err) {
+      logger.debug("ApiPublisher.versionExists failed:", ctx.artifactId, ctx.version, err);
       return false;
     }
   }
@@ -32,7 +34,8 @@ export class ApiPublisher implements Publisher {
     const client = createRegistryClient();
     try {
       return await client.getLatestVersion(ctx.artifactId);
-    } catch {
+    } catch (err) {
+      logger.debug("ApiPublisher.getLatestVersion failed:", ctx.artifactId, err);
       return null;
     }
   }
@@ -101,7 +104,8 @@ export async function isApiAuthenticated(): Promise<boolean> {
   }
   try {
     return await isAuthenticated();
-  } catch {
+  } catch (err) {
+    logger.debug("isApiAuthenticated failed:", err);
     return false;
   }
 }
