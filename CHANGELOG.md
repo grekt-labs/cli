@@ -1,3 +1,11 @@
+## [6.6.1](https://github.com/grekt-labs/cli/compare/v6.6.0...v6.6.1) (2026-02-07)
+
+
+### Bug Fixes
+
+* **publish:** reorder checks before tarball creation ([66fea4f](https://github.com/grekt-labs/cli/commit/66fea4f70f5ea19b814ebf8840a707a98c6cb0c8))
+* **publish:** split prepareArtifact into validate and tarball steps ([162f7ff](https://github.com/grekt-labs/cli/commit/162f7ffde68cd70343cedd1657a6c557733ecb10))
+
 # [6.6.0](https://github.com/grekt-labs/cli/compare/v6.5.0...v6.6.0) (2026-02-07)
 
 
