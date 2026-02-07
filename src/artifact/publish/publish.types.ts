@@ -17,6 +17,11 @@ export interface ValidatedArtifact {
   componentCount: number;
 }
 
+export interface ValidateResult {
+  artifact: ValidatedArtifact;
+  components: unknown[];
+}
+
 export interface PrepareResult {
   artifact: ValidatedArtifact;
   tarballPath: string;
