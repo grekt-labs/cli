@@ -1,3 +1,11 @@
+## [6.6.2](https://github.com/grekt-labs/cli/compare/v6.6.1...v6.6.2) (2026-02-07)
+
+
+### Bug Fixes
+
+* **deps:** update @grekt-labs/cli-engine to 5.5.6 ([a6dabf5](https://github.com/grekt-labs/cli/commit/a6dabf5a72dc97c9770d5ea75b3fa3d06a14f103))
+* **publish:** pass private flag from manifest to publish context ([f2132a1](https://github.com/grekt-labs/cli/commit/f2132a14a64e8abd7cd6c65720cce8aeb55ae846))
+
 ## [6.6.1](https://github.com/grekt-labs/cli/compare/v6.6.0...v6.6.1) (2026-02-07)
 
 
