@@ -1,8 +1,74 @@
 import { Command } from "commander";
+import { select, input, password } from "@inquirer/prompts";
 import { browserLogin, emailLogin } from "#/auth/oauth/oauth";
 import { setProjectRoot } from "#/auth/session/session";
 import { requireInitialized } from "#/shared/guards/guards";
+import { withPromptHandler } from "#/shared/prompts/prompts";
 import { success, error, info, log, spinner } from "#/shared/ui/ui";
+
+async function interactiveEmailFlow(): Promise<void> {
+  const emailAddress = await input({
+    message: "Email:",
+    validate: (value) => (value.trim() ? true : "Email is required"),
+  });
+
+  const userPassword = await password({
+    message: "Password:",
+    validate: (value) => (value.trim() ? true : "Password is required"),
+  });
+
+  const spin = spinner("Logging in...");
+  spin.start();
+
+  try {
+    await emailLogin(emailAddress, userPassword);
+    spin.stop();
+    success("Logged in");
+  } catch (err) {
+    spin.stop();
+    error(err instanceof Error ? err.message : "Login failed");
+    process.exit(1);
+  }
+}
+
+async function interactiveBrowserFlow(): Promise<void> {
+  const spin = spinner("Waiting for authentication...");
+
+  try {
+    await browserLogin({
+      onAuthUrl: (url) => {
+        log("");
+        info("Opening browser for authentication...");
+        log("");
+        log(`  If the browser doesn't open, visit:`);
+        log(`  ${url}`);
+        log("");
+      },
+    });
+    spin.start();
+    spin.stop();
+    success("Logged in");
+  } catch (err) {
+    spin.stop();
+    error(err instanceof Error ? err.message : "Login failed");
+    process.exit(1);
+  }
+}
+
+async function nonInteractiveEmailFlow(email: string, userPassword: string): Promise<void> {
+  const spin = spinner("Logging in...");
+  spin.start();
+
+  try {
+    await emailLogin(email, userPassword);
+    spin.stop();
+    success("Logged in");
+  } catch (err) {
+    spin.stop();
+    error(err instanceof Error ? err.message : "Login failed");
+    process.exit(1);
+  }
+}
 
 export const loginCommand = new Command("login")
   .description("Log in to grekt registry")
@@ -13,23 +79,10 @@ export const loginCommand = new Command("login")
 
     requireInitialized(projectRoot);
 
-    // Set project root for session persistence
     setProjectRoot(projectRoot);
 
-    // Non-interactive mode: email/password
     if (options.email && options.password) {
-      const spin = spinner("Logging in...");
-      spin.start();
-
-      try {
-        await emailLogin(options.email, options.password);
-        spin.stop();
-        success("Logged in");
-      } catch (err) {
-        spin.stop();
-        error(err instanceof Error ? err.message : "Login failed");
-        process.exit(1);
-      }
+      await nonInteractiveEmailFlow(options.email, options.password);
       return;
     }
 
@@ -38,26 +91,19 @@ export const loginCommand = new Command("login")
       process.exit(1);
     }
 
-    // Interactive mode: browser OAuth flow
-    const spin = spinner("Waiting for authentication...");
-
-    try {
-      await browserLogin({
-        onAuthUrl: (url) => {
-          log("");
-          info("Opening browser for authentication...");
-          log("");
-          log(`  If the browser doesn't open, visit:`);
-          log(`  ${url}`);
-          log("");
-        },
+    await withPromptHandler(async () => {
+      const method = await select({
+        message: "Login method:",
+        choices: [
+          { name: "GitHub (browser)", value: "github" as const },
+          { name: "Email & password", value: "email" as const },
+        ],
       });
-      spin.start();
-      spin.stop();
-      success("Logged in");
-    } catch (err) {
-      spin.stop();
-      error(err instanceof Error ? err.message : "Login failed");
-      process.exit(1);
-    }
+
+      if (method === "email") {
+        await interactiveEmailFlow();
+      } else {
+        await interactiveBrowserFlow();
+      }
+    });
   });
