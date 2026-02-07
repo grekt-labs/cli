@@ -1,3 +1,10 @@
+## [6.4.3](https://github.com/grekt-labs/cli/compare/v6.4.2...v6.4.3) (2026-02-07)
+
+
+### Bug Fixes
+
+* replace leftover console.error with logger.debug in api-publisher ([8e8fc59](https://github.com/grekt-labs/cli/commit/8e8fc591a6f10463a10ca4ca2f40ee834c28016d))
+
 ## [6.4.2](https://github.com/grekt-labs/cli/compare/v6.4.1...v6.4.2) (2026-02-07)
 
 
