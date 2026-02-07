@@ -12,7 +12,7 @@ import { isApiAuthenticated } from "#/registry/publishers/api-publisher";
 import type { PublishContext, Publisher } from "#/registry/publishers/publisher.types";
 import { ARTIFACT_MAX_BYTES, ARTIFACT_WARNING_BYTES } from "#/constants";
 import { formatBytes } from "#/shared/format";
-import type { PrepareResult } from "./publish.types";
+import type { PrepareResult, ValidateResult } from "./publish.types";
 
 const MIN_KEYWORDS = 3;
 const MAX_KEYWORDS = 5;
@@ -24,13 +24,13 @@ export interface ValidationError {
 }
 
 /**
- * Validate and prepare an artifact for publishing.
- * Returns the validated artifact info and tarball, or throws with a ValidationError.
+ * Validate an artifact for publishing without creating a tarball.
+ * Returns validated artifact info and generated components.
  */
-export function prepareArtifact(
+export function validateForPublish(
   artifactPath: string,
   projectRoot: string
-): PrepareResult {
+): ValidateResult {
   const result = validateArtifact(artifactPath, projectRoot, {
     requireKeywords: { min: MIN_KEYWORDS, max: MAX_KEYWORDS },
   });
@@ -56,6 +56,29 @@ export function prepareArtifact(
 
   const components = generateComponents(artifact.scanned);
 
+  return {
+    artifact: {
+      artifactId: artifact.artifactId,
+      scope: artifact.scope,
+      fullPath: artifact.fullPath,
+      manifest: artifact.manifest,
+      scanned: artifact.scanned,
+      componentCount: artifact.componentCount,
+    },
+    components,
+  };
+}
+
+/**
+ * Create a tarball from a previously validated artifact.
+ * Returns the tarball path, filename, and size.
+ */
+export function createArtifactTarball(
+  validated: ValidateResult,
+  projectRoot: string
+): { tarballPath: string; tarballFilename: string; tarballSize: number } {
+  const { artifact, components } = validated;
+
   const tarballResult = createTarball({
     artifactPath: artifact.fullPath,
     artifactId: artifact.artifactId,
@@ -80,17 +103,26 @@ export function prepareArtifact(
   }
 
   return {
-    artifact: {
-      artifactId: artifact.artifactId,
-      scope: artifact.scope,
-      fullPath: artifact.fullPath,
-      manifest: artifact.manifest,
-      scanned: artifact.scanned,
-      componentCount: artifact.componentCount,
-    },
     tarballPath: tarballResult.path,
     tarballFilename: tarballResult.filename ?? "",
     tarballSize,
+  };
+}
+
+/**
+ * @deprecated Use validateForPublish() + createArtifactTarball() instead.
+ * Validate and prepare an artifact for publishing (legacy combined function).
+ */
+export function prepareArtifact(
+  artifactPath: string,
+  projectRoot: string
+): PrepareResult {
+  const validated = validateForPublish(artifactPath, projectRoot);
+  const tarball = createArtifactTarball(validated, projectRoot);
+
+  return {
+    artifact: validated.artifact,
+    ...tarball,
   };
 }
 
@@ -161,3 +193,4 @@ export async function publishArtifact(
 }
 
 export { getPublisherTypeName, removeTarball, ARTIFACT_WARNING_BYTES, formatBytes };
+export type { ValidateResult } from "./publish.types";
