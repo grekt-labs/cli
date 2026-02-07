@@ -1,3 +1,10 @@
+## [6.4.1](https://github.com/grekt-labs/cli/compare/v6.4.0...v6.4.1) (2026-02-07)
+
+
+### Bug Fixes
+
+* case-insensitive matching for context entry points ([#109](https://github.com/grekt-labs/cli/issues/109)) ([b038e10](https://github.com/grekt-labs/cli/commit/b038e1076fabe9a637a97b9b1903c1248fa6e7df))
+
 # [6.4.0](https://github.com/grekt-labs/cli/compare/v6.3.0...v6.4.0) (2026-02-06)
 
 
