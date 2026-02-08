@@ -1,3 +1,10 @@
+# [6.8.0](https://github.com/grekt-labs/cli/compare/v6.7.1...v6.8.0) (2026-02-08)
+
+
+### Features
+
+* **init:** add .grekt to .gitignore during initialization ([c8bcdca](https://github.com/grekt-labs/cli/commit/c8bcdcacb4c742e9c92b3307e9c223d4f73b8f17))
+
 ## [6.7.1](https://github.com/grekt-labs/cli/compare/v6.7.0...v6.7.1) (2026-02-08)
 
 
