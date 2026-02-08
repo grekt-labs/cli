@@ -1,3 +1,10 @@
+## [6.7.1](https://github.com/grekt-labs/cli/compare/v6.7.0...v6.7.1) (2026-02-08)
+
+
+### Bug Fixes
+
+* **deps:** update cli-engine to 5.7.1 and add GREKT_REGISTRY_URL support ([80188f3](https://github.com/grekt-labs/cli/commit/80188f3d923ae809f595099946fceb6b8ac6bc2b))
+
 # [6.7.0](https://github.com/grekt-labs/cli/compare/v6.6.2...v6.7.0) (2026-02-08)
 
 
