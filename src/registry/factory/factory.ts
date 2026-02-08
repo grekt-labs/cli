@@ -16,7 +16,11 @@ import {
 import { fs, http, shell, createTokenProvider } from "#/context";
 
 /**
- * Resolve a scope to a registry configuration (with dependencies injected)
+ * Resolve a scope to a registry configuration (with dependencies injected).
+ *
+ * Supports GREKT_REGISTRY_URL env var to override the default registry endpoint.
+ * Useful for local development or self-hosted registries.
+ * Example: GREKT_REGISTRY_URL=http://localhost:54321/functions/v1
  */
 export function resolveRegistry(
   scope: string,
@@ -24,7 +28,15 @@ export function resolveRegistry(
   projectRoot: string = process.cwd()
 ): ResolvedRegistry {
   const tokens = createTokenProvider(projectRoot);
-  return _resolveRegistry(scope, localConfig, tokens);
+  const resolved = _resolveRegistry(scope, localConfig, tokens);
+
+  if (resolved.type === "default" && process.env.GREKT_REGISTRY_URL) {
+    const override = process.env.GREKT_REGISTRY_URL.replace(/\/$/, "");
+    resolved.apiBasePath = override;
+    resolved.host = "";
+  }
+
+  return resolved;
 }
 
 /**
