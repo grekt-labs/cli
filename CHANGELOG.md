@@ -1,3 +1,10 @@
+# [6.9.0](https://github.com/grekt-labs/cli/compare/v6.8.0...v6.9.0) (2026-02-08)
+
+
+### Features
+
+* **publish:** send categories in publish request body ([e0a5ab9](https://github.com/grekt-labs/cli/commit/e0a5ab90b7078ea4ac24733e17b8131473d4b6eb))
+
 # [6.8.0](https://github.com/grekt-labs/cli/compare/v6.7.1...v6.8.0) (2026-02-08)
 
 
