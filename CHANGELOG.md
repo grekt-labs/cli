@@ -1,3 +1,10 @@
+# [6.7.0](https://github.com/grekt-labs/cli/compare/v6.6.2...v6.7.0) (2026-02-08)
+
+
+### Features
+
+* **deps:** update @grekt-labs/cli-engine to 5.6.0 ([fef4d74](https://github.com/grekt-labs/cli/commit/fef4d744c8e1ad0c9ba66082a055878c9642e7d3))
+
 ## [6.6.2](https://github.com/grekt-labs/cli/compare/v6.6.1...v6.6.2) (2026-02-07)
 
 
