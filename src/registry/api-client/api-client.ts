@@ -23,6 +23,7 @@ export interface DownloadResult {
 export interface PublishRequest {
   artifactId: string;
   version: string;
+  categories: string[];
   description?: string;
   keywords?: string[];
   private?: boolean;

@@ -57,6 +57,7 @@ export class ApiPublisher implements Publisher {
       const { uploadUrl } = await client.publish({
         artifactId: ctx.artifactId,
         version: ctx.version,
+        categories: ctx.categories,
         description: ctx.description,
         keywords: ctx.keywords,
         private: ctx.isPrivate,

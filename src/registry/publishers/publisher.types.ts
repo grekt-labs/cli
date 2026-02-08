@@ -16,6 +16,7 @@ export interface PublishContext {
   tarballPath: string;
   scope: string;
   projectRoot: string;
+  categories: string[];
   description?: string;
   keywords?: string[];
   isPrivate?: boolean;
