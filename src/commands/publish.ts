@@ -83,6 +83,7 @@ async function handleChangedMode(cwd: string, options: PublishOptions): Promise<
         tarballPath: "",
         scope: artifact.manifest.name.split("/")[0]!,
         projectRoot: cwd,
+        categories: [],
       });
     } catch {
       // Artifact not published yet
@@ -174,7 +175,14 @@ async function publishSingleArtifact(
     throw err;
   }
 
-  const { artifact } = validated;
+  const { artifact, components } = validated;
+  const categories = Object.keys(components);
+
+  if (categories.length === 0) {
+    error(`Artifact must contain at least one component (${CATEGORIES.join(", ")})`);
+    showFrontmatterExample();
+    throw new Error("No categories detected");
+  }
 
   // 2. Log component summary
   if (!silent) {
@@ -202,6 +210,7 @@ async function publishSingleArtifact(
     tarballPath: "",
     scope: artifact.scope,
     projectRoot,
+    categories,
     description: artifact.manifest.description,
     keywords: artifact.manifest.keywords,
     isPrivate: artifact.manifest.private,
@@ -261,6 +270,7 @@ async function publishSingleArtifact(
     tarballPath,
     scope: artifact.scope,
     projectRoot,
+    categories,
     description: artifact.manifest.description,
     keywords: artifact.manifest.keywords,
     isPrivate: artifact.manifest.private,
@@ -388,6 +398,7 @@ function showS3CredentialsHelp(): void {
 const REGISTRY_ERROR_HINTS: Record<string, string> = {
   SCOPE_NOT_FOUND: "Make sure the scope matches your username or an organization you belong to",
   SCOPE_NOT_OWNED: "You are not a member of this organization",
+  INVALID_CATEGORIES: `Artifact categories are invalid. Valid categories: ${CATEGORIES.join(", ")}`,
 };
 
 function showRegistryErrorHint(err: RegistryError): void {
