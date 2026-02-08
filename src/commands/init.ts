@@ -6,6 +6,7 @@ import { isInitialized, saveConfig } from "#/config/project/project";
 import { getPluginChoices, getDefaultTarget } from "#/sync/manager/manager";
 import { createEmptyIndex } from "#/artifact/index/index";
 import { GREKT_YAML, GREKT_DIR, ARTIFACTS_DIR, INDEX_FILE } from "#/config/paths/paths";
+import { ensureGitignore } from "#/shared/gitignore/gitignore";
 import { success, info, warning, newline, log, colors } from "#/shared/ui/ui";
 import { withPromptHandler, selectTargets } from "#/shared/prompts/prompts";
 import { ASCII_LOGO } from "#/constants";
@@ -130,6 +131,8 @@ export const initCommand = new Command("init")
 
     // Create empty index
     createEmptyIndex(projectRoot);
+
+    ensureGitignore(projectRoot);
 
     newline();
     success(`Created ${GREKT_YAML}`);
