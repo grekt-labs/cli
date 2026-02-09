@@ -12,6 +12,7 @@ import { isSafeArtifactId } from "#/artifact/validation/validation";
 import { success, error, info, log, newline, colors } from "#/shared/ui/ui";
 import { withPromptHandler } from "#/shared/prompts/prompts";
 import { getSyncPaths } from "#/sync/manager/manager";
+import { uninstallHooks } from "#/sync/hooks";
 
 // Only MD categories are synced to target folders
 const SYNCABLE_CATEGORIES = getCategoriesForFormat("md");
@@ -89,6 +90,12 @@ export const removeCommand = new Command("remove")
     }
 
     const removed: string[] = [];
+
+    // Uninstall hooks from target tool settings before removing artifact
+    const hooksRemoved = uninstallHooks(projectRoot, artifactId);
+    if (hooksRemoved > 0) {
+      removed.push(`${hooksRemoved} hook(s) from settings`);
+    }
 
     // Remove from .grekt/artifacts/
     if (fs.exists(artifactDir)) {
