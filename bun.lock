@@ -6,7 +6,7 @@
       "name": "grekt",
       "dependencies": {
         "@aws-sdk/client-s3": "^3.971.0",
-        "@grekt-labs/cli-engine": "^5.11.0",
+        "@grekt-labs/cli-engine": "^5.11.1",
         "@inquirer/prompts": "^7.2.0",
         "@supabase/supabase-js": "^2.91.0",
         "chalk": "^5.4.1",
@@ -124,7 +124,7 @@
 
     "@colors/colors": ["@colors/colors@1.5.0", "", {}, "sha512-ooWCrlZP11i8GImSjTHYHLkvFDP48nS4+204nGb1RiX/WXYHmJA2III9/e2DWVabCESdW7hBAEzHRqUn9OUVvQ=="],
 
-    "@grekt-labs/cli-engine": ["@grekt-labs/cli-engine@5.11.0", "https://npm.pkg.github.com/download/@grekt-labs/cli-engine/5.11.0/0ecc4523d9672aa73e7162c1538314bdb02b45b6", { "dependencies": { "gray-matter": "^4.0.3", "semver": "^7.7.3", "yaml": "^2.6.1", "zod": "^3.24.1" } }, "sha512-nHQMMwbbt6BJMgNTNNQL/z9GG9GfL4ufQehI0wIEAcUTavOGGuar6EgTQr0/8qkYAFFjxtNMnUyyhcKrwqwb4w=="],
+    "@grekt-labs/cli-engine": ["@grekt-labs/cli-engine@5.11.1", "https://npm.pkg.github.com/download/@grekt-labs/cli-engine/5.11.1/58c8903cebd717530e8650423624318a1ea40812", { "dependencies": { "gray-matter": "^4.0.3", "semver": "^7.7.3", "yaml": "^2.6.1", "zod": "^3.24.1" } }, "sha512-7L2wsc/dcWV6k6mQBJUR5N0ZAQcjkas0hPPeRnJarr6knJx+vGlijPouAAgS9MLDudJIWO+V1K2eATMI2sst9w=="],
 
     "@inquirer/ansi": ["@inquirer/ansi@1.0.2", "", {}, "sha512-S8qNSZiYzFd0wAcyG5AXCvUHC5Sr7xpZ9wZ2py9XR88jUz8wooStVx5M6dRzczbBWjic9NP7+rY0Xi7qqK/aMQ=="],
 
