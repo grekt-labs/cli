@@ -36,6 +36,10 @@ export const gitlabProvider: RegistryProvider = {
       },
     });
 
+    const prefix = await input({
+      message: "Artifact nesting path (where artifacts are grouped, leave empty if root):",
+    });
+
     const token = await password({
       message: "GitLab token (optional, can use GITLAB_TOKEN env var):",
       mask: "*",
@@ -44,6 +48,7 @@ export const gitlabProvider: RegistryProvider = {
     return {
       host,
       project,
+      prefix: prefix.trim() || undefined,
       token: token || undefined,
     };
   },
