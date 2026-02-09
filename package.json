@@ -1,6 +1,6 @@
 {
   "name": "grekt",
-  "version": "6.13.0",
+  "version": "6.13.1",
   "description": "AI tools versioned, synced, and shared across tools and teams",
   "type": "module",
   "bin": {

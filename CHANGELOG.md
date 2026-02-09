@@ -1,3 +1,10 @@
+## [6.13.1](https://github.com/grekt-labs/cli/compare/v6.13.0...v6.13.1) (2026-02-09)
+
+
+### Bug Fixes
+
+* update cli-engine 5.11.1 to fix skill-router bundle error ([2155061](https://github.com/grekt-labs/cli/commit/2155061570b32634d517de4cf24f6f91f01f769f))
+
 # [6.13.0](https://github.com/grekt-labs/cli/compare/v6.12.0...v6.13.0) (2026-02-09)
 
 
