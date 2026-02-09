@@ -1,9 +1,22 @@
 import { basename } from "path";
-import { createFolderPlugin, generateDefaultBlockContent } from "#/sync/base/base";
-import { toSafeName } from "@grekt-labs/cli-engine";
+import { createFolderPlugin, generateDefaultBlockContent, ensureDir } from "#/sync/base/base";
+import { toSafeName, getSkillRouterTemplate } from "@grekt-labs/cli-engine";
+import { fs } from "#/context";
 
 const TARGET_DIR = ".claude";
 const ENTRY_POINTS = [`${TARGET_DIR}/CLAUDE.md`, "CLAUDE.md"];
+const SKILL_ROUTER_PATH = `${TARGET_DIR}/skills/grekt/SKILL.md`;
+
+const SKILL_ROUTER_FRONTMATTER = `---
+name: grekt
+description: Search and load grekt artifact skills by name or intent
+argument-hint: "skill <name> | <question>"
+allowed-tools: Bash, Read, AskUserQuestion
+---`;
+
+function buildSkillRouterContent(): string {
+  return `${SKILL_ROUTER_FRONTMATTER}\n\n${getSkillRouterTemplate()}`;
+}
 
 function getSkillFolderName(artifactId: string, filePath: string): string {
   const safeName = toSafeName(artifactId);
@@ -23,6 +36,14 @@ export const claudePlugin = createFolderPlugin({
       return `${folderName}/SKILL.md`;
     }
     return null;
+  },
+  setup: (projectRoot) => {
+    const skillRouterFile = `${projectRoot}/${SKILL_ROUTER_PATH}`;
+
+    if (fs.exists(skillRouterFile)) return;
+
+    ensureDir(skillRouterFile);
+    fs.writeFile(skillRouterFile, buildSkillRouterContent());
   },
 });
 

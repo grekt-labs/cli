@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import { getConfig, saveConfig } from "#/config/project/project";
 import { requireInitialized } from "#/shared/guards/guards";
-import { getPluginChoices } from "#/sync/manager/manager";
+import { getPluginChoices, getPlugin } from "#/sync/manager/manager";
 import { success, error, info, newline } from "#/shared/ui/ui";
 import { withPromptHandler, selectTargetsToAdd } from "#/shared/prompts/prompts";
 
@@ -34,6 +34,12 @@ export const addTargetCommand = new Command("add-target")
         ...newCustomTargets,
       };
       saveConfig(config, projectRoot);
+
+      // Run one-time setup for each new target (e.g., create skill router)
+      for (const target of newTargets) {
+        const plugin = getPlugin(target, newCustomTargets);
+        plugin.setup?.(projectRoot);
+      }
 
       newline();
       success(`Added targets: ${newTargets.join(", ")}`);
