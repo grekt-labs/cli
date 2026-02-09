@@ -1,3 +1,16 @@
+# [6.10.0](https://github.com/grekt-labs/cli/compare/v6.9.0...v6.10.0) (2026-02-09)
+
+
+### Bug Fixes
+
+* upgrade cli-engine to 5.8.0 and fix publish tests for hooks category ([62aa742](https://github.com/grekt-labs/cli/commit/62aa742b5883854eb2f9f501091ae92da0f3d059))
+
+
+### Features
+
+* add hook install/uninstall utilities ([674e5ca](https://github.com/grekt-labs/cli/commit/674e5ca9be46dbdf91516721c505c32e008afedd))
+* integrate hook install/uninstall into add and remove commands ([f4ae623](https://github.com/grekt-labs/cli/commit/f4ae623145025c911e07a95e94235fe11e8e4340))
+
 # [6.9.0](https://github.com/grekt-labs/cli/compare/v6.8.0...v6.9.0) (2026-02-08)
 
 
