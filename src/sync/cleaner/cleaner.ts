@@ -1,11 +1,10 @@
-import { dirname, join, resolve } from "path";
+import { join, resolve } from "path";
 import { fs } from "#/context";
 import type { CustomTarget } from "@grekt-labs/cli-engine";
+import type { TargetPaths } from "#/sync/sync.types";
+import { getPlugin } from "#/sync/manager/manager";
 
-export interface TargetPaths {
-  targetDir: string;
-  contextEntryPoint: string;
-}
+export type { TargetPaths };
 
 const DANGEROUS_PATHS = new Set([".", "..", "/", ""]);
 
@@ -31,51 +30,20 @@ function isSafeToDelete(projectRoot: string, relativePath: string): boolean {
   return true;
 }
 
-const builtInTargetPaths: Record<string, TargetPaths> = {
-  claude: {
-    targetDir: ".claude",
-    contextEntryPoint: ".claude/CLAUDE.md",
-  },
-  cursor: {
-    targetDir: "",
-    contextEntryPoint: ".cursorrules",
-  },
-  opencode: {
-    targetDir: ".opencode",
-    contextEntryPoint: "",
-  },
-};
-
 /**
- * Get the paths associated with a target (folder and entry point).
+ * Get the paths associated with a target (folder and entry points).
+ * Delegates to the plugin's getTargetPaths() method.
  */
 export function getTargetPaths(
   targetId: string,
   customTargets?: Record<string, CustomTarget>
 ): TargetPaths | null {
-  const builtIn = builtInTargetPaths[targetId];
-  if (builtIn) {
-    return builtIn;
+  try {
+    const plugin = getPlugin(targetId, customTargets);
+    return plugin.getTargetPaths();
+  } catch {
+    return null;
   }
-
-  const customTarget = customTargets?.[targetId];
-  if (customTarget) {
-    let targetDir = customTarget.paths
-      ? dirname(customTarget.contextEntryPoint)
-      : targetId;
-
-    // dirname returns "." for root-level files, treat as no directory
-    if (targetDir === ".") {
-      targetDir = "";
-    }
-
-    return {
-      targetDir,
-      contextEntryPoint: customTarget.contextEntryPoint,
-    };
-  }
-
-  return null;
 }
 
 export interface CleanResult {
@@ -98,7 +66,7 @@ export function cleanTargetPaths(
     return result;
   }
 
-  const { targetDir, contextEntryPoint } = paths;
+  const { targetDir, entryPoints } = paths;
 
   // Delete target directory if it exists and is safe
   if (targetDir && isSafeToDelete(projectRoot, targetDir)) {
@@ -111,18 +79,19 @@ export function cleanTargetPaths(
     }
   }
 
-  // Delete context entry point if it's outside the target directory and is safe
-  if (contextEntryPoint && isSafeToDelete(projectRoot, contextEntryPoint)) {
-    const isInsideTargetDir = targetDir && contextEntryPoint.startsWith(targetDir + "/");
+  // Delete entry point files that are outside the target directory and are safe
+  for (const entryPoint of entryPoints) {
+    if (!entryPoint || !isSafeToDelete(projectRoot, entryPoint)) continue;
 
-    if (!isInsideTargetDir) {
-      const fullPath = join(projectRoot, contextEntryPoint);
-      if (fs.exists(fullPath)) {
-        fs.unlink(fullPath);
-        result.deleted.push(contextEntryPoint);
-      } else {
-        result.notFound.push(contextEntryPoint);
-      }
+    const isInsideTargetDir = targetDir && entryPoint.startsWith(targetDir + "/");
+    if (isInsideTargetDir) continue;
+
+    const fullPath = join(projectRoot, entryPoint);
+    if (fs.exists(fullPath)) {
+      fs.unlink(fullPath);
+      result.deleted.push(entryPoint);
+    } else {
+      result.notFound.push(entryPoint);
     }
   }
 
