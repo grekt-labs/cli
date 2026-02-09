@@ -11,7 +11,7 @@ import {
 import { claudePlugin } from "#/sync/plugins/claude/claude";
 import { cursorPlugin } from "#/sync/plugins/cursor/cursor";
 import { opencodePlugin } from "#/sync/plugins/opencode/opencode";
-import { createRulesOnlyPlugin, createFolderPlugin, generateDefaultBlockContent } from "#/sync/base/base";
+import { createRulesOnlyPlugin, createFolderPlugin, generateDefaultBlockContent, GREKT_ENTRY_POINT_TEXT } from "#/sync/base/base";
 
 // Note: createRulesOnlyPlugin and RulesOnlyPluginConfig kept for built-in cursor plugin
 
@@ -67,7 +67,7 @@ const plugins: Map<string, SyncPlugin> = new Map(Object.entries(builtInPlugins))
 function generateCustomBlockContent(targetDir: string): () => string {
   return () => {
     const lines = [
-      "**MANDATORY:** Read `.grekt/index` at session start to discover artifacts.",
+      GREKT_ENTRY_POINT_TEXT,
       "",
       "**CORE artifacts in:**",
       `- ${targetDir}/agents/ - autonomous specialists for complex tasks`,
