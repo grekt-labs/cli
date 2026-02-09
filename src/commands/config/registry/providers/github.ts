@@ -35,6 +35,10 @@ export const githubProvider: RegistryProvider = {
       },
     });
 
+    const prefix = await input({
+      message: "Artifact nesting path (where artifacts are grouped, leave empty if root):",
+    });
+
     const token = await password({
       message: "GitHub token (optional, can use GITHUB_TOKEN env var):",
       mask: "*",
@@ -43,6 +47,7 @@ export const githubProvider: RegistryProvider = {
     return {
       host,
       project,
+      prefix: prefix.trim() || undefined,
       token: token || undefined,
     };
   },
