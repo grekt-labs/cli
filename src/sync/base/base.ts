@@ -154,6 +154,7 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
     id,
     name,
     targetFile: targetDir,
+    setup: config.setup,
 
     targetExists(projectRoot: string): boolean {
       return fs.exists(`${projectRoot}/${targetDir}`);

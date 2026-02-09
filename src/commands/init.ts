@@ -3,7 +3,7 @@ import { basename } from "path";
 import { fs } from "#/context";
 import { input, confirm } from "@inquirer/prompts";
 import { isInitialized, saveConfig } from "#/config/project/project";
-import { getPluginChoices, getDefaultTarget } from "#/sync/manager/manager";
+import { getPluginChoices, getDefaultTarget, getPlugin } from "#/sync/manager/manager";
 import { createEmptyIndex } from "#/artifact/index/index";
 import { GREKT_YAML, GREKT_DIR, ARTIFACTS_DIR, INDEX_FILE } from "#/config/paths/paths";
 import { ensureGitignore } from "#/shared/gitignore/gitignore";
@@ -133,6 +133,12 @@ export const initCommand = new Command("init")
     createEmptyIndex(projectRoot);
 
     ensureGitignore(projectRoot);
+
+    // Run one-time setup for each selected target (e.g., create skill router)
+    for (const target of targets) {
+      const plugin = getPlugin(target, customTargets);
+      plugin.setup?.(projectRoot);
+    }
 
     newline();
     success(`Created ${GREKT_YAML}`);
