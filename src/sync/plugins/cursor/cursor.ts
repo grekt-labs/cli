@@ -3,7 +3,7 @@ import { createRulesOnlyPlugin, generateDefaultBlockContent } from "#/sync/base/
 export const cursorPlugin = createRulesOnlyPlugin({
   id: "cursor",
   name: "Cursor",
-  contextEntryPoint: ".cursorrules",
+  entryPoints: [".cursorrules"],
   generateRulesContent: generateDefaultBlockContent,
 });
 

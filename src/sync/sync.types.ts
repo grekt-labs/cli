@@ -6,6 +6,7 @@ export type {
   SyncPlugin,
   FolderPluginConfig,
   RulesOnlyPluginConfig,
+  TargetPaths,
 } from "@grekt-labs/cli-engine";
 
 export { generateDefaultBlockContent } from "@grekt-labs/cli-engine";

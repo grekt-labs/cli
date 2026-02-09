@@ -2,8 +2,6 @@ import { dirname, join } from "path";
 import type { SyncPlugin } from "#/sync/sync.types";
 import {
   type CustomTarget,
-  type FolderPluginConfig,
-  type RulesOnlyPluginConfig,
   CATEGORIES,
   CATEGORY_CONFIG,
   type Category,
@@ -11,50 +9,28 @@ import {
 import { claudePlugin } from "#/sync/plugins/claude/claude";
 import { cursorPlugin } from "#/sync/plugins/cursor/cursor";
 import { opencodePlugin } from "#/sync/plugins/opencode/opencode";
-import { createRulesOnlyPlugin, createFolderPlugin, generateDefaultBlockContent, GREKT_ENTRY_POINT_TEXT } from "#/sync/base/base";
-
-// Note: createRulesOnlyPlugin and RulesOnlyPluginConfig kept for built-in cursor plugin
+import { windsurfPlugin } from "#/sync/plugins/windsurf/windsurf";
+import { clinePlugin } from "#/sync/plugins/cline/cline";
+import { copilotPlugin } from "#/sync/plugins/copilot/copilot";
+import { aiderPlugin } from "#/sync/plugins/aider/aider";
+import { continuePlugin } from "#/sync/plugins/continue/continue";
+import { amazonqPlugin } from "#/sync/plugins/amazonq/amazonq";
+import { codexPlugin } from "#/sync/plugins/codex/codex";
+import { createFolderPlugin, GREKT_ENTRY_POINT_TEXT } from "#/sync/base/base";
 
 export type SyncPaths = Record<Category, string>;
-
-type PluginConfig =
-  | { type: "folder"; config: FolderPluginConfig }
-  | { type: "rulesOnly"; config: RulesOnlyPluginConfig };
-
-const builtInConfigs: Record<string, PluginConfig> = {
-  claude: {
-    type: "folder",
-    config: {
-      id: "claude",
-      name: "Claude",
-      targetDir: ".claude",
-      contextEntryPoint: ".claude/CLAUDE.md",
-      generateRulesContent: generateDefaultBlockContent,
-    },
-  },
-  cursor: {
-    type: "rulesOnly",
-    config: {
-      id: "cursor",
-      name: "Cursor",
-      contextEntryPoint: ".cursorrules",
-      generateRulesContent: generateDefaultBlockContent,
-    },
-  },
-  opencode: {
-    type: "folder",
-    config: {
-      id: "opencode",
-      name: "OpenCode",
-      targetDir: ".opencode",
-    },
-  },
-};
 
 const builtInPlugins: Record<string, SyncPlugin> = {
   claude: claudePlugin,
   cursor: cursorPlugin,
   opencode: opencodePlugin,
+  windsurf: windsurfPlugin,
+  cline: clinePlugin,
+  copilot: copilotPlugin,
+  aider: aiderPlugin,
+  continue: continuePlugin,
+  amazonq: amazonqPlugin,
+  codex: codexPlugin,
 };
 
 // Registry for all loaded plugins
@@ -92,7 +68,7 @@ function createCustomPlugin(id: string, config: CustomTarget): SyncPlugin {
     id,
     name: config.name,
     targetDir,
-    contextEntryPoint: config.contextEntryPoint,
+    entryPoints: [config.contextEntryPoint],
     paths,
     generateRulesContent: generateCustomBlockContent(targetDir),
   });
@@ -190,39 +166,12 @@ export function validateTargets(targets: string[]): string[] {
 }
 
 /**
- * Build sync paths from config, using category defaults.
- */
-function buildSyncPaths(baseDir: string, configPaths?: Partial<Record<Category, string>>): SyncPaths {
-  const paths = {} as SyncPaths;
-  for (const category of CATEGORIES) {
-    paths[category] = configPaths?.[category] ?? join(baseDir, CATEGORY_CONFIG[category].defaultPath);
-  }
-  return paths;
-}
-
-/**
  * Get sync paths for a target (where files are copied to).
  * Returns null if target doesn't copy files (RulesOnlyPlugin).
  */
 export function getSyncPaths(target: string, customTargets?: Record<string, CustomTarget>): SyncPaths | null {
-  // Check built-in plugins
-  const builtIn = builtInConfigs[target];
-  if (builtIn) {
-    if (builtIn.type === "rulesOnly") return null;
-    return buildSyncPaths(builtIn.config.targetDir, builtIn.config.paths);
-  }
-
-  // Check custom targets - always have paths (default to target-id based)
-  const customTarget = customTargets?.[target];
-  if (!customTarget) return null;
-
-  if (customTarget.paths) {
-    const baseDir = dirname(customTarget.contextEntryPoint);
-    return buildSyncPaths(baseDir, customTarget.paths);
-  }
-
-  // Default paths using target-id as base
-  return buildSyncPaths(target, buildDefaultPaths(target));
+  const plugin = getPlugin(target, customTargets);
+  return plugin.getSyncPaths();
 }
 
 // Re-export types

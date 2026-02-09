@@ -3,7 +3,7 @@ import { createFolderPlugin, generateDefaultBlockContent } from "#/sync/base/bas
 import { toSafeName } from "@grekt-labs/cli-engine";
 
 const TARGET_DIR = ".claude";
-const CONTEXT_ENTRY_POINT = `${TARGET_DIR}/CLAUDE.md`;
+const ENTRY_POINTS = [`${TARGET_DIR}/CLAUDE.md`, "CLAUDE.md"];
 
 function getSkillFolderName(artifactId: string, filePath: string): string {
   const safeName = toSafeName(artifactId);
@@ -15,7 +15,7 @@ export const claudePlugin = createFolderPlugin({
   id: "claude",
   name: "Claude",
   targetDir: TARGET_DIR,
-  contextEntryPoint: CONTEXT_ENTRY_POINT,
+  entryPoints: ENTRY_POINTS,
   generateRulesContent: generateDefaultBlockContent,
   getTargetPath: (artifactId, category, filePath) => {
     if (category === "skills") {

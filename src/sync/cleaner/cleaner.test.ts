@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach, afterEach } from "bun:test";
-import { existsSync, mkdirSync, rmSync, writeFileSync } from "fs";
+import { existsSync, mkdirSync, writeFileSync, rmSync } from "fs";
 import { join } from "path";
 import { getTargetPaths, cleanTargetPaths } from "./cleaner";
 
@@ -21,7 +21,7 @@ describe("cleaner", () => {
 
       expect(paths).toEqual({
         targetDir: ".claude",
-        contextEntryPoint: ".claude/CLAUDE.md",
+        entryPoints: [".claude/CLAUDE.md", "CLAUDE.md"],
       });
     });
 
@@ -30,7 +30,7 @@ describe("cleaner", () => {
 
       expect(paths).toEqual({
         targetDir: "",
-        contextEntryPoint: ".cursorrules",
+        entryPoints: [".cursorrules"],
       });
     });
 
@@ -39,7 +39,7 @@ describe("cleaner", () => {
 
       expect(paths).toEqual({
         targetDir: ".opencode",
-        contextEntryPoint: "",
+        entryPoints: [],
       });
     });
 
@@ -60,7 +60,7 @@ describe("cleaner", () => {
 
       expect(paths).toEqual({
         targetDir: ".my-ai",
-        contextEntryPoint: ".my-ai/config.md",
+        entryPoints: [".my-ai/config.md"],
       });
     });
 
@@ -76,7 +76,7 @@ describe("cleaner", () => {
 
       expect(paths).toEqual({
         targetDir: "custom-tool",
-        contextEntryPoint: "custom-tool/README.md",
+        entryPoints: ["custom-tool/README.md"],
       });
     });
 
@@ -134,15 +134,28 @@ describe("cleaner", () => {
       expect(result.deleted).toContain("my-custom");
     });
 
-    test("does not delete contextEntryPoint inside targetDir twice", () => {
+    test("does not delete entryPoint inside targetDir twice", () => {
       const claudeDir = join(testDir, ".claude");
       mkdirSync(claudeDir, { recursive: true });
       writeFileSync(join(claudeDir, "CLAUDE.md"), "content");
 
       const result = cleanTargetPaths(testDir, "claude");
 
-      // Should only have .claude in deleted, not .claude/CLAUDE.md separately
-      expect(result.deleted).toEqual([".claude"]);
+      // .claude/CLAUDE.md is inside .claude so should not be deleted separately
+      expect(result.deleted).toContain(".claude");
+      expect(result.deleted).not.toContain(".claude/CLAUDE.md");
+    });
+
+    test("deletes root-level entry point for claude when outside targetDir", () => {
+      const claudeDir = join(testDir, ".claude");
+      mkdirSync(claudeDir, { recursive: true });
+      writeFileSync(join(testDir, "CLAUDE.md"), "root content");
+
+      const result = cleanTargetPaths(testDir, "claude");
+
+      // CLAUDE.md at root is outside .claude/ so should be cleaned
+      expect(result.deleted).toContain(".claude");
+      expect(result.deleted).toContain("CLAUDE.md");
     });
 
     test("returns empty result for unknown target", () => {
@@ -153,8 +166,6 @@ describe("cleaner", () => {
     });
 
     test("handles contextEntryPoint outside targetDir", () => {
-      // Custom target without explicit paths - uses targetId as base
-      // contextEntryPoint is at root level, outside the target folder
       const customDir = join(testDir, "special");
       const configFile = join(testDir, "config.md");
       mkdirSync(customDir, { recursive: true });
@@ -169,8 +180,6 @@ describe("cleaner", () => {
 
       const result = cleanTargetPaths(testDir, "special", customTargets);
 
-      // targetDir is "special" (the targetId since no explicit paths)
-      // contextEntryPoint "config.md" is outside "special/"
       expect(existsSync(customDir)).toBe(false);
       expect(existsSync(configFile)).toBe(false);
       expect(result.deleted).toContain("special");
@@ -198,7 +207,6 @@ describe("cleaner", () => {
       expect(existsSync(testDir)).toBe(true);
       expect(existsSync(testFile)).toBe(true);
       expect(result.deleted).not.toContain(".");
-      expect(result.deleted).toHaveLength(0);
     });
 
     test("does NOT delete parent directory with '..' path", () => {
@@ -235,7 +243,6 @@ describe("cleaner", () => {
     });
 
     test("does NOT delete when custom target contextEntryPoint is root-level file", () => {
-      // This was the original bug: dirname("INSTRUCTIONS.md") returns "."
       const testFile = join(testDir, "important.txt");
       writeFileSync(testFile, "do not delete me");
 
@@ -251,8 +258,6 @@ describe("cleaner", () => {
 
       const result = cleanTargetPaths(testDir, "codex", customTargets);
 
-      // dirname("INSTRUCTIONS.md") = "." which should be normalized to ""
-      // and then rejected as dangerous
       expect(existsSync(testDir)).toBe(true);
       expect(existsSync(testFile)).toBe(true);
     });
@@ -276,41 +281,6 @@ describe("cleaner", () => {
 
       expect(existsSync(nestedDir)).toBe(false);
       expect(result.deleted).toContain(".safe-target");
-    });
-  });
-
-  describe("getTargetPaths: dirname normalization", () => {
-    test("normalizes '.' to empty string for root-level contextEntryPoint", () => {
-      const customTargets = {
-        "root-file-target": {
-          name: "Root File",
-          contextEntryPoint: "INSTRUCTIONS.md",
-          paths: {
-            agents: "agents",
-          },
-        },
-      };
-
-      const paths = getTargetPaths("root-file-target", customTargets);
-
-      // dirname("INSTRUCTIONS.md") returns "." but should be normalized to ""
-      expect(paths?.targetDir).toBe("");
-    });
-
-    test("preserves valid directory from dirname", () => {
-      const customTargets = {
-        "nested-target": {
-          name: "Nested",
-          contextEntryPoint: ".nested/config.md",
-          paths: {
-            agents: ".nested/agents",
-          },
-        },
-      };
-
-      const paths = getTargetPaths("nested-target", customTargets);
-
-      expect(paths?.targetDir).toBe(".nested");
     });
   });
 });

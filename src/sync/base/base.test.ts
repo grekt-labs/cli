@@ -152,14 +152,102 @@ grk-description: A test agent
       expect(result.created.length).toBeGreaterThan(0);
       expect(existsSync(join(testDir, ".test"))).toBe(false);
     });
+
+    test("getSyncPaths returns category paths", () => {
+      const plugin = createTestPlugin(".test");
+
+      const paths = plugin.getSyncPaths();
+
+      expect(paths).not.toBeNull();
+      expect(paths!.agents).toBe(".test/agents");
+      expect(paths!.skills).toBe(".test/skills");
+      expect(paths!.commands).toBe(".test/commands");
+    });
+
+    test("getTargetPaths returns targetDir and entryPoints", () => {
+      const plugin = createFolderPlugin({
+        id: "test",
+        name: "Test",
+        targetDir: ".test",
+        entryPoints: [".test/RULES.md", "RULES.md"],
+      });
+
+      const targetPaths = plugin.getTargetPaths();
+
+      expect(targetPaths).not.toBeNull();
+      expect(targetPaths!.targetDir).toBe(".test");
+      expect(targetPaths!.entryPoints).toEqual([".test/RULES.md", "RULES.md"]);
+    });
+
+    test("getTargetPaths returns empty entryPoints when none configured", () => {
+      const plugin = createTestPlugin();
+
+      const targetPaths = plugin.getTargetPaths();
+
+      expect(targetPaths!.entryPoints).toEqual([]);
+    });
+
+    describe("entryPoints array", () => {
+      test("finds existing alternative entry point", async () => {
+        // Create RULES.md at root (second entry point)
+        writeFileSync(join(testDir, "RULES.md"), "# Existing");
+
+        const plugin = createFolderPlugin({
+          id: "test",
+          name: "Test",
+          targetDir: ".test",
+          entryPoints: [".test/RULES.md", "RULES.md"],
+          generateRulesContent: () => `${GREKT_SECTION_HEADER}\n\nMANAGED`,
+        });
+
+        await plugin.sync(testLockfile, testDir, { projectConfig: testProjectConfig });
+
+        // Should update the existing RULES.md, not create .test/RULES.md
+        const content = readFileSync(join(testDir, "RULES.md"), "utf-8");
+        expect(content).toContain("MANAGED");
+        expect(content).toContain("# Existing");
+      });
+
+      test("creates at first entry point when none exist", async () => {
+        const plugin = createFolderPlugin({
+          id: "test",
+          name: "Test",
+          targetDir: ".test",
+          entryPoints: [".test/RULES.md", "RULES.md"],
+          generateRulesContent: () => `${GREKT_SECTION_HEADER}\n\nMANAGED`,
+        });
+
+        await plugin.sync(testLockfile, testDir, { projectConfig: testProjectConfig });
+
+        expect(existsSync(join(testDir, ".test/RULES.md"))).toBe(true);
+        expect(existsSync(join(testDir, "RULES.md"))).toBe(false);
+      });
+
+      test("preview finds existing alternative", () => {
+        writeFileSync(join(testDir, "RULES.md"), "# Existing");
+
+        const plugin = createFolderPlugin({
+          id: "test",
+          name: "Test",
+          targetDir: ".test",
+          entryPoints: [".test/RULES.md", "RULES.md"],
+          generateRulesContent: () => `${GREKT_SECTION_HEADER}\n\nMANAGED`,
+        });
+
+        const preview = plugin.preview(testLockfile, testDir, { projectConfig: testProjectConfig });
+
+        expect(preview.willUpdate).toContain("RULES.md");
+        expect(preview.willCreate).not.toContain(".test/RULES.md");
+      });
+    });
   });
 
   describe("createRulesOnlyPlugin", () => {
-    const createTestPlugin = (contextEntryPoint = "RULES.md") =>
+    const createTestPlugin = (entryPoints = ["RULES.md"]) =>
       createRulesOnlyPlugin({
         id: "test",
         name: "Test",
-        contextEntryPoint,
+        entryPoints,
         generateRulesContent: () => `${GREKT_SECTION_HEADER}\n\nMANAGED CONTENT`,
       });
 
@@ -188,7 +276,7 @@ grk-description: A test agent
     });
 
     test("creates file when createTarget is true", async () => {
-      const plugin = createTestPlugin("NEW.md");
+      const plugin = createTestPlugin(["NEW.md"]);
 
       await plugin.sync(testLockfile, testDir, { createTarget: true });
 
@@ -196,7 +284,7 @@ grk-description: A test agent
     });
 
     test("skips when file missing and createTarget is false", async () => {
-      const plugin = createTestPlugin("MISSING.md");
+      const plugin = createTestPlugin(["MISSING.md"]);
 
       const result = await plugin.sync(testLockfile, testDir, { createTarget: false });
 
@@ -205,13 +293,82 @@ grk-description: A test agent
     });
 
     test("targetExists detects file presence", () => {
-      const plugin = createTestPlugin("TARGET.md");
+      const plugin = createTestPlugin(["TARGET.md"]);
 
       expect(plugin.targetExists(testDir)).toBe(false);
 
       writeFileSync(join(testDir, "TARGET.md"), "");
 
       expect(plugin.targetExists(testDir)).toBe(true);
+    });
+
+    test("getSyncPaths returns null", () => {
+      const plugin = createTestPlugin();
+
+      expect(plugin.getSyncPaths()).toBeNull();
+    });
+
+    test("getTargetPaths returns empty targetDir and entryPoints", () => {
+      const plugin = createTestPlugin([".cursorrules"]);
+
+      const targetPaths = plugin.getTargetPaths();
+
+      expect(targetPaths).not.toBeNull();
+      expect(targetPaths!.targetDir).toBe("");
+      expect(targetPaths!.entryPoints).toEqual([".cursorrules"]);
+    });
+
+    describe("entryPoints array", () => {
+      test("finds existing alternative entry point", async () => {
+        writeFileSync(join(testDir, "ALT.md"), "# Alt");
+
+        const plugin = createTestPlugin(["PRIMARY.md", "ALT.md"]);
+
+        await plugin.sync(testLockfile, testDir, {});
+
+        const content = readFileSync(join(testDir, "ALT.md"), "utf-8");
+        expect(content).toContain("MANAGED CONTENT");
+        expect(content).toContain("# Alt");
+        expect(existsSync(join(testDir, "PRIMARY.md"))).toBe(false);
+      });
+
+      test("creates at first entry point when none exist and createTarget is true", async () => {
+        const plugin = createTestPlugin(["PRIMARY.md", "ALT.md"]);
+
+        await plugin.sync(testLockfile, testDir, { createTarget: true });
+
+        expect(existsSync(join(testDir, "PRIMARY.md"))).toBe(true);
+        expect(existsSync(join(testDir, "ALT.md"))).toBe(false);
+      });
+
+      test("targetExists returns true if any entry point exists", () => {
+        const plugin = createTestPlugin(["PRIMARY.md", "ALT.md"]);
+
+        expect(plugin.targetExists(testDir)).toBe(false);
+
+        writeFileSync(join(testDir, "ALT.md"), "");
+
+        expect(plugin.targetExists(testDir)).toBe(true);
+      });
+
+      test("preview shows willCreate with first entry point when none exist", () => {
+        const plugin = createTestPlugin(["PRIMARY.md", "ALT.md"]);
+
+        const preview = plugin.preview(testLockfile, testDir);
+
+        expect(preview.willCreate).toContain("PRIMARY.md");
+      });
+
+      test("preview shows willUpdate with existing alternative", () => {
+        writeFileSync(join(testDir, "ALT.md"), "content");
+
+        const plugin = createTestPlugin(["PRIMARY.md", "ALT.md"]);
+
+        const preview = plugin.preview(testLockfile, testDir);
+
+        expect(preview.willUpdate).toContain("ALT.md");
+        expect(preview.willCreate).not.toContain("PRIMARY.md");
+      });
     });
   });
 });

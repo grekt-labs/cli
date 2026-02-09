@@ -1,10 +1,11 @@
 import { basename, dirname, join } from "path";
-import type { SyncPlugin, SyncResult, SyncOptions, SyncPreview, FolderPluginConfig, RulesOnlyPluginConfig } from "#/sync/sync.types";
+import type { SyncPlugin, SyncResult, SyncOptions, SyncPreview, FolderPluginConfig, RulesOnlyPluginConfig, TargetPaths } from "#/sync/sync.types";
 import {
   type Lockfile,
   type ProjectConfig,
   type ArtifactMode,
   type Category,
+  CATEGORIES,
   CATEGORY_CONFIG,
   getCategoriesForFormat,
   scanArtifact,
@@ -31,7 +32,7 @@ export function ensureDir(filepath: string): void {
  * Find the actual path of an entry point file, matching case-insensitively.
  * Returns the real path if a case-variant exists, otherwise returns the canonical path.
  */
-function findEntryPointPath(projectRoot: string, entryPoint: string): string {
+export function findEntryPointPath(projectRoot: string, entryPoint: string): string {
   const dir = dirname(entryPoint);
   const filename = basename(entryPoint);
   const fullDir = `${projectRoot}/${dir}`;
@@ -46,7 +47,7 @@ function findEntryPointPath(projectRoot: string, entryPoint: string): string {
 
 // Re-export for backwards compatibility
 export { getSafeFilename } from "@grekt-labs/cli-engine";
-export type { FolderPluginConfig, RulesOnlyPluginConfig } from "@grekt-labs/cli-engine";
+export type { FolderPluginConfig, RulesOnlyPluginConfig, TargetPaths } from "@grekt-labs/cli-engine";
 
 /**
  * Get the sync mode for an artifact from the project config.
@@ -74,31 +75,62 @@ function shouldSyncArtifact(config: ProjectConfig | undefined, artifactId: strin
 }
 
 /**
+ * Find the first existing entry point from an array of candidates.
+ * Searches case-insensitively. Returns the resolved path and the original entry point string.
+ * If none exist, returns null.
+ */
+function findExistingEntryPoint(
+  projectRoot: string,
+  entryPoints: string[]
+): { resolvedPath: string; entryPoint: string } | null {
+  for (const entryPoint of entryPoints) {
+    const resolved = findEntryPointPath(projectRoot, entryPoint);
+    if (fs.exists(resolved)) {
+      return { resolvedPath: resolved, entryPoint };
+    }
+  }
+  return null;
+}
+
+/**
  * Create a folder-based plugin that syncs artifacts to category subfolders.
  * Optionally updates a rules file (like CLAUDE.md).
  */
 export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
-  const { id, name, targetDir, contextEntryPoint, generateRulesContent } = config;
+  const { id, name, targetDir, entryPoints, generateRulesContent } = config;
 
   // Build category paths from config or defaults
   function getCategoryDir(category: Category): string {
     return config.paths?.[category] ?? join(targetDir, CATEGORY_CONFIG[category].defaultPath);
   }
 
-  function updateContextEntryPoint(projectRoot: string, lockfile: Lockfile, result: SyncResult): void {
-    if (!contextEntryPoint || !generateRulesContent) return;
+  function buildSyncPaths(): Record<Category, string> {
+    const paths = {} as Record<Category, string>;
+    for (const category of CATEGORIES) {
+      paths[category] = getCategoryDir(category);
+    }
+    return paths;
+  }
 
-    const filepath = findEntryPointPath(projectRoot, contextEntryPoint);
+  function updateContextEntryPoint(projectRoot: string, lockfile: Lockfile, result: SyncResult): void {
+    if (!entryPoints || entryPoints.length === 0 || !generateRulesContent) return;
+
     const managedBlock = generateRulesContent(lockfile);
 
-    if (!fs.exists(filepath)) {
+    // Find first existing entry point
+    const existing = findExistingEntryPoint(projectRoot, entryPoints);
+
+    if (!existing) {
+      // None exist — create at first entry point
+      const primaryEntryPoint = entryPoints[0];
+      const filepath = `${projectRoot}/${primaryEntryPoint}`;
       ensureDir(filepath);
       fs.writeFile(filepath, managedBlock + "\n");
-      result.created.push(contextEntryPoint);
+      result.created.push(primaryEntryPoint);
       return;
     }
 
-    const content = fs.readFile(filepath);
+    const content = fs.readFile(existing.resolvedPath);
 
     // If section header already exists, nothing to do
     if (content.includes(GREKT_SECTION_HEADER)) {
@@ -106,8 +138,8 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
     }
 
     // Prepend to file
-    fs.writeFile(filepath, managedBlock + "\n\n" + content.trimStart());
-    result.updated.push(basename(filepath));
+    fs.writeFile(existing.resolvedPath, managedBlock + "\n\n" + content.trimStart());
+    result.updated.push(basename(existing.resolvedPath));
   }
 
   function getTargetPath(artifactId: string, category: Category, filePath: string): string {
@@ -125,6 +157,17 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
 
     targetExists(projectRoot: string): boolean {
       return fs.exists(`${projectRoot}/${targetDir}`);
+    },
+
+    getSyncPaths(): Record<Category, string> {
+      return buildSyncPaths();
+    },
+
+    getTargetPaths(): TargetPaths {
+      return {
+        targetDir,
+        entryPoints: entryPoints ?? [],
+      };
     },
 
     async sync(lockfile: Lockfile, projectRoot: string, options: SyncOptions): Promise<SyncResult> {
@@ -242,12 +285,12 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
         }
       }
 
-      if (contextEntryPoint) {
-        const entryPath = findEntryPointPath(projectRoot, contextEntryPoint);
-        if (!fs.exists(entryPath)) {
-          preview.willCreate.push(contextEntryPoint);
+      if (entryPoints && entryPoints.length > 0) {
+        const existing = findExistingEntryPoint(projectRoot, entryPoints);
+        if (!existing) {
+          preview.willCreate.push(entryPoints[0]);
         } else {
-          preview.willUpdate.push(basename(entryPath));
+          preview.willUpdate.push(basename(existing.resolvedPath));
         }
       }
 
@@ -260,16 +303,26 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
  * Create a rules-only plugin that only updates a context entry point file (no folder sync).
  */
 export function createRulesOnlyPlugin(config: RulesOnlyPluginConfig): SyncPlugin {
-  const { id, name, contextEntryPoint, generateRulesContent } = config;
+  const { id, name, entryPoints, generateRulesContent } = config;
 
   return {
     id,
     name,
-    targetFile: contextEntryPoint,
+    targetFile: entryPoints[0],
 
     targetExists(projectRoot: string): boolean {
-      const filepath = findEntryPointPath(projectRoot, contextEntryPoint);
-      return fs.exists(filepath);
+      return findExistingEntryPoint(projectRoot, entryPoints) !== null;
+    },
+
+    getSyncPaths(): null {
+      return null;
+    },
+
+    getTargetPaths(): TargetPaths {
+      return {
+        targetDir: "",
+        entryPoints,
+      };
     },
 
     async sync(lockfile: Lockfile, projectRoot: string, options: SyncOptions): Promise<SyncResult> {
@@ -284,21 +337,22 @@ export function createRulesOnlyPlugin(config: RulesOnlyPluginConfig): SyncPlugin
         };
       }
 
-      const filepath = findEntryPointPath(projectRoot, contextEntryPoint);
+      const existing = findExistingEntryPoint(projectRoot, entryPoints);
       const managedBlock = generateRulesContent(lockfile);
 
-      if (!fs.exists(filepath)) {
+      if (!existing) {
         if (!options.createTarget) {
-          result.skipped.push(`${contextEntryPoint} (file doesn't exist)`);
+          result.skipped.push(`${entryPoints[0]} (file doesn't exist)`);
           return result;
         }
-        ensureDir(filepath);
-        fs.writeFile(filepath, managedBlock);
-        result.created.push(contextEntryPoint);
+        const primaryPath = `${projectRoot}/${entryPoints[0]}`;
+        ensureDir(primaryPath);
+        fs.writeFile(primaryPath, managedBlock);
+        result.created.push(entryPoints[0]);
         return result;
       }
 
-      const content = fs.readFile(filepath);
+      const content = fs.readFile(existing.resolvedPath);
 
       // If section header already exists, nothing to do
       if (content.includes(GREKT_SECTION_HEADER)) {
@@ -306,17 +360,17 @@ export function createRulesOnlyPlugin(config: RulesOnlyPluginConfig): SyncPlugin
       }
 
       // Prepend to file
-      fs.writeFile(filepath, managedBlock + "\n\n" + content.trimStart());
-      result.updated.push(basename(filepath));
+      fs.writeFile(existing.resolvedPath, managedBlock + "\n\n" + content.trimStart());
+      result.updated.push(basename(existing.resolvedPath));
       return result;
     },
 
     preview(_lockfile: Lockfile, projectRoot: string, _options?: SyncOptions): SyncPreview {
-      const filepath = findEntryPointPath(projectRoot, contextEntryPoint);
+      const existing = findExistingEntryPoint(projectRoot, entryPoints);
 
-      if (!fs.exists(filepath)) {
+      if (!existing) {
         return {
-          willCreate: [contextEntryPoint],
+          willCreate: [entryPoints[0]],
           willUpdate: [],
           willSkip: [],
         };
@@ -324,7 +378,7 @@ export function createRulesOnlyPlugin(config: RulesOnlyPluginConfig): SyncPlugin
 
       return {
         willCreate: [],
-        willUpdate: [basename(filepath)],
+        willUpdate: [basename(existing.resolvedPath)],
         willSkip: [],
       };
     },
