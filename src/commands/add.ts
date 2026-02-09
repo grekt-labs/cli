@@ -27,6 +27,8 @@ import { promptStructuralChanges } from "#/artifact/upgrade/display";
 import { success, error, info, log, warning, newline, colors, spinner } from "#/shared/ui/ui";
 import { compareSemver, CATEGORIES, type Category } from "@grekt-labs/cli-engine";
 import { syncToTargets } from "#/sync/helpers/helpers";
+import { installHooks, getHookSummary } from "#/sync/hooks";
+import { confirm } from "@inquirer/prompts";
 
 
 export const addCommand = new Command("add")
@@ -278,6 +280,34 @@ export const addCommand = new Command("add")
         return file?.parsed.frontmatter["grk-name"] ?? path;
       });
       log(`  ${colors.dim(`${category}:`)} ${names.join(", ")}`);
+    }
+
+    // Install hooks if artifact has them
+    const hookFiles = artifactInfo.hooks;
+    if (hookFiles.length > 0) {
+      newline();
+      const summary = getHookSummary(hookFiles);
+
+      for (const [targetName, descriptions] of summary) {
+        log(`${colors.bold("Hooks")} for ${colors.highlight(targetName)}:`);
+        for (const desc of descriptions) {
+          log(`  ${colors.dim("-")} ${desc}`);
+        }
+      }
+
+      newline();
+
+      const shouldInstall = await confirm({
+        message: "Install these hooks?",
+        default: true,
+      });
+
+      if (shouldInstall) {
+        const hookResult = installHooks(projectRoot, resolvedArtifactId, hookFiles);
+        success(`Installed ${hookResult.installed} hook(s) for ${hookResult.targets.join(", ")}`);
+      } else {
+        info("Hooks skipped");
+      }
     }
 
     // Auto-sync to targets
