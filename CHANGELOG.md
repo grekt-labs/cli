@@ -1,3 +1,10 @@
+# [6.11.0](https://github.com/grekt-labs/cli/compare/v6.10.0...v6.11.0) (2026-02-09)
+
+
+### Features
+
+* refactor plugin architecture, fix duplicate entry point, add 7 new plugins ([6284eb1](https://github.com/grekt-labs/cli/commit/6284eb11fc1fc24908fbdf668d63bbb8f0c76989))
+
 # [6.10.0](https://github.com/grekt-labs/cli/compare/v6.9.0...v6.10.0) (2026-02-09)
 
 
