@@ -10,14 +10,14 @@ import {
   scanArtifact,
 } from "@grekt-labs/cli-engine";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
-import { getSafeFilename, generateDefaultBlockContent, GREKT_SECTION_HEADER } from "@grekt-labs/cli-engine";
+import { getSafeFilename, generateDefaultBlockContent, GREKT_SECTION_HEADER, GREKT_ENTRY_POINT_TEXT } from "@grekt-labs/cli-engine";
 import { fs } from "#/context";
 
 // MD categories can be synced to folder targets
 const SYNCABLE_CATEGORIES = getCategoriesForFormat("md");
 
 // Re-export for external use
-export { generateDefaultBlockContent } from "@grekt-labs/cli-engine";
+export { generateDefaultBlockContent, GREKT_ENTRY_POINT_TEXT } from "@grekt-labs/cli-engine";
 
 // Utility functions
 export function ensureDir(filepath: string): void {
