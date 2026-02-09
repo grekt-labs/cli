@@ -1,3 +1,10 @@
+# [6.13.0](https://github.com/grekt-labs/cli/compare/v6.12.0...v6.13.0) (2026-02-09)
+
+
+### Features
+
+* **sync:** add setup() support and Claude skill router ([f68c650](https://github.com/grekt-labs/cli/commit/f68c65022819a22c7b0053e2f5c884f72aec1841))
+
 # [6.12.0](https://github.com/grekt-labs/cli/compare/v6.11.0...v6.12.0) (2026-02-09)
 
 
