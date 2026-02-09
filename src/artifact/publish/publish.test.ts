@@ -21,7 +21,7 @@ const VALID_ARTIFACT = {
   scope: "scope",
   fullPath: "/path/to/artifact",
   manifest: { version: "1.0.0", description: "desc", keywords: ["a", "b", "c"] },
-  scanned: { agents: [], skills: [], commands: [], mcps: [], rules: [] },
+  scanned: { agents: [], skills: [], commands: [], mcps: [], rules: [], hooks: [] },
   componentCount: 3,
 };
 
