@@ -1,3 +1,10 @@
+# [6.12.0](https://github.com/grekt-labs/cli/compare/v6.11.0...v6.12.0) (2026-02-09)
+
+
+### Features
+
+* **config:** add artifact nesting path prompt to registry setup ([bae953c](https://github.com/grekt-labs/cli/commit/bae953c32ea6274b54d54ec9ce33773f30e69108))
+
 # [6.11.0](https://github.com/grekt-labs/cli/compare/v6.10.0...v6.11.0) (2026-02-09)
 
 
