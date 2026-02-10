@@ -1,0 +1,7 @@
+name: "@test/artifact"
+author: test
+version: 1.0.0
+description: Test artifact for E2E tests
+keywords:
+  - test
+  - e2e
