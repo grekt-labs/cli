@@ -20,6 +20,8 @@ export interface PublishContext {
   description?: string;
   keywords?: string[];
   isPrivate?: boolean;
+  license?: string;
+  repositoryUrl?: string;
 }
 
 /**

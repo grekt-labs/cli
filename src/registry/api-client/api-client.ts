@@ -27,11 +27,20 @@ export interface PublishRequest {
   description?: string;
   keywords?: string[];
   private?: boolean;
+  license?: string;
+  repository?: string;
 }
 
 export interface PublishResult {
   uploadUrl: string;
   expiresAt: string;
+}
+
+export interface ConfirmPublishOptions {
+  artifactId: string;
+  version: string;
+  license?: string;
+  repositoryUrl?: string;
 }
 
 export interface WhoamiResult {
@@ -385,7 +394,7 @@ export class RegistryClient {
    * Confirm publish and trigger tarball extraction (calls Edge Function)
    * This extracts the tarball contents for file browsing in the web UI.
    */
-  async confirmPublish(artifactId: string, version: string): Promise<void> {
+  async confirmPublish(options: ConfirmPublishOptions): Promise<void> {
     const session = await getSession();
     if (!session) {
       throw new Error("Not authenticated");
@@ -397,7 +406,12 @@ export class RegistryClient {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${session.access_token}`,
       },
-      body: JSON.stringify({ artifactId, version }),
+      body: JSON.stringify({
+        artifactId: options.artifactId,
+        version: options.version,
+        license: options.license,
+        repository: options.repositoryUrl,
+      }),
     });
 
     if (!response.ok) {
