@@ -27,9 +27,15 @@ function parseArtifactVersion(input: string): { artifactId: string; version: str
   };
 }
 
-interface DeprecateOptions {
+interface DeprecateCommandOptions {
   message: string;
   s3?: boolean;
+}
+
+interface DeprecateOperationParams {
+  artifactId: string;
+  version: string;
+  message: string;
 }
 
 export const deprecateCommand = new Command("deprecate")
@@ -37,7 +43,7 @@ export const deprecateCommand = new Command("deprecate")
   .argument("[artifact@version]", "Artifact and version to deprecate (e.g., @author/name@1.0.0)")
   .option("-m, --message <message>", "Deprecation message", "This version is deprecated")
   .option("--s3", "Use S3-compatible storage (legacy mode, env vars only)")
-  .action(async (artifactVersion: string | undefined, options: DeprecateOptions) => {
+  .action(async (artifactVersion: string | undefined, options: DeprecateCommandOptions) => {
     const projectRoot = process.cwd();
 
     if (!artifactVersion) {
@@ -60,17 +66,20 @@ export const deprecateCommand = new Command("deprecate")
 
     const { artifactId, version } = parsed;
 
+    const params: DeprecateOperationParams = { artifactId, version, message: options.message };
+
     if (options.s3) {
-      await deprecateS3(artifactId, version, options.message);
+      await deprecateS3(params);
     } else {
-      await deprecateApi(artifactId, version, options.message);
+      await deprecateApi(params);
     }
   });
 
 /**
  * Deprecate using the API-based registry
  */
-async function deprecateApi(artifactId: string, version: string, message: string): Promise<void> {
+async function deprecateApi(params: DeprecateOperationParams): Promise<void> {
+  const { artifactId, version, message } = params;
   const authenticated = await isAuthenticated();
 
   if (!authenticated) {
@@ -86,7 +95,7 @@ async function deprecateApi(artifactId: string, version: string, message: string
   spin.start();
 
   try {
-    await client.deprecate(artifactId, version, message);
+    await client.deprecate(artifactId, { version, message });
     spin.stop();
     success(`Deprecated ${artifactId}@${version}`);
     log(`  Message: ${message}`);
@@ -100,7 +109,8 @@ async function deprecateApi(artifactId: string, version: string, message: string
 /**
  * Deprecate using S3-compatible storage (legacy mode)
  */
-async function deprecateS3(artifactId: string, version: string, message: string): Promise<void> {
+async function deprecateS3(params: DeprecateOperationParams): Promise<void> {
+  const { artifactId, version, message } = params;
   const credentials = getS3CredentialsFromEnv();
 
   if (!credentials) {
