@@ -39,7 +39,11 @@ export class CustomPublisher implements Publisher {
     const client = createRegistryClient(this.registry);
 
     try {
-      const result = await client.publish(ctx.artifactId, ctx.version, ctx.tarballPath);
+      const result = await client.publish({
+        artifactId: ctx.artifactId,
+        version: ctx.version,
+        tarballPath: ctx.tarballPath,
+      });
 
       if (!result.success) {
         return {

@@ -122,7 +122,7 @@ async function downloadFromRegistrySource(
     const registry = resolveRegistry(scope, localConfig, projectRoot);
     const client = createRegistryClient(registry);
 
-    return await client.download(artifactId, version, targetDir);
+    return await client.download(artifactId, { version, targetDir });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     return { success: false, error: message };
