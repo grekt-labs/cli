@@ -18,6 +18,7 @@ import { CustomPublisher } from "#/registry/publishers/custom-publisher";
 import { RegistryError } from "#/registry/api-client/registry-error";
 import { CATEGORIES, isWorkspaceRoot, compareSemver } from "@grekt-labs/cli-engine";
 import { success, error, info, log, colors, spinner } from "#/shared/ui/ui";
+import { logComponentSummary } from "./display";
 import { loadWorkspace } from "./workspace";
 import { fs } from "#/context";
 
@@ -186,7 +187,14 @@ async function publishSingleArtifact(
 
   // 2. Log component summary
   if (!silent) {
-    logComponentSummary(artifact.artifactId, artifact.manifest.version, artifact.manifest.keywords ?? [], artifact.scanned, artifact.componentCount);
+    logComponentSummary({
+      artifactId: artifact.artifactId,
+      version: artifact.manifest.version,
+      action: "Publishing",
+      keywords: artifact.manifest.keywords ?? [],
+      scanned: artifact.scanned,
+      componentCount: artifact.componentCount,
+    });
   }
 
   // 3. Create publisher and verify auth (fail fast before tarball)
@@ -329,24 +337,6 @@ async function publishSingleArtifact(
 }
 
 // Display helpers
-
-function logComponentSummary(
-  artifactId: string,
-  version: string,
-  keywords: string[],
-  scanned: { agent?: unknown; skills: unknown[]; commands: unknown[]; mcps: unknown[]; rules: unknown[] },
-  componentCount: number
-): void {
-  log(colors.bold(`\nPublishing ${artifactId}@${version}...`));
-  log(colors.dim(`  Keywords: ${keywords.join(", ")}`));
-  log(colors.dim(`  Components: ${componentCount}`));
-  if (scanned.agent) log(colors.dim(`    - 1 agent`));
-  if (scanned.skills.length > 0) log(colors.dim(`    - ${scanned.skills.length} skill(s)`));
-  if (scanned.commands.length > 0) log(colors.dim(`    - ${scanned.commands.length} command(s)`));
-  if (scanned.mcps.length > 0) log(colors.dim(`    - ${scanned.mcps.length} mcp(s)`));
-  if (scanned.rules.length > 0) log(colors.dim(`    - ${scanned.rules.length} rule(s)`));
-  log("");
-}
 
 function showKeywordsExample(): void {
   log("");
