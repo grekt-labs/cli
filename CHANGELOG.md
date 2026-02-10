@@ -1,3 +1,10 @@
+## [6.14.1](https://github.com/grekt-labs/cli/compare/v6.14.0...v6.14.1) (2026-02-10)
+
+
+### Bug Fixes
+
+* update cli-engine 5.12.1 and migrate remaining call sites ([#125](https://github.com/grekt-labs/cli/issues/125)) ([c0f7dba](https://github.com/grekt-labs/cli/commit/c0f7dba6cb2cea5fb5b9f0eb54948d563634d51d))
+
 # [6.14.0](https://github.com/grekt-labs/cli/compare/v6.13.1...v6.14.0) (2026-02-10)
 
 
