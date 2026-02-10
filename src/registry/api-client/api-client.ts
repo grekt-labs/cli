@@ -4,7 +4,10 @@ import { sortVersionsDesc, getHighestVersion, validateTarballContents } from "@g
 import { getSupabaseClient, getSession, getSupabaseUrl } from "#/auth/session/session";
 import { fs, shell, http, cryptoProvider } from "#/context";
 import type { RegistryErrorResponse } from "./api-client.types";
+import type { DeprecateOptions, PublishRequest } from "#/registry/registry.types";
 import { RegistryError } from "./registry-error";
+
+export type { PublishRequest };
 
 export interface VersionInfo {
   version: string;
@@ -18,17 +21,6 @@ export interface DownloadResult {
   version?: string;
   resolved?: string;
   deprecationMessage?: string;
-}
-
-export interface PublishRequest {
-  artifactId: string;
-  version: string;
-  categories: string[];
-  description?: string;
-  keywords?: string[];
-  private?: boolean;
-  license?: string;
-  repository?: string;
 }
 
 export interface PublishResult {
@@ -170,8 +162,10 @@ export class RegistryClient {
   /**
    * Download artifact tarball using Edge Function for signed URLs
    */
-  async download(artifactId: string, version: string | undefined, targetDir: string): Promise<DownloadResult> {
+  async download(artifactId: string, options: { version?: string; targetDir: string }): Promise<DownloadResult> {
     try {
+      const { version, targetDir } = options;
+
       // If no version specified, get latest from metadata
       let resolvedVersion = version;
       if (!resolvedVersion) {
@@ -345,7 +339,9 @@ export class RegistryClient {
   /**
    * Deprecate a version (calls Edge Function for ownership validation)
    */
-  async deprecate(artifactId: string, version: string, message: string): Promise<void> {
+  async deprecate(artifactId: string, options: DeprecateOptions): Promise<void> {
+    const { version, message } = options;
+
     const session = await getSession();
     if (!session) {
       throw new Error("Not authenticated");

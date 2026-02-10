@@ -40,6 +40,36 @@ export interface PublishResult {
 }
 
 /**
+ * Options for downloading an artifact
+ */
+export interface DownloadOptions {
+  version?: string;
+  targetDir: string;
+}
+
+/**
+ * Options for deprecating a version
+ */
+export interface DeprecateOptions {
+  version: string;
+  message: string;
+}
+
+/**
+ * Request payload for publishing an artifact
+ */
+export interface PublishRequest {
+  artifactId: string;
+  version: string;
+  categories: string[];
+  description?: string;
+  keywords?: string[];
+  private?: boolean;
+  license?: string;
+  repository?: string;
+}
+
+/**
  * Registry client interface.
  * All registry implementations must implement this interface.
  */
@@ -49,18 +79,13 @@ export interface RegistryClient {
    */
   download(
     artifactId: string,
-    version: string | undefined,
-    targetDir: string
+    options: DownloadOptions
   ): Promise<DownloadResult>;
 
   /**
    * Publish an artifact tarball
    */
-  publish(
-    artifactId: string,
-    version: string,
-    tarballPath: string
-  ): Promise<PublishResult>;
+  publish(request: PublishRequest): Promise<PublishResult>;
 
   /**
    * Get the latest version of an artifact

@@ -194,7 +194,7 @@ describe("api-client", () => {
     const { RegistryClient } = await import("./api-client");
     const client = new RegistryClient();
 
-    await expect(client.deprecate("@org/tool", "1.0.0", "no")).rejects.toThrow("Not authenticated");
+    await expect(client.deprecate("@org/tool", { version: "1.0.0", message: "no" })).rejects.toThrow("Not authenticated");
   });
 
   test("deprecate calls edge function with bearer token", async () => {
@@ -207,7 +207,7 @@ describe("api-client", () => {
     const { RegistryClient } = await import("./api-client");
     const client = new RegistryClient();
 
-    await client.deprecate("@org/tool", "1.0.0", "Use v2");
+    await client.deprecate("@org/tool", { version: "1.0.0", message: "Use v2" });
 
     expect(globalThis.fetch).toHaveBeenCalledWith(
       "https://supabase.test/functions/v1/deprecate",
@@ -232,7 +232,7 @@ describe("api-client", () => {
     const client = new RegistryClient();
 
     try {
-      await client.deprecate("@org/tool", "1.0.0", "no");
+      await client.deprecate("@org/tool", { version: "1.0.0", message: "no" });
       expect.unreachable("Should have thrown");
     } catch (err) {
       expect(err).toBeInstanceOf(RegistryError);
