@@ -61,6 +61,8 @@ export class ApiPublisher implements Publisher {
         description: ctx.description,
         keywords: ctx.keywords,
         private: ctx.isPrivate,
+        license: ctx.license,
+        repository: ctx.repositoryUrl,
       });
 
       // Upload tarball to signed URL
@@ -80,7 +82,12 @@ export class ApiPublisher implements Publisher {
 
       // Confirm publish to trigger tarball extraction for file browsing
       try {
-        await client.confirmPublish(ctx.artifactId, ctx.version);
+        await client.confirmPublish({
+          artifactId: ctx.artifactId,
+          version: ctx.version,
+          license: ctx.license,
+          repositoryUrl: ctx.repositoryUrl,
+        });
       } catch (confirmErr) {
         // Log but don't fail the publish - extraction is optional for MVP
         logger.debug("Failed to extract files for browsing:", confirmErr);
