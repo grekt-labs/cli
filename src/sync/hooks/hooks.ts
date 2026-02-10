@@ -25,13 +25,13 @@ function getArtifactHookPath(artifactId: string): string {
  * Rewrite relative command paths to point to the artifact's hooks directory.
  * e.g. "./format.sh" → ".grekt/artifacts/@scope/name/hooks/format.sh"
  */
-function rewriteCommandPath(command: string, artifactId: string, hookFilePath: string): string {
+function rewriteCommandPath(command: string, context: { artifactId: string; hookFilePath: string }): string {
   if (!command.startsWith("./") && !command.startsWith("../")) {
     return command;
   }
 
-  const hookDir = dirname(hookFilePath);
-  const artifactBasePath = `${ARTIFACTS_DIR}/${artifactId}`;
+  const hookDir = dirname(context.hookFilePath);
+  const artifactBasePath = `${ARTIFACTS_DIR}/${context.artifactId}`;
 
   if (hookDir && hookDir !== ".") {
     return `${artifactBasePath}/${hookDir}/${command.replace(/^\.\//, "")}`;
@@ -86,7 +86,7 @@ function rewriteEventDefinitions(
       ...def,
       hooks: def.hooks.map((hook) => ({
         ...hook,
-        command: rewriteCommandPath(hook.command, artifactId, hookFilePath),
+        command: rewriteCommandPath(hook.command, { artifactId, hookFilePath }),
       })),
     }));
   }
