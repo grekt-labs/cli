@@ -1,3 +1,10 @@
+# [6.14.0](https://github.com/grekt-labs/cli/compare/v6.13.1...v6.14.0) (2026-02-10)
+
+
+### Features
+
+* pass license and repository through publish flow ([410e81e](https://github.com/grekt-labs/cli/commit/410e81eabfddc9c828c14814bc97f31d0aeddbb8))
+
 ## [6.13.1](https://github.com/grekt-labs/cli/compare/v6.13.0...v6.13.1) (2026-02-09)
 
 
