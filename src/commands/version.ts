@@ -48,7 +48,7 @@ export const versionCommand = new Command("version")
 
     // --exec mode: delegate to external tool with package.json compatibility
     if (options.exec) {
-      await handleExecMode(cwd, options.exec, options.dryRun);
+      await handleExecMode({ cwd, command: options.exec, dryRun: options.dryRun });
       return;
     }
 
@@ -152,7 +152,8 @@ export const versionCommand = new Command("version")
 /**
  * Handle --exec mode: generate package.json, run command, sync back, cleanup.
  */
-async function handleExecMode(cwd: string, command: string, dryRun?: boolean): Promise<void> {
+async function handleExecMode(options: { cwd: string; command: string; dryRun?: boolean }): Promise<void> {
+  const { cwd, command, dryRun } = options;
   if (!isWorkspaceRoot(fs, cwd)) {
     error("--exec requires a workspace (grekt-workspace.yaml not found)");
     info("Run this command from your workspace root");
