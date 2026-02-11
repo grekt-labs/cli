@@ -93,6 +93,57 @@ function findExistingEntryPoint(
 }
 
 /**
+ * Remove previously synced files for an artifact from target directories.
+ * Handles both flat files and folder-based targets (e.g., Claude skills).
+ */
+function cleanupArtifactFiles(
+  projectRoot: string,
+  artifactId: string,
+  getCategoryDir: (category: Category) => string,
+  getTargetPathFn: (artifactId: string, category: Category, filePath: string) => string,
+): void {
+  const artifactDir = `${projectRoot}/${ARTIFACTS_DIR}/${artifactId}`;
+  const artifactInfo = scanArtifact(fs, artifactDir);
+  if (!artifactInfo) return;
+
+  for (const category of SYNCABLE_CATEGORIES) {
+    const categoryDir = getCategoryDir(category);
+    const files = artifactInfo[category];
+    if (!files || files.length === 0) continue;
+
+    for (const scannedFile of files) {
+      const targetName = getTargetPathFn(artifactId, category, scannedFile.path);
+      const targetPath = `${projectRoot}/${categoryDir}/${targetName}`;
+
+      if (fs.exists(targetPath)) {
+        fs.unlink(targetPath);
+
+        // Clean up parent directory if target was inside a subfolder
+        const parentDir = dirname(targetPath);
+        const categoryFullPath = `${projectRoot}/${categoryDir}`;
+        if (parentDir !== categoryFullPath) {
+          cleanEmptyDir(parentDir);
+        }
+      }
+    }
+
+    cleanEmptyDir(`${projectRoot}/${categoryDir}`);
+  }
+}
+
+/**
+ * Remove directory if empty
+ */
+function cleanEmptyDir(dir: string): void {
+  if (fs.exists(dir)) {
+    const files = fs.readdir(dir);
+    if (files.length === 0) {
+      fs.rmdir(dir, { recursive: true });
+    }
+  }
+}
+
+/**
  * Create a folder-based plugin that syncs artifacts to category subfolders.
  * Optionally updates a rules file (like CLAUDE.md).
  */
@@ -171,6 +222,10 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
       };
     },
 
+    resolveTargetPath(artifactId: string, category: Category, filePath: string): string {
+      return getTargetPath(artifactId, category, filePath);
+    },
+
     async sync(lockfile: Lockfile, projectRoot: string, options: SyncOptions): Promise<SyncResult> {
       const result: SyncResult = { created: [], updated: [], skipped: [] };
 
@@ -195,6 +250,9 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
       // Sync each artifact (only CORE mode artifacts are copied)
       for (const [artifactId] of Object.entries(lockfile.artifacts)) {
         if (!shouldSyncArtifact(options.projectConfig, artifactId)) {
+          // Clean up previously synced files for CORE→LAZY transitions
+          cleanupArtifactFiles(projectRoot, artifactId, getCategoryDir, getTargetPath);
+
           result.skipped.push(`${artifactId} (lazy mode)`);
           continue;
         }
@@ -324,6 +382,10 @@ export function createRulesOnlyPlugin(config: RulesOnlyPluginConfig): SyncPlugin
         targetDir: "",
         entryPoints,
       };
+    },
+
+    resolveTargetPath(artifactId: string, _category: Category, filePath: string): string {
+      return getSafeFilename(artifactId, filePath);
     },
 
     async sync(lockfile: Lockfile, projectRoot: string, options: SyncOptions): Promise<SyncResult> {

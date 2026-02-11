@@ -99,6 +99,18 @@ grk-description: A test skill
     writeFileSync(join(skillsDir, "scope-test-artifact_skill.md"), "# Synced Skill");
   }
 
+  function createClaudeSyncedFiles() {
+    const agentsDir = join(testDir, ".claude", "agents");
+    const skillFolderDir = join(testDir, ".claude", "skills", "scope-test-artifact-skill");
+
+    mkdirSync(agentsDir, { recursive: true });
+    mkdirSync(skillFolderDir, { recursive: true });
+
+    // Claude uses flat files for agents but folder-based paths for skills
+    writeFileSync(join(agentsDir, "scope-test-artifact_agent.md"), "# Synced Agent");
+    writeFileSync(join(skillFolderDir, "SKILL.md"), "# Synced Skill");
+  }
+
   function createGrektDir() {
     mkdirSync(join(testDir, ".grekt"), { recursive: true });
     writeFileSync(join(testDir, ".grekt/index"), "");
@@ -164,6 +176,29 @@ grk-description: A test skill
 
     expect(existsSync(agentPath)).toBe(false);
     expect(existsSync(skillPath)).toBe(false);
+  });
+
+  test("removes claude skill folders (folder-based target path)", async () => {
+    createArtifactFiles();
+    createProjectConfig(["claude"]);
+    createLockfile();
+    createGrektDir();
+    createClaudeSyncedFiles();
+
+    const agentPath = join(testDir, ".claude/agents/scope-test-artifact_agent.md");
+    const skillFolder = join(testDir, ".claude/skills/scope-test-artifact-skill");
+    const skillPath = join(skillFolder, "SKILL.md");
+
+    expect(existsSync(agentPath)).toBe(true);
+    expect(existsSync(skillPath)).toBe(true);
+
+    const { removeCommand } = await import("./remove");
+    await removeCommand.parseAsync(["node", "remove", TEST_ARTIFACT_ID, "-f"]);
+
+    expect(existsSync(agentPath)).toBe(false);
+    expect(existsSync(skillPath)).toBe(false);
+    // Skill folder should also be cleaned up
+    expect(existsSync(skillFolder)).toBe(false);
   });
 
   test("removes synced files from multiple targets", async () => {
