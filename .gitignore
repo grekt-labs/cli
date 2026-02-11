@@ -9,4 +9,4 @@ dist/
 .npmrc
 bunfig.toml
 
-.grektspec/.tarball-cache/
+.grekt
