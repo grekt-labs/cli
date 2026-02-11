@@ -1,6 +1,8 @@
-import type { Lockfile, ProjectConfig, CustomTarget } from "@grekt-labs/cli-engine";
+import type { Lockfile, ProjectConfig, CustomTarget, SyncPlugin } from "@grekt-labs/cli-engine";
 import { getPlugin } from "#/sync/manager/manager";
 import { success, info, warning, log, colors, spinner } from "#/shared/ui/ui";
+
+type PluginResolver = (target: string, customTargets?: Record<string, CustomTarget>) => SyncPlugin;
 
 export interface RunSyncOptions {
   targets: string[];
@@ -10,6 +12,7 @@ export interface RunSyncOptions {
   customTargets?: Record<string, CustomTarget>;
   force?: boolean;
   createTarget?: boolean;
+  resolvePlugin?: PluginResolver;
 }
 
 export interface RunSyncResult {
@@ -31,6 +34,7 @@ export async function runSync(options: RunSyncOptions): Promise<RunSyncResult> {
     customTargets,
     force = false,
     createTarget = true,
+    resolvePlugin = getPlugin,
   } = options;
 
   const result: RunSyncResult = {
@@ -40,7 +44,7 @@ export async function runSync(options: RunSyncOptions): Promise<RunSyncResult> {
   };
 
   for (const target of targets) {
-    const plugin = getPlugin(target, customTargets);
+    const plugin = resolvePlugin(target, customTargets);
     log(colors.bold(`\nSyncing ${plugin.name}...`));
 
     const targetExists = plugin.targetExists(projectRoot);
