@@ -1,8 +1,11 @@
 import { Command } from "commander";
+import { confirm } from "@inquirer/prompts";
 import { getConfig, saveConfig } from "#/config/project/project";
+import { getLockfile } from "#/context";
 import { requireInitialized } from "#/shared/guards/guards";
 import { getPluginChoices, getPlugin } from "#/sync/manager/manager";
-import { success, error, info, newline } from "#/shared/ui/ui";
+import { runSync } from "#/sync/runner/runner";
+import { success, info, newline } from "#/shared/ui/ui";
 import { withPromptHandler, selectTargetsToAdd } from "#/shared/prompts/prompts";
 
 export const addTargetCommand = new Command("add-target")
@@ -43,6 +46,35 @@ export const addTargetCommand = new Command("add-target")
 
       newline();
       success(`Added targets: ${newTargets.join(", ")}`);
-      info("Run 'grekt sync' to sync artifacts to these targets");
+
+      const lockfile = getLockfile(projectRoot);
+      const hasArtifacts = Object.keys(lockfile.artifacts).length > 0;
+
+      if (!hasArtifacts) {
+        info("Run 'grekt add <artifact>' to install artifacts, then 'grekt sync'");
+        return;
+      }
+
+      newline();
+      const shouldSync = await confirm({
+        message: "Run sync now to generate files for the new targets?",
+        default: true,
+      });
+
+      if (shouldSync) {
+        await runSync({
+          targets: newTargets,
+          lockfile,
+          projectRoot,
+          projectConfig: config,
+          customTargets: config.customTargets,
+          createTarget: true,
+        });
+
+        newline();
+        success("Sync complete!");
+      } else {
+        info("Run 'grekt sync' when you're ready to generate files");
+      }
     });
   });
