@@ -163,10 +163,10 @@ grk-description: A test skill
     createProjectConfig(["claude"]);
     createLockfile();
     createGrektDir();
-    createSyncedFiles(".claude");
+    createClaudeSyncedFiles();
 
     const agentPath = join(testDir, ".claude/agents/scope-test-artifact_agent.md");
-    const skillPath = join(testDir, ".claude/skills/scope-test-artifact_skill.md");
+    const skillPath = join(testDir, ".claude/skills/scope-test-artifact-skill/SKILL.md");
 
     expect(existsSync(agentPath)).toBe(true);
     expect(existsSync(skillPath)).toBe(true);
