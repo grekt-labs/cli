@@ -1,3 +1,11 @@
+## [6.14.2](https://github.com/grekt-labs/cli/compare/v6.14.1...v6.14.2) (2026-02-11)
+
+
+### Bug Fixes
+
+* resolve target paths via plugin for correct cleanup ([9a690c9](https://github.com/grekt-labs/cli/commit/9a690c94b147a4043d6591e9d74ba0835e7c3477))
+* update cli-engine to 5.14.0 for resolveTargetPath support ([a41bbc6](https://github.com/grekt-labs/cli/commit/a41bbc6156a2accd34d39f294bcb48e1d30de199))
+
 ## [6.14.1](https://github.com/grekt-labs/cli/compare/v6.14.0...v6.14.1) (2026-02-10)
 
 
