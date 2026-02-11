@@ -1,3 +1,15 @@
+# [6.15.0](https://github.com/grekt-labs/cli/compare/v6.14.2...v6.15.0) (2026-02-11)
+
+
+### Bug Fixes
+
+* improve publish error feedback for auth and registry errors ([efea4ee](https://github.com/grekt-labs/cli/commit/efea4ee69c2128f39c62d9def56e720708531d6c))
+
+
+### Features
+
+* prompt sync after add-target and extract reusable sync runner ([d1f1b35](https://github.com/grekt-labs/cli/commit/d1f1b35312f71cf002d690c9af615f78ea9da890))
+
 ## [6.14.2](https://github.com/grekt-labs/cli/compare/v6.14.1...v6.14.2) (2026-02-11)
 
 
