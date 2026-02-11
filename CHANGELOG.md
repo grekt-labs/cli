@@ -1,3 +1,10 @@
+## [6.15.1](https://github.com/grekt-labs/cli/compare/v6.15.0...v6.15.1) (2026-02-11)
+
+
+### Bug Fixes
+
+* update cli-engine to 5.15.0 for frontmatter fallback support ([038b18c](https://github.com/grekt-labs/cli/commit/038b18ccb294d9c891dd059efefbfc914d9fbe36))
+
 # [6.15.0](https://github.com/grekt-labs/cli/compare/v6.14.2...v6.15.0) (2026-02-11)
 
 
