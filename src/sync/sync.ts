@@ -2,3 +2,4 @@
 export * from "./sync.types";
 export * from "./manager/manager";
 export * from "./base/base";
+export * from "./helpers/helpers";

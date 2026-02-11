@@ -1,10 +1,88 @@
-import type { Lockfile, ProjectConfig } from "@grekt-labs/cli-engine";
+import type { Lockfile, ProjectConfig, CustomTarget } from "@grekt-labs/cli-engine";
 import { getPlugin } from "#/sync/manager/manager";
-import { success, info, warning, spinner } from "#/shared/ui/ui";
+import { success, info, warning, log, colors, spinner } from "#/shared/ui/ui";
+
+export interface RunSyncOptions {
+  targets: string[];
+  lockfile: Lockfile;
+  projectRoot: string;
+  projectConfig: ProjectConfig;
+  customTargets?: Record<string, CustomTarget>;
+  force?: boolean;
+  createTarget?: boolean;
+}
+
+export interface RunSyncResult {
+  totalCreated: number;
+  totalUpdated: number;
+  totalSkipped: number;
+}
+
+/**
+ * Core sync execution logic, reusable across commands.
+ * Iterates over targets, resolves plugins, and runs sync.
+ */
+export async function runSync(options: RunSyncOptions): Promise<RunSyncResult> {
+  const {
+    targets,
+    lockfile,
+    projectRoot,
+    projectConfig,
+    customTargets,
+    force = false,
+    createTarget = true,
+  } = options;
+
+  const result: RunSyncResult = {
+    totalCreated: 0,
+    totalUpdated: 0,
+    totalSkipped: 0,
+  };
+
+  for (const target of targets) {
+    const plugin = getPlugin(target, customTargets);
+    log(colors.bold(`\nSyncing ${plugin.name}...`));
+
+    const targetExists = plugin.targetExists(projectRoot);
+
+    if (!targetExists && !createTarget) {
+      info(`Skipping ${plugin.name} (target not found)`);
+      continue;
+    }
+
+    const spin = spinner(`Syncing ${plugin.name}...`);
+    spin.start();
+
+    const syncResult = await plugin.sync(lockfile, projectRoot, {
+      createTarget: !targetExists,
+      force,
+      projectConfig,
+    });
+
+    spin.stop();
+
+    for (const file of syncResult.created) {
+      success(`Created ${file}`);
+      result.totalCreated++;
+    }
+
+    for (const file of syncResult.updated) {
+      info(`Updated ${file}`);
+      result.totalUpdated++;
+    }
+
+    for (const file of syncResult.skipped) {
+      warning(`Skipped ${file}`);
+      result.totalSkipped++;
+    }
+  }
+
+  return result;
+}
 
 /**
  * Sync artifacts to all configured targets.
- * Shared between add and upgrade commands.
+ * Convenience wrapper for add/upgrade commands that sync all targets with force.
  */
 export async function syncToTargets(
   config: ProjectConfig,
@@ -13,27 +91,13 @@ export async function syncToTargets(
 ): Promise<void> {
   if (config.targets.length === 0) return;
 
-  for (const target of config.targets) {
-    const plugin = getPlugin(target, config.customTargets);
-    const syncSpin = spinner(`Syncing ${plugin.name}...`);
-    syncSpin.start();
-
-    const syncResult = await plugin.sync(lockfile, projectRoot, {
-      createTarget: true,
-      force: true,
-      projectConfig: config,
-    });
-
-    syncSpin.stop();
-
-    for (const file of syncResult.created) {
-      success(`Created ${file}`);
-    }
-    for (const file of syncResult.updated) {
-      info(`Updated ${file}`);
-    }
-    for (const file of syncResult.skipped) {
-      warning(`Skipped ${file}`);
-    }
-  }
+  await runSync({
+    targets: config.targets,
+    lockfile,
+    projectRoot,
+    projectConfig: config,
+    customTargets: config.customTargets,
+    force: true,
+    createTarget: true,
+  });
 }
