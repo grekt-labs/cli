@@ -13,7 +13,7 @@ import {
   formatBytes,
 } from "#/artifact/publish/publish";
 import type { ValidationError } from "#/artifact/publish/publish";
-import type { PublishContext } from "#/registry/publishers/publisher.types";
+import type { PublishContext, Publisher } from "#/registry/publishers/publisher.types";
 import { CustomPublisher } from "#/registry/publishers/custom-publisher";
 import { RegistryError } from "#/registry/api-client/registry-error";
 import { CATEGORIES, isWorkspaceRoot, compareSemver } from "@grekt-labs/cli-engine";
@@ -207,7 +207,7 @@ async function publishSingleArtifact(
   const authError = await verifyPublisherAuth(publisher, projectRoot);
   if (authError) {
     if (authError === "no-s3-credentials") showS3CredentialsHelp();
-    if (authError === "not-authenticated") error("Not logged in. Run 'grekt login' first to publish to the default registry.");
+    if (authError === "not-authenticated") showAuthHelp(publisher);
     throw new Error(authError);
   }
 
@@ -390,8 +390,8 @@ function showS3CredentialsHelp(): void {
 }
 
 const REGISTRY_ERROR_HINTS: Record<string, string> = {
-  SCOPE_NOT_FOUND: "Make sure the scope matches your username or an organization you belong to",
-  SCOPE_NOT_OWNED: "You are not a member of this organization",
+  SCOPE_NOT_FOUND: "Scope not found. Verify it matches your username or organization",
+  SCOPE_NOT_OWNED: "You don't have publish permissions for this scope. Contact the organization owner",
   INVALID_CATEGORIES: `Artifact categories are invalid. Valid categories: ${CATEGORIES.join(", ")}`,
 };
 
@@ -402,8 +402,21 @@ function showRegistryErrorHint(err: RegistryError): void {
     return;
   }
 
-  if (err.code === "INSERT_FAILED" && err.details) {
-    info(`Details: ${err.details}`);
+  if (err.code === "INSERT_FAILED") {
+    info(err.details ? `Details: ${err.details}` : "Publish failed at the registry. Try again or check your connection");
+    return;
+  }
+
+  info("Unexpected registry error. Verify your connection and try again");
+}
+
+function showAuthHelp(publisher: Publisher): void {
+  if (publisher instanceof CustomPublisher) {
+    const registry = publisher.getRegistry();
+    error(`Authentication failed for ${registry.type} registry`);
+    info("Verify your token and registry URL in .grekt/config.yaml");
+  } else {
+    error("Not authenticated. Run 'grekt login' or check that the registry is reachable");
   }
 }
 
