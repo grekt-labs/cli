@@ -97,6 +97,70 @@ grk-description: A test agent
       expect(existsSync(join(testDir, ".test/agents/scope-artifact_agent.md"))).toBe(false);
     });
 
+    test("cleans up synced files when artifact switches from CORE to LAZY", async () => {
+      const plugin = createTestPlugin();
+
+      // First sync with CORE mode - files get copied
+      await plugin.sync(testLockfile, testDir, { projectConfig: testProjectConfig });
+      const syncedFile = join(testDir, ".test/agents/scope-artifact_agent.md");
+      expect(existsSync(syncedFile)).toBe(true);
+
+      // Second sync with LAZY mode - files should be cleaned up
+      const lazyConfig: ProjectConfig = {
+        ...testProjectConfig,
+        artifacts: { [TEST_ARTIFACT_ID]: "1.0.0" }, // string = lazy
+      };
+
+      const result = await plugin.sync(testLockfile, testDir, { projectConfig: lazyConfig });
+
+      expect(result.skipped.some((s) => s.includes("lazy mode"))).toBe(true);
+      expect(existsSync(syncedFile)).toBe(false);
+    });
+
+    test("cleans up folder-based targets when switching CORE to LAZY", async () => {
+      // Plugin with custom getTargetPath that creates folder structure (like Claude skills)
+      const plugin = createFolderPlugin({
+        id: "test",
+        name: "Test",
+        targetDir: ".test",
+        getTargetPath: (_artifactId, category, filePath) => {
+          if (category === "skills") {
+            const skillName = filePath.replace(".md", "");
+            return `${skillName}-folder/SKILL.md`;
+          }
+          return null;
+        },
+      });
+
+      // Create a skill file in the artifact
+      writeFileSync(
+        join(artifactDir, "my-skill.md"),
+        `---
+grk-type: skills
+grk-name: My Skill
+grk-description: A skill
+---
+# Skill`
+      );
+
+      // First sync with CORE mode
+      await plugin.sync(testLockfile, testDir, { projectConfig: testProjectConfig });
+      const skillFolder = join(testDir, ".test/skills/my-skill-folder");
+      const skillFile = join(skillFolder, "SKILL.md");
+      expect(existsSync(skillFile)).toBe(true);
+
+      // Switch to LAZY - folder should be cleaned up
+      const lazyConfig: ProjectConfig = {
+        ...testProjectConfig,
+        artifacts: { [TEST_ARTIFACT_ID]: "1.0.0" },
+      };
+
+      await plugin.sync(testLockfile, testDir, { projectConfig: lazyConfig });
+
+      expect(existsSync(skillFile)).toBe(false);
+      expect(existsSync(skillFolder)).toBe(false);
+    });
+
     test("reports created files in result", async () => {
       const plugin = createTestPlugin();
 
