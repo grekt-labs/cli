@@ -1,6 +1,8 @@
 # grekt
 
-AI tools versioned, synced, and shared across tools and teams.
+AI artifacts versioned, synced, and shared across tools and teams.
+
+> **Free to use.** grekt is free for personal and commercial use. If you're building something with it, we'd love to hear about it. The source is available under [BSL 1.1](./LICENSE), which just means you can't use this code to build something that competes with grekt. Each version converts to [MIT](./LICENSING.md) after two years.
 
 ## Installation
 
@@ -26,13 +28,34 @@ GREKT_INSTALL=/opt/bin curl -fsSL https://grekt.com/install.sh | sh
 brew install grekt-labs/tap/grekt
 ```
 
+## Quick Start
+
+```bash
+# Initialize a project
+grekt init
+
+# Add an artifact from the registry
+grekt add @scope/artifact-name
+
+# Install all artifacts from lockfile
+grekt install
+
+# Sync artifacts to your AI tools
+grekt sync
+
+# Check integrity and context budget
+grekt check
+```
+
+For the full command reference, guides, and artifact format, visit the [documentation](https://docs.grekt.com).
+
 ## Development
 
 ### Requirements
 
 - [Bun](https://bun.sh) >= 1.0
 
-### Local installation
+### Local setup
 
 ```bash
 cd cli
@@ -42,80 +65,10 @@ bun link
 
 Now `grekt` is available globally.
 
-## Quick Start
+## Contributing
 
-```bash
-# Initialize a project
-grekt init
-
-# Add an artifact from registry
-grekt add my-artifact
-
-# Sync to your AI tools
-grekt sync
-
-# Check integrity
-grekt check
-
-# List installed artifacts
-grekt list
-```
-
-## Commands
-
-| Command | Description |
-|---------|-------------|
-| `grekt init` | Initialize grekt in current directory |
-| `grekt add <artifact>` | Add artifact from registry |
-| `grekt remove <id>` | Remove an artifact |
-| `grekt sync` | Sync to AI tools (Claude, Cursor) |
-| `grekt list` | List installed artifacts |
-| `grekt check` | Check integrity and context budget |
-| `grekt config` | Manage configuration |
-
-## Configuration
-
-Set `REGISTRY_URL` in your environment or `.env` file to point to your artifact registry.
-
-## Project Structure
-
-After `grekt init`, your project will have:
-
-```
-project/
-├── .grekt/
-│   └── config.yaml      # Sync targets
-├── grekts/
-│   └── installed.yaml   # Installed artifacts index
-└── grekt.lock           # Version lockfile
-```
-
-## Artifact Format
-
-Artifacts are directories with:
-
-```
-@scope/artifact-name/
-├── grekt.yaml           # Manifest (name, author, version)
-├── agent.md             # Optional agent definition
-├── skills/
-│   └── *.md             # Skill files
-└── commands/
-    └── *.md             # Command files
-```
-
-Each `.md` file needs YAML frontmatter:
-
-```markdown
----
-type: agent|skill|command
-name: my-component
-description: What it does
----
-
-Content here...
-```
+See [CONTRIBUTING.md](./CONTRIBUTING.md). Feature requests and bug reports are welcome.
 
 ## License
 
-[BSL 1.1](./LICENSE)
+[BSL 1.1](./LICENSE) — [What does this mean?](./LICENSING.md)

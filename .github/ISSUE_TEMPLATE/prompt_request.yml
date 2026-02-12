@@ -1,0 +1,40 @@
+name: Prompt Request
+description: Describe a change you'd like the maintainer to implement
+labels: ["prompt-request"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A prompt request is a way to suggest a specific change without writing the code yourself. Describe what you want clearly and the maintainer will evaluate and implement it if it fits the project.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What should change?
+      description: Describe the change as precisely as possible. What should the behavior be before and after?
+    validations:
+      required: true
+
+  - type: textarea
+    id: rationale
+    attributes:
+      label: Why?
+      description: Why is this change needed? What problem does it solve?
+    validations:
+      required: true
+
+  - type: textarea
+    id: details
+    attributes:
+      label: Implementation hints
+      description: If you have ideas about how this should be implemented, share them here. File paths, function names, edge cases — anything helps.
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Any other context, references, or examples.
+    validations:
+      required: false
