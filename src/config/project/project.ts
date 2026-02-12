@@ -12,16 +12,10 @@ import {
   GREKT_YAML,
   GREKT_DIR,
 } from "#/config/paths/paths";
+import { ensureDir } from "#/shared/filesystem/filesystem";
 
 // Local config file path (inside .grekt/ directory)
 const LOCAL_CONFIG_FILE = "config.yaml";
-
-function ensureDir(filepath: string): void {
-  const dir = dirname(filepath);
-  if (!fs.exists(dir)) {
-    fs.mkdir(dir, { recursive: true });
-  }
-}
 
 function writeYaml(filepath: string, data: unknown, secure = false): void {
   ensureDir(filepath);

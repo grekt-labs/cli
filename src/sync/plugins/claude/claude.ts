@@ -1,5 +1,6 @@
 import { basename } from "path";
-import { createFolderPlugin, generateDefaultBlockContent, ensureDir } from "#/sync/base/base";
+import { createFolderPlugin, generateDefaultBlockContent } from "#/sync/base/base";
+import { ensureDir } from "#/shared/filesystem/filesystem";
 import { toSafeName, getSkillRouterTemplate } from "@grekt-labs/cli-engine";
 import { fs } from "#/context";
 

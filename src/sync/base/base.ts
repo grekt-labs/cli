@@ -13,20 +13,14 @@ import {
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
 import { getSafeFilename, generateDefaultBlockContent, GREKT_SECTION_HEADER, GREKT_ENTRY_POINT_TEXT } from "@grekt-labs/cli-engine";
 import { fs } from "#/context";
+import { ensureDir, cleanEmptyDir } from "#/shared/filesystem/filesystem";
 
 // MD categories can be synced to folder targets
 const SYNCABLE_CATEGORIES = getCategoriesForFormat("md");
 
 // Re-export for external use
 export { generateDefaultBlockContent, GREKT_ENTRY_POINT_TEXT } from "@grekt-labs/cli-engine";
-
-// Utility functions
-export function ensureDir(filepath: string): void {
-  const dir = dirname(filepath);
-  if (!fs.exists(dir)) {
-    fs.mkdir(dir, { recursive: true });
-  }
-}
+export { ensureDir } from "#/shared/filesystem/filesystem";
 
 /**
  * Find the actual path of an entry point file, matching case-insensitively.
@@ -128,18 +122,6 @@ function cleanupArtifactFiles(
     }
 
     cleanEmptyDir(`${projectRoot}/${categoryDir}`);
-  }
-}
-
-/**
- * Remove directory if empty
- */
-function cleanEmptyDir(dir: string): void {
-  if (fs.exists(dir)) {
-    const files = fs.readdir(dir);
-    if (files.length === 0) {
-      fs.rmdir(dir, { recursive: true });
-    }
   }
 }
 

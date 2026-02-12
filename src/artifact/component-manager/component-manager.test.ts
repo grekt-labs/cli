@@ -1,7 +1,8 @@
 import { describe, test, expect, beforeEach, afterEach } from "bun:test";
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "fs";
 import { join } from "path";
-import { removeUnselectedFiles, cleanEmptyDirs } from "./component-manager";
+import { removeUnselectedFiles } from "./component-manager";
+import { cleanEmptyDirs } from "#/shared/filesystem/filesystem";
 import type { ArtifactInfo } from "#/context";
 import { createEmptySelection, type ComponentSelection } from "#/artifact/selector/selector";
 import { createCategoryRecord } from "@grekt-labs/cli-engine";

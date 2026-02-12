@@ -1,8 +1,9 @@
-import { dirname, join } from "path";
+import { join } from "path";
 import { homedir } from "os";
 import { parse, stringify } from "yaml";
 import { fs } from "#/context";
 import type { StoredSession } from "@grekt-labs/cli-engine";
+import { ensureDir } from "#/shared/filesystem/filesystem";
 
 // Global user config directory
 const USER_CONFIG_DIR = join(homedir(), ".grekt");
@@ -10,13 +11,6 @@ const SESSION_FILE = "session.yaml";
 
 function getSessionPath(): string {
   return join(USER_CONFIG_DIR, SESSION_FILE);
-}
-
-function ensureDir(filepath: string): void {
-  const dir = dirname(filepath);
-  if (!fs.exists(dir)) {
-    fs.mkdir(dir, { recursive: true });
-  }
 }
 
 /**
