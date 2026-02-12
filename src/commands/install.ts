@@ -148,7 +148,7 @@ export const installCommand = new Command("install")
         spin.stop();
 
         // Scan for frontmatter errors before deleting
-        const scanned = scanArtifact(fs, targetDir);
+        const scanned = scanArtifact(targetDir);
         const hasValidationErrors = scanned && scanned.invalidFiles.length > 0;
 
         fs.rmdir(targetDir, { recursive: true });
