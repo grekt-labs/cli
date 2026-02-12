@@ -1,6 +1,6 @@
 # grekt
 
-AI artifacts versioned, synced, and shared across tools and teams.
+AI artifacts versioned, synced, and shared across tools, teams, and the [community](https://explore.grekt.com).
 
 > **Free to use.** grekt is free for personal and commercial use. If you're building something with it, we'd love to hear about it. The source is available under [BSL 1.1](./LICENSE), which just means you can't use this code to build something that competes with grekt. Each version converts to [MIT](./LICENSING.md) after two years.
 
