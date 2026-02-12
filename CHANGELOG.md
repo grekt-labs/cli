@@ -1,3 +1,10 @@
+## [6.15.2](https://github.com/grekt-labs/cli/compare/v6.15.1...v6.15.2) (2026-02-12)
+
+
+### Bug Fixes
+
+* pass correct argument to scanArtifact in install command ([edad686](https://github.com/grekt-labs/cli/commit/edad686868a6a4585a81f0877dce5e184f41d127))
+
 ## [6.15.1](https://github.com/grekt-labs/cli/compare/v6.15.0...v6.15.1) (2026-02-11)
 
 
