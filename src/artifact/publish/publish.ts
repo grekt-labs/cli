@@ -57,14 +57,7 @@ export function validateForPublish(
   const components = generateComponents(artifact.scanned);
 
   return {
-    artifact: {
-      artifactId: artifact.artifactId,
-      scope: artifact.scope,
-      fullPath: artifact.fullPath,
-      manifest: artifact.manifest,
-      scanned: artifact.scanned,
-      componentCount: artifact.componentCount,
-    },
+    artifact: artifact as ValidateResult["artifact"],
     components,
   };
 }

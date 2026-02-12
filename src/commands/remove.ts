@@ -1,6 +1,7 @@
 import { dirname } from "path";
 import { Command } from "commander";
 import { fs } from "#/context";
+import { cleanEmptyDir } from "#/shared/filesystem/filesystem";
 import { confirm } from "@inquirer/prompts";
 import { getConfig, saveConfig } from "#/config/project/project";
 import { requireInitialized } from "#/shared/guards/guards";
@@ -170,14 +171,3 @@ export const removeCommand = new Command("remove")
     });
   });
 
-/**
- * Remove directory if empty
- */
-function cleanEmptyDir(dir: string): void {
-  if (fs.exists(dir)) {
-    const files = fs.readdir(dir);
-    if (files.length === 0) {
-      fs.rmdir(dir, { recursive: true });
-    }
-  }
-}

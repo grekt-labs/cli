@@ -6,6 +6,10 @@
  * "a registry client" with download/publish methods.
  */
 
+import type { PublishResult } from "./publishers/publisher.types";
+
+export type { PublishResult };
+
 export type RegistryType = "gitlab" | "github" | "default";
 
 /**
@@ -28,15 +32,6 @@ export interface DownloadResult {
   version?: string;
   resolved?: string;
   deprecationMessage?: string;
-}
-
-/**
- * Result from publish operation
- */
-export interface PublishResult {
-  success: boolean;
-  url?: string;
-  error?: string;
 }
 
 /**
