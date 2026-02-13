@@ -17,6 +17,8 @@ export interface HookTargetConfig {
   settingsFile: string;
   /** Key in the settings file where hooks are stored */
   hooksKey: string;
+  /** Directory where hook script files are copied, relative to project root */
+  hooksDir: string;
   /** Display name for the target */
   displayName: string;
 }
