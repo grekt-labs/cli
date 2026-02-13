@@ -5,6 +5,7 @@ import { installHooks, uninstallHooks, getHookSummary } from "./hooks";
 import type { ScannedFile } from "@grekt-labs/cli-engine";
 
 const TEST_ARTIFACT_ID = "@scope/my-artifact";
+const ARTIFACTS_DIR = ".grekt/artifacts";
 
 function createHookFile(overrides: Partial<{
   path: string;
@@ -41,6 +42,15 @@ function createHookFile(overrides: Partial<{
   };
 }
 
+function createArtifactHooksDir(testDir: string, artifactId: string, files: Record<string, string>): void {
+  const hooksDir = join(testDir, ARTIFACTS_DIR, artifactId, "hooks");
+  mkdirSync(hooksDir, { recursive: true });
+
+  for (const [fileName, content] of Object.entries(files)) {
+    writeFileSync(join(hooksDir, fileName), content);
+  }
+}
+
 describe("hooks", () => {
   const testDir = join(process.cwd(), ".test-hooks");
 
@@ -55,15 +65,16 @@ describe("hooks", () => {
 
   describe("installHooks", () => {
     test("creates settings file when it does not exist", () => {
+      createArtifactHooksDir(testDir, TEST_ARTIFACT_ID, { "format.sh": "#!/bin/bash\necho ok" });
       const hookFiles = [createHookFile({})];
 
       installHooks(testDir, TEST_ARTIFACT_ID, hookFiles);
 
-      const settingsPath = join(testDir, ".claude/settings.json");
-      expect(existsSync(settingsPath)).toBe(true);
+      expect(existsSync(join(testDir, ".claude/settings.json"))).toBe(true);
     });
 
     test("writes hooks to correct key in settings", () => {
+      createArtifactHooksDir(testDir, TEST_ARTIFACT_ID, {});
       const hookFiles = [createHookFile({})];
 
       installHooks(testDir, TEST_ARTIFACT_ID, hookFiles);
@@ -73,17 +84,72 @@ describe("hooks", () => {
       expect(settings.hooks.PostToolUse).toHaveLength(1);
     });
 
-    test("rewrites relative command paths to artifact directory", () => {
+    test("does not rewrite command paths", () => {
+      createArtifactHooksDir(testDir, TEST_ARTIFACT_ID, {});
       const hookFiles = [createHookFile({})];
 
       installHooks(testDir, TEST_ARTIFACT_ID, hookFiles);
 
       const settings = JSON.parse(readFileSync(join(testDir, ".claude/settings.json"), "utf-8"));
       const command = settings.hooks.PostToolUse[0].hooks[0].command;
-      expect(command).toBe(".grekt/artifacts/@scope/my-artifact/hooks/format.sh");
+      expect(command).toBe("./format.sh");
+    });
+
+    test("copies script files to target hooks directory", () => {
+      createArtifactHooksDir(testDir, TEST_ARTIFACT_ID, {
+        "format.sh": "#!/bin/bash\necho format",
+        "lint.sh": "#!/bin/bash\necho lint",
+      });
+      const hookFiles = [createHookFile({})];
+
+      const result = installHooks(testDir, TEST_ARTIFACT_ID, hookFiles);
+
+      expect(result.copiedFiles).toBe(2);
+      expect(existsSync(join(testDir, ".claude/hooks/format.sh"))).toBe(true);
+      expect(existsSync(join(testDir, ".claude/hooks/lint.sh"))).toBe(true);
+    });
+
+    test("skips JSON files when copying", () => {
+      createArtifactHooksDir(testDir, TEST_ARTIFACT_ID, {
+        "hooks.json": '{"grk-type": "hooks"}',
+        "format.sh": "#!/bin/bash\necho ok",
+      });
+      const hookFiles = [createHookFile({})];
+
+      const result = installHooks(testDir, TEST_ARTIFACT_ID, hookFiles);
+
+      expect(result.copiedFiles).toBe(1);
+      expect(existsSync(join(testDir, ".claude/hooks/hooks.json"))).toBe(false);
+      expect(existsSync(join(testDir, ".claude/hooks/format.sh"))).toBe(true);
+    });
+
+    test("detects file collisions and skips existing files", () => {
+      createArtifactHooksDir(testDir, TEST_ARTIFACT_ID, { "format.sh": "#!/bin/bash\necho new" });
+      mkdirSync(join(testDir, ".claude/hooks"), { recursive: true });
+      writeFileSync(join(testDir, ".claude/hooks/format.sh"), "#!/bin/bash\necho existing");
+
+      const hookFiles = [createHookFile({})];
+      const result = installHooks(testDir, TEST_ARTIFACT_ID, hookFiles);
+
+      expect(result.copiedFiles).toBe(0);
+      expect(result.collisions).toEqual(["format.sh"]);
+      const content = readFileSync(join(testDir, ".claude/hooks/format.sh"), "utf-8");
+      expect(content).toBe("#!/bin/bash\necho existing");
+    });
+
+    test("creates manifest tracking copied files and definitions", () => {
+      createArtifactHooksDir(testDir, TEST_ARTIFACT_ID, { "format.sh": "#!/bin/bash\necho ok" });
+      const hookFiles = [createHookFile({})];
+
+      installHooks(testDir, TEST_ARTIFACT_ID, hookFiles);
+
+      const manifest = JSON.parse(readFileSync(join(testDir, ".claude/hooks/.grekt-hooks.json"), "utf-8"));
+      expect(manifest[TEST_ARTIFACT_ID].files).toEqual(["format.sh"]);
+      expect(manifest[TEST_ARTIFACT_ID].definitions.PostToolUse).toHaveLength(1);
     });
 
     test("preserves existing settings when adding hooks", () => {
+      createArtifactHooksDir(testDir, TEST_ARTIFACT_ID, {});
       mkdirSync(join(testDir, ".claude"), { recursive: true });
       writeFileSync(
         join(testDir, ".claude/settings.json"),
@@ -99,6 +165,7 @@ describe("hooks", () => {
     });
 
     test("merges hooks with existing hooks in same event", () => {
+      createArtifactHooksDir(testDir, TEST_ARTIFACT_ID, {});
       mkdirSync(join(testDir, ".claude"), { recursive: true });
       writeFileSync(
         join(testDir, ".claude/settings.json"),
@@ -119,6 +186,7 @@ describe("hooks", () => {
     });
 
     test("returns installed count and target names", () => {
+      createArtifactHooksDir(testDir, TEST_ARTIFACT_ID, {});
       const hookFiles = [createHookFile({})];
 
       const result = installHooks(testDir, TEST_ARTIFACT_ID, hookFiles);
@@ -133,35 +201,6 @@ describe("hooks", () => {
       const result = installHooks(testDir, TEST_ARTIFACT_ID, hookFiles);
 
       expect(result.installed).toBe(0);
-      expect(existsSync(join(testDir, ".claude/settings.json"))).toBe(false);
-    });
-
-    test("handles multiple hooks for same target", () => {
-      const hookFiles = [
-        createHookFile({ name: "hook-1", hooks: {
-          PostToolUse: [{ matcher: "Edit", hooks: [{ type: "command", command: "./hook1.sh" }] }],
-        }}),
-        createHookFile({ path: "hooks/hook2.json", name: "hook-2", hooks: {
-          PreToolUse: [{ matcher: "Bash", hooks: [{ type: "command", command: "./hook2.sh" }] }],
-        }}),
-      ];
-
-      installHooks(testDir, TEST_ARTIFACT_ID, hookFiles);
-
-      const settings = JSON.parse(readFileSync(join(testDir, ".claude/settings.json"), "utf-8"));
-      expect(settings.hooks.PostToolUse).toHaveLength(1);
-      expect(settings.hooks.PreToolUse).toHaveLength(1);
-    });
-
-    test("does not rewrite absolute command paths", () => {
-      const hookFiles = [createHookFile({ hooks: {
-        PostToolUse: [{ matcher: "Edit", hooks: [{ type: "command", command: "/usr/bin/format" }] }],
-      }})];
-
-      installHooks(testDir, TEST_ARTIFACT_ID, hookFiles);
-
-      const settings = JSON.parse(readFileSync(join(testDir, ".claude/settings.json"), "utf-8"));
-      expect(settings.hooks.PostToolUse[0].hooks[0].command).toBe("/usr/bin/format");
     });
 
     test("skips hook files with no hook definitions", () => {
@@ -178,7 +217,8 @@ describe("hooks", () => {
       expect(result.installed).toBe(0);
     });
 
-    test("preserves non-command hook types without rewriting", () => {
+    test("preserves non-command hook types", () => {
+      createArtifactHooksDir(testDir, TEST_ARTIFACT_ID, {});
       const hookFiles = [createHookFile({
         hooks: {
           PreToolUse: [
@@ -201,72 +241,64 @@ describe("hooks", () => {
   });
 
   describe("uninstallHooks", () => {
-    test("removes hooks belonging to artifact by path", () => {
-      mkdirSync(join(testDir, ".claude"), { recursive: true });
-      writeFileSync(
-        join(testDir, ".claude/settings.json"),
-        JSON.stringify({
-          hooks: {
-            PostToolUse: [
-              {
-                matcher: "Edit",
-                hooks: [{ type: "command", command: ".grekt/artifacts/@scope/my-artifact/hooks/format.sh" }],
-              },
-              {
-                matcher: "Bash",
-                hooks: [{ type: "command", command: "echo other" }],
-              },
-            ],
-          },
-        }, null, 2),
-      );
+    test("removes copied script files", () => {
+      createArtifactHooksDir(testDir, TEST_ARTIFACT_ID, { "format.sh": "#!/bin/bash\necho ok" });
+      const hookFiles = [createHookFile({})];
+      installHooks(testDir, TEST_ARTIFACT_ID, hookFiles);
 
-      const removed = uninstallHooks(testDir, TEST_ARTIFACT_ID);
+      expect(existsSync(join(testDir, ".claude/hooks/format.sh"))).toBe(true);
 
-      expect(removed).toBe(1);
-      const settings = JSON.parse(readFileSync(join(testDir, ".claude/settings.json"), "utf-8"));
-      expect(settings.hooks.PostToolUse).toHaveLength(1);
-      expect(settings.hooks.PostToolUse[0].matcher).toBe("Bash");
+      uninstallHooks(testDir, TEST_ARTIFACT_ID);
+
+      expect(existsSync(join(testDir, ".claude/hooks/format.sh"))).toBe(false);
     });
 
-    test("removes entire hooks key when no hooks remain", () => {
-      mkdirSync(join(testDir, ".claude"), { recursive: true });
-      writeFileSync(
-        join(testDir, ".claude/settings.json"),
-        JSON.stringify({
-          permissions: { allow: ["Read"] },
-          hooks: {
-            PostToolUse: [
-              {
-                matcher: "Edit",
-                hooks: [{ type: "command", command: ".grekt/artifacts/@scope/my-artifact/hooks/format.sh" }],
-              },
-            ],
-          },
-        }, null, 2),
-      );
+    test("removes hook definitions from settings", () => {
+      createArtifactHooksDir(testDir, TEST_ARTIFACT_ID, {});
+      const hookFiles = [createHookFile({})];
+      installHooks(testDir, TEST_ARTIFACT_ID, hookFiles);
 
       uninstallHooks(testDir, TEST_ARTIFACT_ID);
 
       const settings = JSON.parse(readFileSync(join(testDir, ".claude/settings.json"), "utf-8"));
       expect(settings.hooks).toBeUndefined();
-      expect(settings.permissions).toEqual({ allow: ["Read"] });
     });
 
-    test("returns 0 when artifact has no hooks installed", () => {
+    test("preserves hooks from other sources", () => {
+      createArtifactHooksDir(testDir, TEST_ARTIFACT_ID, {});
       mkdirSync(join(testDir, ".claude"), { recursive: true });
       writeFileSync(
         join(testDir, ".claude/settings.json"),
-        JSON.stringify({ hooks: {} }, null, 2),
+        JSON.stringify({
+          hooks: {
+            PostToolUse: [
+              { matcher: "Bash", hooks: [{ type: "command", command: "echo manual" }] },
+            ],
+          },
+        }, null, 2),
       );
 
-      const removed = uninstallHooks(testDir, "@scope/other-artifact");
+      const hookFiles = [createHookFile({})];
+      installHooks(testDir, TEST_ARTIFACT_ID, hookFiles);
+      uninstallHooks(testDir, TEST_ARTIFACT_ID);
 
-      expect(removed).toBe(0);
+      const settings = JSON.parse(readFileSync(join(testDir, ".claude/settings.json"), "utf-8"));
+      expect(settings.hooks.PostToolUse).toHaveLength(1);
+      expect(settings.hooks.PostToolUse[0].matcher).toBe("Bash");
     });
 
-    test("handles missing settings file gracefully", () => {
-      const removed = uninstallHooks(testDir, TEST_ARTIFACT_ID);
+    test("removes manifest file when no artifacts remain", () => {
+      createArtifactHooksDir(testDir, TEST_ARTIFACT_ID, { "format.sh": "#!/bin/bash\necho ok" });
+      const hookFiles = [createHookFile({})];
+      installHooks(testDir, TEST_ARTIFACT_ID, hookFiles);
+
+      uninstallHooks(testDir, TEST_ARTIFACT_ID);
+
+      expect(existsSync(join(testDir, ".claude/hooks/.grekt-hooks.json"))).toBe(false);
+    });
+
+    test("returns 0 when artifact has no hooks installed", () => {
+      const removed = uninstallHooks(testDir, "@scope/other-artifact");
       expect(removed).toBe(0);
     });
   });

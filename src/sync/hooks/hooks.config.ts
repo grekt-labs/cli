@@ -11,6 +11,7 @@ export const HOOK_TARGETS: Record<string, HookTargetConfig> = {
   claude: {
     settingsFile: ".claude/settings.json",
     hooksKey: "hooks",
+    hooksDir: ".claude/hooks",
     displayName: "Claude",
   },
 };
