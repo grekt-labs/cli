@@ -137,15 +137,15 @@ describe("hooks", () => {
       expect(content).toBe("#!/bin/bash\necho existing");
     });
 
-    test("creates manifest tracking copied files and definitions", () => {
-      createArtifactHooksDir(testDir, TEST_ARTIFACT_ID, { "format.sh": "#!/bin/bash\necho ok" });
+    test("does not duplicate definitions on re-install", () => {
+      createArtifactHooksDir(testDir, TEST_ARTIFACT_ID, {});
       const hookFiles = [createHookFile({})];
 
       installHooks(testDir, TEST_ARTIFACT_ID, hookFiles);
+      installHooks(testDir, TEST_ARTIFACT_ID, hookFiles);
 
-      const manifest = JSON.parse(readFileSync(join(testDir, ".claude/hooks/.grekt-hooks.json"), "utf-8"));
-      expect(manifest[TEST_ARTIFACT_ID].files).toEqual(["format.sh"]);
-      expect(manifest[TEST_ARTIFACT_ID].definitions.PostToolUse).toHaveLength(1);
+      const settings = JSON.parse(readFileSync(join(testDir, ".claude/settings.json"), "utf-8"));
+      expect(settings.hooks.PostToolUse).toHaveLength(1);
     });
 
     test("preserves existing settings when adding hooks", () => {
@@ -248,7 +248,7 @@ describe("hooks", () => {
 
       expect(existsSync(join(testDir, ".claude/hooks/format.sh"))).toBe(true);
 
-      uninstallHooks(testDir, TEST_ARTIFACT_ID);
+      uninstallHooks(testDir, TEST_ARTIFACT_ID, hookFiles);
 
       expect(existsSync(join(testDir, ".claude/hooks/format.sh"))).toBe(false);
     });
@@ -258,7 +258,7 @@ describe("hooks", () => {
       const hookFiles = [createHookFile({})];
       installHooks(testDir, TEST_ARTIFACT_ID, hookFiles);
 
-      uninstallHooks(testDir, TEST_ARTIFACT_ID);
+      uninstallHooks(testDir, TEST_ARTIFACT_ID, hookFiles);
 
       const settings = JSON.parse(readFileSync(join(testDir, ".claude/settings.json"), "utf-8"));
       expect(settings.hooks).toBeUndefined();
@@ -280,25 +280,21 @@ describe("hooks", () => {
 
       const hookFiles = [createHookFile({})];
       installHooks(testDir, TEST_ARTIFACT_ID, hookFiles);
-      uninstallHooks(testDir, TEST_ARTIFACT_ID);
+      uninstallHooks(testDir, TEST_ARTIFACT_ID, hookFiles);
 
       const settings = JSON.parse(readFileSync(join(testDir, ".claude/settings.json"), "utf-8"));
       expect(settings.hooks.PostToolUse).toHaveLength(1);
       expect(settings.hooks.PostToolUse[0].matcher).toBe("Bash");
     });
 
-    test("removes manifest file when no artifacts remain", () => {
-      createArtifactHooksDir(testDir, TEST_ARTIFACT_ID, { "format.sh": "#!/bin/bash\necho ok" });
-      const hookFiles = [createHookFile({})];
-      installHooks(testDir, TEST_ARTIFACT_ID, hookFiles);
-
-      uninstallHooks(testDir, TEST_ARTIFACT_ID);
-
-      expect(existsSync(join(testDir, ".claude/hooks/.grekt-hooks.json"))).toBe(false);
+    test("returns 0 when hook files have no valid targets", () => {
+      const hookFiles = [createHookFile({ target: "unknown-tool" })];
+      const removed = uninstallHooks(testDir, TEST_ARTIFACT_ID, hookFiles);
+      expect(removed).toBe(0);
     });
 
-    test("returns 0 when artifact has no hooks installed", () => {
-      const removed = uninstallHooks(testDir, "@scope/other-artifact");
+    test("returns 0 when no hook files provided", () => {
+      const removed = uninstallHooks(testDir, TEST_ARTIFACT_ID, []);
       expect(removed).toBe(0);
     });
   });

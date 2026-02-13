@@ -95,9 +95,12 @@ export const removeCommand = new Command("remove")
     const removed: string[] = [];
 
     // Uninstall hooks from target tool settings before removing artifact
-    const hooksRemoved = uninstallHooks(projectRoot, artifactId);
-    if (hooksRemoved > 0) {
-      removed.push(`${hooksRemoved} hook(s) from settings`);
+    const hookFiles = artifactInfo?.hooks ?? [];
+    if (hookFiles.length > 0) {
+      const hooksRemoved = uninstallHooks(projectRoot, artifactId, hookFiles);
+      if (hooksRemoved > 0) {
+        removed.push(`${hooksRemoved} hook target(s) cleaned`);
+      }
     }
 
     // Remove from .grekt/artifacts/

@@ -5,6 +5,9 @@
  * They modify target tool settings files (e.g. .claude/settings.json)
  * and copy hook script files to the target's hooks directory.
  * Completely independent from the sync system.
+ *
+ * No manifest or external tracking needed — the artifact on disk
+ * is the source of truth for both install and uninstall.
  */
 
 import { dirname, join } from "path";
@@ -13,22 +16,6 @@ import { ARTIFACTS_DIR } from "#/config/paths/paths";
 import { getHookTarget, getHookTargetIds } from "./hooks.config";
 import type { ScannedFile } from "@grekt-labs/cli-engine";
 import type { ParsedHookContent, HookEventDefinition, HookEventsMap } from "./hooks.types";
-
-/**
- * Manifest file that tracks which hook files were copied by each artifact.
- * Stored in the target's hooks directory (e.g. .claude/hooks/.grekt-hooks.json).
- * Used during uninstall to know which files to remove.
- */
-const HOOKS_MANIFEST_FILE = ".grekt-hooks.json";
-
-interface ArtifactHookEntry {
-  files: string[];
-  definitions: Record<string, HookEventDefinition[]>;
-}
-
-interface HooksManifest {
-  [artifactId: string]: ArtifactHookEntry;
-}
 
 /**
  * Resolve event definitions from parsed hook content.
@@ -69,29 +56,23 @@ function writeSettingsFile(projectRoot: string, settingsFile: string, data: Reco
   fs.writeFile(fullPath, JSON.stringify(data, null, 2) + "\n");
 }
 
-function readHooksManifest(projectRoot: string, hooksDir: string): HooksManifest {
-  const manifestPath = join(projectRoot, hooksDir, HOOKS_MANIFEST_FILE);
+/**
+ * List non-JSON script files in an artifact's hooks directory.
+ * These are the files that get copied to the target's hooks directory.
+ */
+function listScriptFiles(projectRoot: string, artifactId: string, hookFilePath: string): string[] {
+  const hookDir = dirname(hookFilePath);
+  const artifactHooksPath = join(projectRoot, ARTIFACTS_DIR, artifactId, hookDir);
 
-  if (!fs.exists(manifestPath)) {
-    return {};
+  if (!fs.exists(artifactHooksPath)) {
+    return [];
   }
 
-  try {
-    return JSON.parse(fs.readFile(manifestPath));
-  } catch {
-    return {};
-  }
-}
-
-function writeHooksManifest(projectRoot: string, hooksDir: string, manifest: HooksManifest): void {
-  const fullDir = join(projectRoot, hooksDir);
-
-  if (!fs.exists(fullDir)) {
-    fs.mkdir(fullDir, { recursive: true });
-  }
-
-  const manifestPath = join(fullDir, HOOKS_MANIFEST_FILE);
-  fs.writeFile(manifestPath, JSON.stringify(manifest, null, 2) + "\n");
+  return fs.readdir(artifactHooksPath).filter((file) => {
+    if (file.endsWith(".json")) return false;
+    const srcPath = join(artifactHooksPath, file);
+    return fs.stat(srcPath).isFile;
+  });
 }
 
 /**
@@ -118,17 +99,13 @@ function copyHookFiles(
     fs.mkdir(targetHooksPath, { recursive: true });
   }
 
-  const files = fs.readdir(artifactHooksPath);
+  const files = listScriptFiles(projectRoot, artifactId, hookFilePath);
   const copied: string[] = [];
   const collisions: string[] = [];
 
   for (const file of files) {
-    if (file.endsWith(".json")) continue;
-
     const srcPath = join(artifactHooksPath, file);
     const destPath = join(targetHooksPath, file);
-
-    if (!fs.stat(srcPath).isFile) continue;
 
     if (fs.exists(destPath)) {
       collisions.push(file);
@@ -156,6 +133,37 @@ function removeHookFiles(projectRoot: string, hooksDir: string, files: string[])
 }
 
 /**
+ * Remove specific definitions from existing hooks in settings.
+ * Uses JSON comparison to identify which definitions to remove.
+ */
+function removeDefinitions(
+  existingHooks: Record<string, HookEventDefinition[]>,
+  toRemove: Record<string, HookEventDefinition[]>,
+): Record<string, HookEventDefinition[]> {
+  const cleaned: Record<string, HookEventDefinition[]> = {};
+
+  for (const [eventName, definitions] of Object.entries(existingHooks)) {
+    const defsToRemove = toRemove[eventName];
+
+    if (!defsToRemove) {
+      cleaned[eventName] = definitions;
+      continue;
+    }
+
+    const removeJson = defsToRemove.map((d) => JSON.stringify(d));
+    const filtered = definitions.filter(
+      (def) => !removeJson.includes(JSON.stringify(def)),
+    );
+
+    if (filtered.length > 0) {
+      cleaned[eventName] = filtered;
+    }
+  }
+
+  return cleaned;
+}
+
+/**
  * Merge hook event definitions into existing hooks in settings.
  */
 function mergeHooks(
@@ -174,28 +182,12 @@ function mergeHooks(
   return merged;
 }
 
-export interface InstallHooksResult {
-  installed: number;
-  targets: string[];
-  copiedFiles: number;
-  collisions: string[];
-}
-
 /**
- * Install hooks from an artifact into target tool settings.
- *
- * 1. Copies hook script files (non-JSON) to the target's hooks directory as-is
- * 2. Merges hook event definitions into the target's settings file
- * 3. Tracks copied files and definitions in a manifest for clean uninstall
+ * Collect all definitions and script file names from hook files grouped by target.
+ * Filters out hooks with unknown targets or no definitions.
  */
-export function installHooks(
-  projectRoot: string,
-  artifactId: string,
-  hookFiles: ScannedFile[],
-): InstallHooksResult {
-  const result: InstallHooksResult = { installed: 0, targets: [], copiedFiles: 0, collisions: [] };
+function collectHooksByTarget(hookFiles: ScannedFile[]): Map<string, Array<{ content: ParsedHookContent; path: string }>> {
   const targetIds = getHookTargetIds();
-
   const hooksByTarget = new Map<string, Array<{ content: ParsedHookContent; path: string }>>();
 
   for (const hookFile of hookFiles) {
@@ -216,12 +208,50 @@ export function installHooks(
     hooksByTarget.get(content.target)!.push({ content, path: hookFile.path });
   }
 
+  return hooksByTarget;
+}
+
+/**
+ * Collect all definitions from grouped hooks into a flat map.
+ */
+function collectAllDefinitions(hooks: Array<{ content: ParsedHookContent }>): Record<string, HookEventDefinition[]> {
+  let allDefinitions: Record<string, HookEventDefinition[]> = {};
+
+  for (const { content } of hooks) {
+    const events = resolveEventDefinitions(content);
+    allDefinitions = mergeHooks(allDefinitions, events as Record<string, HookEventDefinition[]>);
+  }
+
+  return allDefinitions;
+}
+
+export interface InstallHooksResult {
+  installed: number;
+  targets: string[];
+  copiedFiles: number;
+  collisions: string[];
+}
+
+/**
+ * Install hooks from an artifact into target tool settings.
+ *
+ * 1. Removes old definitions from settings if artifact was previously installed (prevents duplication)
+ * 2. Copies hook script files (non-JSON) to the target's hooks directory as-is
+ * 3. Merges hook event definitions into the target's settings file
+ */
+export function installHooks(
+  projectRoot: string,
+  artifactId: string,
+  hookFiles: ScannedFile[],
+): InstallHooksResult {
+  const result: InstallHooksResult = { installed: 0, targets: [], copiedFiles: 0, collisions: [] };
+  const hooksByTarget = collectHooksByTarget(hookFiles);
+
   for (const [targetId, hooks] of hooksByTarget) {
     const targetConfig = getHookTarget(targetId);
     if (!targetConfig) continue;
 
     // Copy script files
-    const manifest = readHooksManifest(projectRoot, targetConfig.hooksDir);
     const allCopied: string[] = [];
 
     for (const { path } of hooks) {
@@ -232,30 +262,21 @@ export function installHooks(
 
     result.copiedFiles += allCopied.length;
 
-    // Merge hook definitions into settings (as-is, no path rewriting)
+    // Collect new definitions
+    const allDefinitions = collectAllDefinitions(hooks);
+
+    // Remove old definitions first (prevents duplication on re-install/upgrade)
     const settings = readSettingsFile(projectRoot, targetConfig.settingsFile);
     let existingHooks = (settings[targetConfig.hooksKey] ?? {}) as Record<string, HookEventDefinition[]>;
-    let allDefinitions: Record<string, HookEventDefinition[]> = {};
+    existingHooks = removeDefinitions(existingHooks, allDefinitions);
 
-    for (const { content } of hooks) {
-      const events = resolveEventDefinitions(content);
-      const eventDefs = events as Record<string, HookEventDefinition[]>;
-      existingHooks = mergeHooks(existingHooks, eventDefs);
-      allDefinitions = mergeHooks(allDefinitions, eventDefs);
-      result.installed++;
-    }
-
-    // Track for uninstall
-    const existing = manifest[artifactId];
-    manifest[artifactId] = {
-      files: [...(existing?.files ?? []), ...allCopied],
-      definitions: mergeHooks(existing?.definitions ?? {}, allDefinitions),
-    };
-    writeHooksManifest(projectRoot, targetConfig.hooksDir, manifest);
+    // Merge new definitions
+    existingHooks = mergeHooks(existingHooks, allDefinitions);
 
     settings[targetConfig.hooksKey] = existingHooks;
     writeSettingsFile(projectRoot, targetConfig.settingsFile, settings);
     result.targets.push(targetConfig.displayName);
+    result.installed += hooks.length;
   }
 
   return result;
@@ -263,50 +284,30 @@ export function installHooks(
 
 /**
  * Uninstall hooks belonging to an artifact from all target tool settings.
+ * The artifact must still be on disk (called before artifact deletion).
  *
- * 1. Removes copied script files tracked in the manifest
- * 2. Removes hook definitions from settings by matching against stored definitions
+ * 1. Removes hook definitions from settings by matching against artifact's hook files
+ * 2. Removes copied script files from the target's hooks directory
  */
-export function uninstallHooks(projectRoot: string, artifactId: string): number {
+export function uninstallHooks(
+  projectRoot: string,
+  artifactId: string,
+  hookFiles: ScannedFile[],
+): number {
   let removedCount = 0;
+  const hooksByTarget = collectHooksByTarget(hookFiles);
 
-  for (const targetId of getHookTargetIds()) {
-    const targetConfig = getHookTarget(targetId)!;
+  for (const [targetId, hooks] of hooksByTarget) {
+    const targetConfig = getHookTarget(targetId);
+    if (!targetConfig) continue;
 
-    const manifest = readHooksManifest(projectRoot, targetConfig.hooksDir);
-    const tracked = manifest[artifactId];
-
-    if (!tracked) continue;
-
-    // Remove copied script files
-    if (tracked.files.length > 0) {
-      removeHookFiles(projectRoot, targetConfig.hooksDir, tracked.files);
-    }
-
-    // Remove hook definitions from settings
+    // Remove definitions from settings
     const settings = readSettingsFile(projectRoot, targetConfig.settingsFile);
-    const hooks = settings[targetConfig.hooksKey] as Record<string, HookEventDefinition[]> | undefined;
+    const existingHooks = settings[targetConfig.hooksKey] as Record<string, HookEventDefinition[]> | undefined;
 
-    if (hooks && tracked.definitions) {
-      const cleanedHooks: Record<string, HookEventDefinition[]> = {};
-
-      for (const [eventName, definitions] of Object.entries(hooks)) {
-        const artifactDefs = tracked.definitions[eventName];
-
-        if (!artifactDefs) {
-          cleanedHooks[eventName] = definitions;
-          continue;
-        }
-
-        const artifactDefsJson = artifactDefs.map((d) => JSON.stringify(d));
-        const filtered = definitions.filter(
-          (def) => !artifactDefsJson.includes(JSON.stringify(def)),
-        );
-
-        if (filtered.length > 0) {
-          cleanedHooks[eventName] = filtered;
-        }
-      }
+    if (existingHooks) {
+      const allDefinitions = collectAllDefinitions(hooks);
+      const cleanedHooks = removeDefinitions(existingHooks, allDefinitions);
 
       if (Object.keys(cleanedHooks).length > 0) {
         settings[targetConfig.hooksKey] = cleanedHooks;
@@ -317,16 +318,10 @@ export function uninstallHooks(projectRoot: string, artifactId: string): number 
       writeSettingsFile(projectRoot, targetConfig.settingsFile, settings);
     }
 
-    // Clean up manifest
-    delete manifest[artifactId];
-
-    if (Object.keys(manifest).length > 0) {
-      writeHooksManifest(projectRoot, targetConfig.hooksDir, manifest);
-    } else {
-      const manifestPath = join(projectRoot, targetConfig.hooksDir, HOOKS_MANIFEST_FILE);
-      if (fs.exists(manifestPath)) {
-        fs.unlink(manifestPath);
-      }
+    // Remove copied script files
+    for (const { path } of hooks) {
+      const scriptFiles = listScriptFiles(projectRoot, artifactId, path);
+      removeHookFiles(projectRoot, targetConfig.hooksDir, scriptFiles);
     }
 
     removedCount++;
