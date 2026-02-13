@@ -1,3 +1,10 @@
+## [6.15.3](https://github.com/grekt-labs/cli/compare/v6.15.2...v6.15.3) (2026-02-13)
+
+
+### Bug Fixes
+
+* align hook types and logic with Claude Code standard ([1fdc360](https://github.com/grekt-labs/cli/commit/1fdc3608539165a2da657dc3a57da44504cad4ad))
+
 ## [6.15.2](https://github.com/grekt-labs/cli/compare/v6.15.1...v6.15.2) (2026-02-12)
 
 
