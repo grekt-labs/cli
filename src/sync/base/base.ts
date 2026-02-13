@@ -95,12 +95,13 @@ function cleanupArtifactFiles(
   artifactId: string,
   getCategoryDir: (category: Category) => string,
   getTargetPathFn: (artifactId: string, category: Category, filePath: string) => string,
+  categories: readonly Category[] = SYNCABLE_CATEGORIES,
 ): void {
   const artifactDir = `${projectRoot}/${ARTIFACTS_DIR}/${artifactId}`;
   const artifactInfo = scanArtifact(fs, artifactDir);
   if (!artifactInfo) return;
 
-  for (const category of SYNCABLE_CATEGORIES) {
+  for (const category of categories) {
     const categoryDir = getCategoryDir(category);
     const files = artifactInfo[category];
     if (!files || files.length === 0) continue;
@@ -131,6 +132,9 @@ function cleanupArtifactFiles(
  */
 export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
   const { id, name, targetDir, entryPoints, generateRulesContent } = config;
+
+  // Use plugin-specific categories or default to all markdown categories
+  const categoriesToSync = config.syncCategories ?? SYNCABLE_CATEGORIES;
 
   // Build category paths from config or defaults
   function getCategoryDir(category: Category): string {
@@ -221,7 +225,7 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
       }
 
       // Create target directories
-      const dirs = [targetDir, ...SYNCABLE_CATEGORIES.map(getCategoryDir)];
+      const dirs = [targetDir, ...categoriesToSync.map(getCategoryDir)];
       for (const dir of dirs) {
         const fullPath = `${projectRoot}/${dir}`;
         if (!fs.exists(fullPath)) {
@@ -233,7 +237,7 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
       for (const [artifactId] of Object.entries(lockfile.artifacts)) {
         if (!shouldSyncArtifact(options.projectConfig, artifactId)) {
           // Clean up previously synced files for CORE→LAZY transitions
-          cleanupArtifactFiles(projectRoot, artifactId, getCategoryDir, getTargetPath);
+          cleanupArtifactFiles(projectRoot, artifactId, getCategoryDir, getTargetPath, categoriesToSync);
 
           result.skipped.push(`${artifactId} (lazy mode)`);
           continue;
@@ -249,7 +253,7 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
         }
 
         // Copy files for each syncable category
-        for (const category of SYNCABLE_CATEGORIES) {
+        for (const category of categoriesToSync) {
           const categoryDir = getCategoryDir(category);
           const files = artifactInfo[category];
 
@@ -264,11 +268,29 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
             if (fs.exists(source)) {
               ensureDir(target);
               const existed = fs.exists(target);
-              fs.copyFile(source, target);
+
+              if (config.transformContent) {
+                const content = fs.readFile(source);
+                const transformed = config.transformContent(content, category, artifactId);
+                fs.writeFile(target, transformed);
+              } else {
+                fs.copyFile(source, target);
+              }
+
               if (existed) {
                 result.updated.push(`${categoryDir}/${targetName}`);
               } else {
                 result.created.push(`${categoryDir}/${targetName}`);
+              }
+
+              if (config.afterFileSync) {
+                config.afterFileSync({
+                  sourcePath: source,
+                  sourceDir: dirname(source),
+                  targetDir: dirname(target),
+                  category,
+                  artifactId,
+                });
               }
             } else {
               result.skipped.push(`${artifactId}/${filePath} (source not found)`);
@@ -303,7 +325,7 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
           continue;
         }
 
-        for (const category of SYNCABLE_CATEGORIES) {
+        for (const category of categoriesToSync) {
           const categoryDir = getCategoryDir(category);
           const files = artifactInfo[category];
 
