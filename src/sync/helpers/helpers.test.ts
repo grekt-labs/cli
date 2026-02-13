@@ -136,6 +136,74 @@ describe("helpers", () => {
       expect(callArgs[2].force).toBe(true);
     });
 
+    test("counts lazy mode items separately from regular skipped", async () => {
+      const syncResult: SyncResult = {
+        created: [],
+        updated: [],
+        skipped: [
+          "@obra/superpowers (lazy mode)",
+          "@scope/broken (invalid artifact)",
+          "@other/pkg (lazy mode)",
+        ],
+      };
+
+      const plugin = createMockPlugin({ sync: async () => syncResult });
+
+      const result = await runSync({
+        targets: ["mock"],
+        lockfile: baseLockfile,
+        projectRoot: "/tmp/test",
+        projectConfig: baseConfig,
+        resolvePlugin: () => plugin,
+      });
+
+      expect(result.totalSkipped).toBe(3);
+    });
+
+    test("counts only lazy mode items in totalSkipped", async () => {
+      const syncResult: SyncResult = {
+        created: [],
+        updated: [],
+        skipped: ["@obra/superpowers (lazy mode)"],
+      };
+
+      const plugin = createMockPlugin({ sync: async () => syncResult });
+
+      const result = await runSync({
+        targets: ["mock"],
+        lockfile: baseLockfile,
+        projectRoot: "/tmp/test",
+        projectConfig: baseConfig,
+        resolvePlugin: () => plugin,
+      });
+
+      expect(result.totalSkipped).toBe(1);
+    });
+
+    test("counts mixed lazy and non-lazy skipped items correctly", async () => {
+      const syncResult: SyncResult = {
+        created: ["file1.md"],
+        updated: [],
+        skipped: [
+          "@lazy/pkg (lazy mode)",
+          "@broken/pkg (invalid artifact)",
+        ],
+      };
+
+      const plugin = createMockPlugin({ sync: async () => syncResult });
+
+      const result = await runSync({
+        targets: ["mock"],
+        lockfile: baseLockfile,
+        projectRoot: "/tmp/test",
+        projectConfig: baseConfig,
+        resolvePlugin: () => plugin,
+      });
+
+      expect(result.totalCreated).toBe(1);
+      expect(result.totalSkipped).toBe(2);
+    });
+
     test("returns zero counts for empty targets", async () => {
       const result = await runSync({
         targets: [],
