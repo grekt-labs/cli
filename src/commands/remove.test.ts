@@ -316,6 +316,47 @@ grk-description: A test skill
     expect(existsSync(join(testDir, ".claude/agents"))).toBe(true);
   });
 
+  test("cleans up empty scope directory in .grekt/artifacts", async () => {
+    createArtifactFiles();
+    createProjectConfig(["claude"]);
+    createLockfile();
+    createGrektDir();
+    createSyncedFiles(".claude");
+
+    const scopeDir = join(testDir, ARTIFACTS_DIR, "@scope");
+    expect(existsSync(scopeDir)).toBe(true);
+
+    const { removeCommand } = await import("./remove");
+    await removeCommand.parseAsync(["node", "remove", TEST_ARTIFACT_ID, "-f"]);
+
+    // Scope directory should be removed when empty
+    expect(existsSync(scopeDir)).toBe(false);
+    // Artifacts root should still exist
+    expect(existsSync(join(testDir, ARTIFACTS_DIR))).toBe(true);
+  });
+
+  test("preserves scope directory when other artifacts exist", async () => {
+    createArtifactFiles();
+    createProjectConfig(["claude"]);
+    createLockfile();
+    createGrektDir();
+    createSyncedFiles(".claude");
+
+    // Add another artifact in the same scope
+    const otherArtifactDir = join(testDir, ARTIFACTS_DIR, "@scope/other-artifact");
+    mkdirSync(otherArtifactDir, { recursive: true });
+    writeFileSync(join(otherArtifactDir, "grekt.yaml"), "name: other");
+
+    const scopeDir = join(testDir, ARTIFACTS_DIR, "@scope");
+
+    const { removeCommand } = await import("./remove");
+    await removeCommand.parseAsync(["node", "remove", TEST_ARTIFACT_ID, "-f"]);
+
+    // Scope directory should still exist because other artifact is there
+    expect(existsSync(scopeDir)).toBe(true);
+    expect(existsSync(otherArtifactDir)).toBe(true);
+  });
+
   test("handles artifact without synced files gracefully", async () => {
     createArtifactFiles();
     createProjectConfig(["claude"]);

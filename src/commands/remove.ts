@@ -104,6 +104,13 @@ export const removeCommand = new Command("remove")
     if (fs.exists(artifactDir)) {
       fs.rmdir(artifactDir, { recursive: true });
       removed.push(`${ARTIFACTS_DIR}/${artifactId}`);
+
+      // Clean up empty scope directory (e.g., .grekt/artifacts/@obra/)
+      const scopeDir = dirname(artifactDir);
+      const artifactsFullPath = `${projectRoot}/${ARTIFACTS_DIR}`;
+      if (scopeDir !== artifactsFullPath) {
+        cleanEmptyDir(scopeDir);
+      }
     }
 
     // Remove synced files from all configured targets
