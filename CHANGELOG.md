@@ -1,3 +1,10 @@
+## [6.15.5](https://github.com/grekt-labs/cli/compare/v6.15.4...v6.15.5) (2026-02-13)
+
+
+### Bug Fixes
+
+* copy hook scripts to target directory and use Claude standard key ([1098a02](https://github.com/grekt-labs/cli/commit/1098a02718e0778b65f4947ad00e0770e02d883d))
+
 ## [6.15.4](https://github.com/grekt-labs/cli/compare/v6.15.3...v6.15.4) (2026-02-13)
 
 
