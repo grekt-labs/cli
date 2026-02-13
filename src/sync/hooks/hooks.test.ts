@@ -11,14 +11,14 @@ function createHookFile(overrides: Partial<{
   name: string;
   description: string;
   target: string;
-  events: Record<string, unknown[]>;
+  hooks: Record<string, unknown[]>;
 }>): ScannedFile {
   const {
     path: filePath = "hooks/format.json",
     name = "format-on-save",
     description = "Auto-format files after edit",
     target = "claude",
-    events = {
+    hooks = {
       PostToolUse: [
         {
           matcher: "Edit|Write",
@@ -36,7 +36,7 @@ function createHookFile(overrides: Partial<{
         "grk-name": name,
         "grk-description": description,
       },
-      content: { target, events },
+      content: { target, hooks },
     },
   };
 }
@@ -138,10 +138,10 @@ describe("hooks", () => {
 
     test("handles multiple hooks for same target", () => {
       const hookFiles = [
-        createHookFile({ name: "hook-1", events: {
+        createHookFile({ name: "hook-1", hooks: {
           PostToolUse: [{ matcher: "Edit", hooks: [{ type: "command", command: "./hook1.sh" }] }],
         }}),
-        createHookFile({ path: "hooks/hook2.json", name: "hook-2", events: {
+        createHookFile({ path: "hooks/hook2.json", name: "hook-2", hooks: {
           PreToolUse: [{ matcher: "Bash", hooks: [{ type: "command", command: "./hook2.sh" }] }],
         }}),
       ];
@@ -154,7 +154,7 @@ describe("hooks", () => {
     });
 
     test("does not rewrite absolute command paths", () => {
-      const hookFiles = [createHookFile({ events: {
+      const hookFiles = [createHookFile({ hooks: {
         PostToolUse: [{ matcher: "Edit", hooks: [{ type: "command", command: "/usr/bin/format" }] }],
       }})];
 
@@ -162,6 +162,41 @@ describe("hooks", () => {
 
       const settings = JSON.parse(readFileSync(join(testDir, ".claude/settings.json"), "utf-8"));
       expect(settings.hooks.PostToolUse[0].hooks[0].command).toBe("/usr/bin/format");
+    });
+
+    test("skips hook files with no hook definitions", () => {
+      const hookFile: ScannedFile = {
+        path: "hooks/empty.json",
+        parsed: {
+          frontmatter: { "grk-type": "hooks", "grk-name": "empty", "grk-description": "Empty hook" },
+          content: { target: "claude" },
+        },
+      };
+
+      const result = installHooks(testDir, TEST_ARTIFACT_ID, [hookFile]);
+
+      expect(result.installed).toBe(0);
+    });
+
+    test("preserves non-command hook types without rewriting", () => {
+      const hookFiles = [createHookFile({
+        hooks: {
+          PreToolUse: [
+            {
+              matcher: "Bash",
+              hooks: [{ type: "prompt", prompt: "Check if this is safe", model: "haiku" }],
+            },
+          ],
+        },
+      })];
+
+      installHooks(testDir, TEST_ARTIFACT_ID, hookFiles);
+
+      const settings = JSON.parse(readFileSync(join(testDir, ".claude/settings.json"), "utf-8"));
+      const hook = settings.hooks.PreToolUse[0].hooks[0];
+      expect(hook.type).toBe("prompt");
+      expect(hook.prompt).toBe("Check if this is safe");
+      expect(hook.model).toBe("haiku");
     });
   });
 
@@ -239,8 +274,8 @@ describe("hooks", () => {
   describe("getHookSummary", () => {
     test("groups descriptions by target", () => {
       const hookFiles = [
-        createHookFile({ name: "hook-1", description: "Format files", events: { PostToolUse: [] } }),
-        createHookFile({ name: "hook-2", description: "Lint code", events: { PreToolUse: [] } }),
+        createHookFile({ name: "hook-1", description: "Format files", hooks: { PostToolUse: [] } }),
+        createHookFile({ name: "hook-2", description: "Lint code", hooks: { PreToolUse: [] } }),
       ];
 
       const summary = getHookSummary(hookFiles);
@@ -248,6 +283,21 @@ describe("hooks", () => {
       expect(summary.get("Claude")).toHaveLength(2);
       expect(summary.get("Claude")![0]).toContain("Format files");
       expect(summary.get("Claude")![1]).toContain("Lint code");
+    });
+
+    test("handles hook files with no hook definitions", () => {
+      const hookFile: ScannedFile = {
+        path: "hooks/empty.json",
+        parsed: {
+          frontmatter: { "grk-type": "hooks", "grk-name": "empty", "grk-description": "Empty hook" },
+          content: { target: "claude" },
+        },
+      };
+
+      const summary = getHookSummary([hookFile]);
+
+      expect(summary.get("Claude")).toHaveLength(1);
+      expect(summary.get("Claude")![0]).toBe("Empty hook");
     });
   });
 });

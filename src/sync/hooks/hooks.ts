@@ -11,7 +11,7 @@ import { fs } from "#/context";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
 import { getHookTarget, getHookTargetIds } from "./hooks.config";
 import type { ScannedFile } from "@grekt-labs/cli-engine";
-import type { ParsedHookContent, HookEventDefinition, HookTargetConfig } from "./hooks.types";
+import type { ParsedHookContent, HookEventDefinition, HookEventsMap } from "./hooks.types";
 
 /**
  * Marker added to hook commands to identify grekt-managed hooks.
@@ -22,8 +22,16 @@ function getArtifactHookPath(artifactId: string): string {
 }
 
 /**
+ * Resolve event definitions from parsed hook content.
+ * Returns an empty object if no hooks are defined.
+ */
+function resolveEventDefinitions(content: ParsedHookContent): HookEventsMap {
+  return content.hooks ?? {};
+}
+
+/**
  * Rewrite relative command paths to point to the artifact's hooks directory.
- * e.g. "./format.sh" → ".grekt/artifacts/@scope/name/hooks/format.sh"
+ * e.g. "./format.sh" -> ".grekt/artifacts/@scope/name/hooks/format.sh"
  */
 function rewriteCommandPath(command: string, context: { artifactId: string; hookFilePath: string }): string {
   if (!command.startsWith("./") && !command.startsWith("../")) {
@@ -73,21 +81,30 @@ function writeSettingsFile(projectRoot: string, settingsFile: string, data: Reco
 
 /**
  * Rewrite all command paths in hook event definitions.
+ * Only rewrites entries that have a `command` field (command type hooks).
+ * Prompt and agent type hooks are passed through unchanged.
  */
 function rewriteEventDefinitions(
-  events: Record<string, HookEventDefinition[]>,
+  events: HookEventsMap,
   artifactId: string,
   hookFilePath: string,
 ): Record<string, HookEventDefinition[]> {
   const rewritten: Record<string, HookEventDefinition[]> = {};
 
   for (const [eventName, definitions] of Object.entries(events)) {
+    if (!definitions) continue;
+
     rewritten[eventName] = definitions.map((def) => ({
       ...def,
-      hooks: def.hooks.map((hook) => ({
-        ...hook,
-        command: rewriteCommandPath(hook.command, { artifactId, hookFilePath }),
-      })),
+      hooks: def.hooks.map((hook) => {
+        if (hook.type === "command") {
+          return {
+            ...hook,
+            command: rewriteCommandPath(hook.command, { artifactId, hookFilePath }),
+          };
+        }
+        return hook;
+      }),
     }));
   }
 
@@ -143,6 +160,11 @@ export function installHooks(
       continue;
     }
 
+    const events = resolveEventDefinitions(content);
+    if (Object.keys(events).length === 0) {
+      continue;
+    }
+
     if (!hooksByTarget.has(content.target)) {
       hooksByTarget.set(content.target, []);
     }
@@ -158,7 +180,8 @@ export function installHooks(
     let existingHooks = (settings[targetConfig.hooksKey] ?? {}) as Record<string, HookEventDefinition[]>;
 
     for (const { content, path } of hooks) {
-      const rewrittenEvents = rewriteEventDefinitions(content.events, artifactId, path);
+      const events = resolveEventDefinitions(content);
+      const rewrittenEvents = rewriteEventDefinitions(events, artifactId, path);
       existingHooks = mergeHooks(existingHooks, rewrittenEvents);
       result.installed++;
     }
@@ -194,7 +217,7 @@ export function uninstallHooks(projectRoot: string, artifactId: string): number 
     for (const [eventName, definitions] of Object.entries(hooks)) {
       const filtered = definitions.filter((def) => {
         const belongsToArtifact = def.hooks.some((hook) =>
-          hook.command.includes(artifactPath)
+          hook.type === "command" && hook.command.includes(artifactPath)
         );
 
         if (belongsToArtifact) {
@@ -241,8 +264,10 @@ export function getHookSummary(hookFiles: ScannedFile[]): Map<string, string[]> 
     }
 
     const description = hookFile.parsed.frontmatter["grk-description"];
-    const events = Object.keys(content.events).join(", ");
-    summary.get(displayName)!.push(`${description} (${events})`);
+    const events = resolveEventDefinitions(content);
+    const eventNames = Object.keys(events).join(", ");
+    const label = eventNames ? `${description} (${eventNames})` : String(description);
+    summary.get(displayName)!.push(label);
   }
 
   return summary;
