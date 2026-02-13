@@ -1,3 +1,10 @@
+# [6.16.0](https://github.com/grekt-labs/cli/compare/v6.15.7...v6.16.0) (2026-02-13)
+
+
+### Features
+
+* upgrade codex plugin to sync skills in agentskills.io format ([01b046c](https://github.com/grekt-labs/cli/commit/01b046cc48a78d3a888a600d794f606f46a5cd89))
+
 ## [6.15.7](https://github.com/grekt-labs/cli/compare/v6.15.6...v6.15.7) (2026-02-13)
 
 
