@@ -1,3 +1,10 @@
+## [6.15.6](https://github.com/grekt-labs/cli/compare/v6.15.5...v6.15.6) (2026-02-13)
+
+
+### Bug Fixes
+
+* show lazy mode artifacts as separate block instead of warning ([adeca0c](https://github.com/grekt-labs/cli/commit/adeca0c641b1dc613fa3203935ac9370b27e17d7))
+
 ## [6.15.5](https://github.com/grekt-labs/cli/compare/v6.15.4...v6.15.5) (2026-02-13)
 
 
