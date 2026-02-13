@@ -1,3 +1,10 @@
+## [6.15.7](https://github.com/grekt-labs/cli/compare/v6.15.6...v6.15.7) (2026-02-13)
+
+
+### Bug Fixes
+
+* remove manifest, use artifact on disk as source of truth ([29ffdb1](https://github.com/grekt-labs/cli/commit/29ffdb15c8b21c1456343d8658dd69c84f4b0e5b))
+
 ## [6.15.6](https://github.com/grekt-labs/cli/compare/v6.15.5...v6.15.6) (2026-02-13)
 
 
