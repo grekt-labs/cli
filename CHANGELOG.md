@@ -1,3 +1,10 @@
+## [6.15.4](https://github.com/grekt-labs/cli/compare/v6.15.3...v6.15.4) (2026-02-13)
+
+
+### Bug Fixes
+
+* clean up empty scope directory after artifact removal ([8d8bc06](https://github.com/grekt-labs/cli/commit/8d8bc06c681f2da5445b89b4fc5d4d3c379b0e30))
+
 ## [6.15.3](https://github.com/grekt-labs/cli/compare/v6.15.2...v6.15.3) (2026-02-13)
 
 
