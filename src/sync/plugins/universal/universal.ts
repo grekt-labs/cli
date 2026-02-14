@@ -116,9 +116,9 @@ function copyDirectoryRecursive(source: string, target: string): void {
   }
 }
 
-export const codexPlugin = createFolderPlugin({
-  id: "codex",
-  name: "Codex",
+export const globalPlugin = createFolderPlugin({
+  id: "global",
+  name: "Global (.agents/)",
   targetDir: TARGET_DIR,
   entryPoints: ENTRY_POINTS,
   generateRulesContent: generateDefaultBlockContent,
@@ -137,4 +137,4 @@ export const codexPlugin = createFolderPlugin({
   },
 });
 
-export default codexPlugin;
+export default globalPlugin;
