@@ -1,3 +1,10 @@
+# [6.17.0](https://github.com/grekt-labs/cli/compare/v6.16.0...v6.17.0) (2026-02-14)
+
+
+### Features
+
+* rename codex plugin to global with grouped target selector ([#140](https://github.com/grekt-labs/cli/issues/140)) ([987d80b](https://github.com/grekt-labs/cli/commit/987d80b9ecc0a566ad84136b1fea15d74f7e3537))
+
 # [6.16.0](https://github.com/grekt-labs/cli/compare/v6.15.7...v6.16.0) (2026-02-13)
 
 
