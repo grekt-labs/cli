@@ -1,3 +1,10 @@
+## [6.17.1](https://github.com/grekt-labs/cli/compare/v6.17.0...v6.17.1) (2026-02-14)
+
+
+### Bug Fixes
+
+* upgrade cli-engine to 5.16.2 for GHCR token exchange fix ([#141](https://github.com/grekt-labs/cli/issues/141)) ([58889b2](https://github.com/grekt-labs/cli/commit/58889b2f07de98f94b63472c280cdd858991de48))
+
 # [6.17.0](https://github.com/grekt-labs/cli/compare/v6.16.0...v6.17.0) (2026-02-14)
 
 
