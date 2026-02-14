@@ -1,3 +1,10 @@
+# [6.18.0](https://github.com/grekt-labs/cli/compare/v6.17.1...v6.18.0) (2026-02-14)
+
+
+### Features
+
+* update cli-engine ([d19627d](https://github.com/grekt-labs/cli/commit/d19627d0fe7d02a50e28c6864b247cc60cb9639a))
+
 ## [6.17.1](https://github.com/grekt-labs/cli/compare/v6.17.0...v6.17.1) (2026-02-14)
 
 
