@@ -15,12 +15,13 @@ import { copilotPlugin } from "#/sync/plugins/copilot/copilot";
 import { aiderPlugin } from "#/sync/plugins/aider/aider";
 import { continuePlugin } from "#/sync/plugins/continue/continue";
 import { amazonqPlugin } from "#/sync/plugins/amazonq/amazonq";
-import { codexPlugin } from "#/sync/plugins/codex/codex";
+import { globalPlugin } from "#/sync/plugins/universal/universal";
 import { createFolderPlugin, GREKT_ENTRY_POINT_TEXT } from "#/sync/base/base";
 
 export type SyncPaths = Record<Category, string>;
 
 const builtInPlugins: Record<string, SyncPlugin> = {
+  global: globalPlugin,
   claude: claudePlugin,
   cursor: cursorPlugin,
   opencode: opencodePlugin,
@@ -30,8 +31,10 @@ const builtInPlugins: Record<string, SyncPlugin> = {
   aider: aiderPlugin,
   continue: continuePlugin,
   amazonq: amazonqPlugin,
-  codex: codexPlugin,
 };
+
+/** The global plugin ID uses the agentskills.io standard (.agents/) */
+export const GLOBAL_PLUGIN_ID = "global";
 
 // Registry for all loaded plugins
 const plugins: Map<string, SyncPlugin> = new Map(Object.entries(builtInPlugins));

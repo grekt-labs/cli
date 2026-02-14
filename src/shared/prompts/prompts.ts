@@ -1,7 +1,8 @@
-import { ExitPromptError } from "@inquirer/core";
+import { ExitPromptError, Separator } from "@inquirer/core";
 import { input, confirm, checkbox } from "@inquirer/prompts";
 import { newline, info, log, colors } from "#/shared/ui/ui";
 import { CATEGORIES, type CustomTarget, type ComponentPaths, type Category } from "@grekt-labs/cli-engine";
+import { GLOBAL_PLUGIN_ID } from "#/sync/manager/manager";
 
 export interface PromptCustomTargetResult {
   id: string;
@@ -49,7 +50,7 @@ export async function promptCustomTarget(
   newline();
 
   const id = await input({
-    message: "Internal ID for grekt config (e.g., codex-gpt, my-custom-ai):",
+    message: "Internal ID for grekt config (e.g., my-custom-ai):",
     validate: (value) => {
       if (!value.trim()) return "ID is required";
       if (!/^[a-z0-9-]+$/.test(value)) return "Use kebab-case: lowercase letters, numbers, and dashes only";
@@ -59,7 +60,7 @@ export async function promptCustomTarget(
   });
 
   const name = await input({
-    message: "Display name shown in CLI output (e.g., Codex GPT, My AI Tool):",
+    message: "Display name shown in CLI output (e.g., My AI Tool):",
     validate: (value) => (value.trim() ? true : "Name is required"),
   });
 
@@ -98,6 +99,30 @@ export async function promptCustomTarget(
 
 const OTHER_TARGET_VALUE = "__other__";
 
+type PluginChoice = { name: string; value: string };
+
+/**
+ * Split plugin choices into global and tool-specific groups.
+ * Global plugin always appears first, separated from tool-specific targets.
+ */
+function splitByGroup(pluginChoices: PluginChoice[]): {
+  globalChoices: PluginChoice[];
+  toolChoices: PluginChoice[];
+} {
+  const globalChoices: PluginChoice[] = [];
+  const toolChoices: PluginChoice[] = [];
+
+  for (const choice of pluginChoices) {
+    if (choice.value === GLOBAL_PLUGIN_ID) {
+      globalChoices.push(choice);
+    } else {
+      toolChoices.push(choice);
+    }
+  }
+
+  return { globalChoices, toolChoices };
+}
+
 /**
  * Interactive prompt to select sync targets.
  * Handles built-in plugins and custom target configuration.
@@ -114,13 +139,19 @@ export async function selectTargets(
   } = options;
 
   const currentTargetSet = new Set(currentTargets);
+  const { globalChoices, toolChoices } = splitByGroup(pluginChoices);
+
+  const mapChoice = (choice: PluginChoice, index: number) => ({
+    ...choice,
+    checked: currentTargetSet.has(choice.value) ||
+      (currentTargetSet.size === 0 && index === defaultCheckedIndex),
+  });
 
   const choices = [
-    ...pluginChoices.map((choice, index) => ({
-      ...choice,
-      checked: currentTargetSet.has(choice.value) ||
-        (currentTargetSet.size === 0 && index === defaultCheckedIndex),
-    })),
+    ...globalChoices.map(mapChoice),
+    new Separator("── Tool-specific ──"),
+    ...toolChoices.map((c, i) => mapChoice(c, i + globalChoices.length)),
+    new Separator("── Other ──"),
     {
       name: "Other (custom)",
       value: OTHER_TARGET_VALUE,
@@ -173,15 +204,21 @@ export async function selectTargetsToAdd(
     (id) => currentTargets.includes(id)
   );
 
+  const { globalChoices, toolChoices } = splitByGroup(pluginChoices);
+
+  const mapChoice = (choice: PluginChoice) => {
+    const isAlreadyAdded = currentTargetSet.has(choice.value);
+    return {
+      name: isAlreadyAdded ? `${choice.name} (already added)` : choice.name,
+      value: choice.value,
+      disabled: isAlreadyAdded,
+    };
+  };
+
   const choices = [
-    ...pluginChoices.map((choice) => {
-      const isAlreadyAdded = currentTargetSet.has(choice.value);
-      return {
-        name: isAlreadyAdded ? `${choice.name} (already added)` : choice.name,
-        value: choice.value,
-        disabled: isAlreadyAdded,
-      };
-    }),
+    ...globalChoices.map(mapChoice),
+    new Separator("── Tool-specific ──"),
+    ...toolChoices.map(mapChoice),
     ...existingCustomTargetIds
       .filter((id) => currentCustomTargets[id] !== undefined)
       .map((id) => {
@@ -192,6 +229,7 @@ export async function selectTargetsToAdd(
           disabled: true,
         };
       }),
+    new Separator("── Other ──"),
     {
       name: "Other (custom)",
       value: OTHER_TARGET_VALUE,
@@ -199,7 +237,7 @@ export async function selectTargetsToAdd(
     },
   ];
 
-  const hasAvailableTargets = choices.some((c) => !c.disabled);
+  const hasAvailableTargets = choices.some((c) => !Separator.isSeparator(c) && !c.disabled);
   if (!hasAvailableTargets) {
     return { newTargets: [], newCustomTargets: {} };
   }

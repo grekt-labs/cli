@@ -1,11 +1,11 @@
 import { describe, test, expect, beforeEach, afterEach } from "bun:test";
 import { existsSync, mkdirSync, writeFileSync, readFileSync, rmSync } from "fs";
 import { join } from "path";
-import { codexPlugin } from "./codex";
+import { globalPlugin } from "./universal";
 import { GREKT_SECTION_HEADER, type ProjectConfig } from "@grekt-labs/cli-engine";
 
-const PLUGIN_ID = "codex";
-const PLUGIN_NAME = "Codex";
+const PLUGIN_ID = "global";
+const PLUGIN_NAME = "Global (.agents/)";
 const TARGET_DIR = ".agents";
 
 const TEST_ARTIFACT_ID = "@test/artifact";
@@ -18,8 +18,8 @@ const coreProjectConfig: ProjectConfig = {
   customTargets: {},
 };
 
-describe("codexPlugin", () => {
-  const testDir = join(process.cwd(), ".test-codex-plugin");
+describe("globalPlugin", () => {
+  const testDir = join(process.cwd(), ".test-global-plugin");
 
   beforeEach(() => {
     rmSync(testDir, { recursive: true, force: true });
@@ -31,32 +31,32 @@ describe("codexPlugin", () => {
   });
 
   test("has correct configuration", () => {
-    expect(codexPlugin.id).toBe(PLUGIN_ID);
-    expect(codexPlugin.name).toBe(PLUGIN_NAME);
-    expect(codexPlugin.targetFile).toBe(TARGET_DIR);
+    expect(globalPlugin.id).toBe(PLUGIN_ID);
+    expect(globalPlugin.name).toBe(PLUGIN_NAME);
+    expect(globalPlugin.targetFile).toBe(TARGET_DIR);
   });
 
   test("targetExists returns false for nonexistent path", () => {
-    expect(codexPlugin.targetExists("/path/that/does/not/exist")).toBe(false);
+    expect(globalPlugin.targetExists("/path/that/does/not/exist")).toBe(false);
   });
 
   test("targetExists detects directory presence", () => {
-    expect(codexPlugin.targetExists(testDir)).toBe(false);
+    expect(globalPlugin.targetExists(testDir)).toBe(false);
 
     mkdirSync(join(testDir, TARGET_DIR), { recursive: true });
 
-    expect(codexPlugin.targetExists(testDir)).toBe(true);
+    expect(globalPlugin.targetExists(testDir)).toBe(true);
   });
 
   test("getSyncPaths returns category paths under .agents", () => {
-    const paths = codexPlugin.getSyncPaths();
+    const paths = globalPlugin.getSyncPaths();
 
     expect(paths).not.toBeNull();
     expect(paths!.skills).toBe(".agents/skills");
   });
 
   test("getTargetPaths returns correct paths", () => {
-    const targetPaths = codexPlugin.getTargetPaths();
+    const targetPaths = globalPlugin.getTargetPaths();
 
     expect(targetPaths).not.toBeNull();
     expect(targetPaths!.targetDir).toBe(TARGET_DIR);
@@ -66,7 +66,7 @@ describe("codexPlugin", () => {
   test("preview includes target directory when missing", () => {
     const lockfile = { version: 1, artifacts: {} };
 
-    const preview = codexPlugin.preview(lockfile, "/nonexistent");
+    const preview = globalPlugin.preview(lockfile, "/nonexistent");
 
     expect(preview.willCreate).toContain(TARGET_DIR);
   });
@@ -82,7 +82,7 @@ describe("codexPlugin", () => {
       },
     };
 
-    const preview = codexPlugin.preview(lockfile, "/nonexistent", { projectConfig: coreProjectConfig });
+    const preview = globalPlugin.preview(lockfile, "/nonexistent", { projectConfig: coreProjectConfig });
 
     expect(preview.willSkip.some((s) => s.includes("invalid artifact"))).toBe(true);
   });
@@ -98,7 +98,7 @@ describe("codexPlugin", () => {
       },
     };
 
-    const preview = codexPlugin.preview(lockfile, "/nonexistent"); // No projectConfig = lazy
+    const preview = globalPlugin.preview(lockfile, "/nonexistent"); // No projectConfig = lazy
 
     expect(preview.willSkip.some((s) => s.includes("lazy mode"))).toBe(true);
   });
@@ -106,13 +106,13 @@ describe("codexPlugin", () => {
   test("sync dry run returns preview without modifications", async () => {
     const lockfile = { version: 1, artifacts: {} };
 
-    const result = await codexPlugin.sync(lockfile, "/nonexistent", { dryRun: true });
+    const result = await globalPlugin.sync(lockfile, "/nonexistent", { dryRun: true });
 
     expect(result.created).toContain(TARGET_DIR);
   });
 
   test("resolveTargetPath maps skills to folder structure", () => {
-    const targetPath = codexPlugin.resolveTargetPath!(
+    const targetPath = globalPlugin.resolveTargetPath!(
       "@test/artifact",
       "skills",
       "skills/create-module.md",
@@ -125,7 +125,7 @@ describe("codexPlugin", () => {
     test("creates AGENTS.md when it does not exist", async () => {
       mkdirSync(join(testDir, TARGET_DIR), { recursive: true });
 
-      const result = await codexPlugin.sync({ version: 1, artifacts: {} }, testDir, {});
+      const result = await globalPlugin.sync({ version: 1, artifacts: {} }, testDir, {});
 
       expect(existsSync(join(testDir, "AGENTS.md"))).toBe(true);
       expect(result.created).toContain("AGENTS.md");
@@ -135,7 +135,7 @@ describe("codexPlugin", () => {
       mkdirSync(join(testDir, TARGET_DIR), { recursive: true });
       writeFileSync(join(testDir, "AGENTS.md"), "# My Project\n");
 
-      const result = await codexPlugin.sync({ version: 1, artifacts: {} }, testDir, {});
+      const result = await globalPlugin.sync({ version: 1, artifacts: {} }, testDir, {});
 
       const content = readFileSync(join(testDir, "AGENTS.md"), "utf-8");
       expect(content).toContain(GREKT_SECTION_HEADER);
@@ -147,7 +147,7 @@ describe("codexPlugin", () => {
       mkdirSync(join(testDir, TARGET_DIR), { recursive: true });
       writeFileSync(join(testDir, "AGENTS.md"), `${GREKT_SECTION_HEADER} existing content\n`);
 
-      await codexPlugin.sync({ version: 1, artifacts: {} }, testDir, {});
+      await globalPlugin.sync({ version: 1, artifacts: {} }, testDir, {});
 
       const content = readFileSync(join(testDir, "AGENTS.md"), "utf-8");
       const occurrences = content.split(GREKT_SECTION_HEADER).length - 1;
