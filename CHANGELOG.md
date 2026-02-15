@@ -1,3 +1,10 @@
+## [6.19.2](https://github.com/grekt-labs/cli/compare/v6.19.1...v6.19.2) (2026-02-15)
+
+
+### Bug Fixes
+
+* default --choose to unchecked and show keyboard hints ([#144](https://github.com/grekt-labs/cli/issues/144)) ([8bbb518](https://github.com/grekt-labs/cli/commit/8bbb51899362e18c35f78dd4aea3e0bad516c40e))
+
 ## [6.19.1](https://github.com/grekt-labs/cli/compare/v6.19.0...v6.19.1) (2026-02-15)
 
 
