@@ -1,3 +1,10 @@
+## [6.19.1](https://github.com/grekt-labs/cli/compare/v6.19.0...v6.19.1) (2026-02-15)
+
+
+### Bug Fixes
+
+* resolve absolute common dir path in worktree sync ([a0f2abe](https://github.com/grekt-labs/cli/commit/a0f2abe3b86132e8933dd7e6fa841b37bd771f9c))
+
 # [6.19.0](https://github.com/grekt-labs/cli/compare/v6.18.0...v6.19.0) (2026-02-15)
 
 
