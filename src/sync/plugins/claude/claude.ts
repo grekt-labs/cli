@@ -3,6 +3,7 @@ import { createFolderPlugin, generateDefaultBlockContent } from "#/sync/base/bas
 import { ensureDir } from "#/shared/filesystem/filesystem";
 import { toSafeName, getSkillRouterTemplate } from "@grekt-labs/cli-engine";
 import { fs } from "#/context";
+import { copySiblingFiles } from "#/sync/helpers/siblings";
 
 const TARGET_DIR = ".claude";
 const ENTRY_POINTS = [`${TARGET_DIR}/CLAUDE.md`, "CLAUDE.md"];
@@ -37,6 +38,9 @@ export const claudePlugin = createFolderPlugin({
       return `${folderName}/SKILL.md`;
     }
     return null;
+  },
+  afterFileSync: ({ sourcePath, sourceDir, targetDir }) => {
+    copySiblingFiles(sourceDir, targetDir, sourcePath);
   },
   setup: (projectRoot) => {
     const skillRouterFile = `${projectRoot}/${SKILL_ROUTER_PATH}`;
