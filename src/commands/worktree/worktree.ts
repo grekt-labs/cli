@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { join, dirname } from "path";
+import { join, dirname, isAbsolute } from "path";
 import { confirm } from "@inquirer/prompts";
 import { fs, shell } from "#/context";
 import { success, error, info } from "#/shared/ui/ui";
@@ -24,10 +24,9 @@ function getWorktreeRoot(): string | null {
 }
 
 function resolveOriginalRepoRoot(commonDir: string, worktreeRoot: string): string {
-  // The common dir is the .git directory of the original repo.
-  // For worktrees, it's an absolute path like /path/to/original/.git
-  // For the main repo, it's just ".git" (relative).
-  const absoluteCommonDir = join(worktreeRoot, commonDir);
+  // For worktrees, git returns an absolute path like /path/to/original/.git
+  // For the main repo, it returns ".git" (relative).
+  const absoluteCommonDir = isAbsolute(commonDir) ? commonDir : join(worktreeRoot, commonDir);
   return dirname(absoluteCommonDir);
 }
 
