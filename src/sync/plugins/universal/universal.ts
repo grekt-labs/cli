@@ -1,9 +1,8 @@
-import { basename, join } from "path";
+import { basename } from "path";
 import matter from "gray-matter";
 import { createFolderPlugin, generateDefaultBlockContent } from "#/sync/base/base";
-import { ensureDir } from "#/shared/filesystem/filesystem";
 import { toSafeName } from "@grekt-labs/cli-engine";
-import { fs } from "#/context";
+import { copySiblingFiles } from "#/sync/helpers/siblings";
 
 const TARGET_DIR = ".agents";
 const ENTRY_POINTS = ["AGENTS.md"];
@@ -59,61 +58,6 @@ function getSkillTargetPath(artifactId: string, filePath: string): string {
   const safeName = toSafeName(artifactId);
   const skillName = basename(filePath, ".md");
   return `${safeName}-${skillName}/SKILL.md`;
-}
-
-/**
- * Copy sibling files and directories next to a synced SKILL.md.
- * Only applies when the skill source is a directory (e.g., skills/create-module/SKILL.md).
- * For flat skill files (e.g., skills/create-module.md), sourceDir is the parent category
- * directory shared by all skills, so copying siblings would be incorrect.
- */
-function copySiblingFiles(sourceDir: string, targetDir: string, sourceFilePath: string): void {
-  if (!fs.exists(sourceDir)) return;
-
-  // Only copy siblings if the source is a SKILL.md inside a dedicated directory.
-  // For flat .md files, sourceDir is the shared category directory — skip.
-  const sourceFileName = basename(sourceFilePath);
-  if (sourceFileName !== "SKILL.md") return;
-
-  const entries = fs.readdir(sourceDir);
-
-  for (const entry of entries) {
-    // Skip the SKILL.md itself
-    if (entry === "SKILL.md") continue;
-    // Skip grekt metadata
-    if (entry === "grekt.yaml" || entry === ".grekt") continue;
-
-    const sourcePath = join(sourceDir, entry);
-    const targetPath = join(targetDir, entry);
-    const stat = fs.stat(sourcePath);
-
-    if (stat.isDirectory) {
-      copyDirectoryRecursive(sourcePath, targetPath);
-    } else if (stat.isFile) {
-      ensureDir(targetPath);
-      fs.copyFile(sourcePath, targetPath);
-    }
-  }
-}
-
-/**
- * Recursively copy a directory and all its contents.
- */
-function copyDirectoryRecursive(source: string, target: string): void {
-  fs.mkdir(target, { recursive: true });
-
-  const entries = fs.readdir(source);
-  for (const entry of entries) {
-    const sourcePath = join(source, entry);
-    const targetPath = join(target, entry);
-    const stat = fs.stat(sourcePath);
-
-    if (stat.isDirectory) {
-      copyDirectoryRecursive(sourcePath, targetPath);
-    } else if (stat.isFile) {
-      fs.copyFile(sourcePath, targetPath);
-    }
-  }
 }
 
 export const globalPlugin = createFolderPlugin({
