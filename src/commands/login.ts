@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import { select, input, password } from "@inquirer/prompts";
-import { browserLogin, emailLogin } from "#/auth/oauth/oauth";
+import { browserLogin, emailLogin, type OAuthProvider } from "#/auth/oauth/oauth";
 import { setProjectRoot } from "#/auth/session/session";
 import { requireInitialized } from "#/shared/guards/guards";
 import { withPromptHandler } from "#/shared/prompts/prompts";
@@ -31,11 +31,11 @@ async function interactiveEmailFlow(): Promise<void> {
   }
 }
 
-async function interactiveBrowserFlow(): Promise<void> {
+async function interactiveBrowserFlow(provider: OAuthProvider): Promise<void> {
   const spin = spinner("Waiting for authentication...");
 
   try {
-    await browserLogin({
+    await browserLogin(provider, {
       onAuthUrl: (url) => {
         log("");
         info("Opening browser for authentication...");
@@ -43,9 +43,9 @@ async function interactiveBrowserFlow(): Promise<void> {
         log(`  If the browser doesn't open, visit:`);
         log(`  ${url}`);
         log("");
+        spin.start();
       },
     });
-    spin.start();
     spin.stop();
     success("Logged in");
   } catch (err) {
@@ -96,6 +96,7 @@ export const loginCommand = new Command("login")
         message: "Login method:",
         choices: [
           { name: "GitHub (browser)", value: "github" as const },
+          { name: "Google (browser)", value: "google" as const },
           { name: "Email & password", value: "email" as const },
         ],
       });
@@ -103,7 +104,7 @@ export const loginCommand = new Command("login")
       if (method === "email") {
         await interactiveEmailFlow();
       } else {
-        await interactiveBrowserFlow();
+        await interactiveBrowserFlow(method);
       }
     });
   });
