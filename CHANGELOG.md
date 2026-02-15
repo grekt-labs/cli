@@ -1,3 +1,10 @@
+# [6.20.0](https://github.com/grekt-labs/cli/compare/v6.19.2...v6.20.0) (2026-02-15)
+
+
+### Features
+
+* replace localhost OAuth with hosted callback + polling ([2b85bde](https://github.com/grekt-labs/cli/commit/2b85bde4b7553f3db454802ec5de210d762b77e1))
+
 ## [6.19.2](https://github.com/grekt-labs/cli/compare/v6.19.1...v6.19.2) (2026-02-15)
 
 
