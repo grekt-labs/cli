@@ -1,3 +1,10 @@
+## [6.21.2](https://github.com/grekt-labs/cli/compare/v6.21.1...v6.21.2) (2026-02-15)
+
+
+### Bug Fixes
+
+* use in-memory storage adapter for PKCE code verifier ([46bba39](https://github.com/grekt-labs/cli/commit/46bba399683beacb56bdcec97bf91dd6bb6be08b))
+
 ## [6.21.1](https://github.com/grekt-labs/cli/compare/v6.21.0...v6.21.1) (2026-02-15)
 
 
