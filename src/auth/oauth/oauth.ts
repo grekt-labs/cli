@@ -1,8 +1,13 @@
-import { createServer, type Server } from "http";
-import { getSupabaseClient } from "#/auth/session/session";
+import { getSupabaseClient, getSupabaseUrl } from "#/auth/session/session";
+import { saveGlobalSession } from "#/config/user/user";
 import { shell } from "#/context";
+import type { StoredSession } from "@grekt-labs/cli-engine";
+import { randomUUID } from "crypto";
 
 const LOGIN_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+const POLL_INTERVAL_MS = 2_000; // 2 seconds
+
+export type OAuthProvider = "github" | "google";
 
 /**
  * Open a URL in the default browser.
@@ -29,182 +34,136 @@ export function openBrowser(url: string): boolean {
   }
 }
 
-/**
- * HTML template for success page.
- */
-function successHtml(): string {
-  return `
-    <!DOCTYPE html>
-    <html>
-      <head><title>Login Successful</title></head>
-      <body style="font-family: system-ui; padding: 40px; text-align: center;">
-        <h1>Login Successful</h1>
-        <p>You can close this window and return to the terminal.</p>
-      </body>
-    </html>
-  `;
-}
-
-/**
- * HTML template for error page.
- */
-function errorHtml(message: string): string {
-  return `
-    <!DOCTYPE html>
-    <html>
-      <head><title>Login Failed</title></head>
-      <body style="font-family: system-ui; padding: 40px; text-align: center;">
-        <h1>Login Failed</h1>
-        <p>${message}</p>
-        <p>You can close this window.</p>
-      </body>
-    </html>
-  `;
-}
-
-/**
- * HTML template for invalid request page.
- */
-function invalidRequestHtml(): string {
-  return `
-    <!DOCTYPE html>
-    <html>
-      <head><title>Invalid Request</title></head>
-      <body style="font-family: system-ui; padding: 40px; text-align: center;">
-        <h1>Invalid Request</h1>
-        <p>No authorization code received.</p>
-      </body>
-    </html>
-  `;
-}
-
-export interface BrowserLoginResult {
-  success: boolean;
-  authUrl?: string;
-}
-
 export interface BrowserLoginCallbacks {
   onAuthUrl?: (url: string) => void;
 }
 
+interface PollResponse {
+  status: "pending" | "ready" | "error";
+  code?: string;
+  error?: string;
+}
+
 /**
- * OAuth login flow with Supabase Auth.
- * Starts a local HTTP server to receive the OAuth callback.
+ * Poll the cli-auth-poll endpoint until it returns a code or times out.
  */
-export async function browserLogin(callbacks?: BrowserLoginCallbacks): Promise<void> {
+async function pollForAuthCode(sessionId: string): Promise<string> {
+  const supabaseUrl = getSupabaseUrl();
+  const pollUrl = `${supabaseUrl}/functions/v1/cli-auth-poll?session_id=${sessionId}`;
+  const deadline = Date.now() + LOGIN_TIMEOUT_MS;
+
+  while (Date.now() < deadline) {
+    const response = await fetch(pollUrl);
+
+    if (!response.ok) {
+      // Transient errors: wait and retry
+      await sleep(POLL_INTERVAL_MS);
+      continue;
+    }
+
+    const data = (await response.json()) as PollResponse;
+
+    if (data.status === "ready" && data.code) {
+      return data.code;
+    }
+
+    if (data.status === "error") {
+      throw new Error(data.error || "Authentication failed");
+    }
+
+    // Still pending
+    await sleep(POLL_INTERVAL_MS);
+  }
+
+  throw new Error("Login timed out. Please try again.");
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * OAuth login flow using hosted callback + polling.
+ * Works in WSL2, remote SSH, and containers where localhost is unreachable.
+ *
+ * Flow:
+ * 1. Generate a random session ID
+ * 2. Build redirect URL pointing to cli-auth-callback edge function
+ * 3. Open browser with Supabase OAuth URL (PKCE enabled)
+ * 4. Poll cli-auth-poll until auth code arrives
+ * 5. Exchange code for session using PKCE verifier
+ * 6. Explicitly save session to disk
+ */
+export async function browserLogin(
+  provider: OAuthProvider,
+  callbacks?: BrowserLoginCallbacks,
+): Promise<void> {
   const supabase = getSupabaseClient();
+  const supabaseUrl = getSupabaseUrl();
 
-  return new Promise((resolve, reject) => {
-    let server: Server;
-    let timeoutId: NodeJS.Timeout;
+  const sessionId = randomUUID();
+  const redirectTo = `${supabaseUrl}/functions/v1/cli-auth-callback?session_id=${sessionId}`;
 
-    const cleanup = () => {
-      clearTimeout(timeoutId);
-      server?.close();
-    };
-
-    server = createServer(async (req, res) => {
-      const url = new URL(req.url!, `http://localhost`);
-      const code = url.searchParams.get("code");
-      const errorParam = url.searchParams.get("error");
-      const errorDescription = url.searchParams.get("error_description");
-
-      res.setHeader("Content-Type", "text/html");
-
-      if (errorParam) {
-        res.statusCode = 400;
-        res.end(errorHtml(errorDescription || errorParam));
-        cleanup();
-        reject(new Error(errorDescription || errorParam));
-        return;
-      }
-
-      if (code) {
-        try {
-          // Exchange code for session
-          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-
-          if (exchangeError) {
-            throw exchangeError;
-          }
-
-          res.statusCode = 200;
-          res.end(successHtml());
-          cleanup();
-          resolve();
-        } catch (err) {
-          res.statusCode = 400;
-          res.end(errorHtml(err instanceof Error ? err.message : "Failed to exchange code"));
-          cleanup();
-          reject(err);
-        }
-        return;
-      }
-
-      // No code or error - invalid request
-      res.statusCode = 400;
-      res.end(invalidRequestHtml());
-    });
-
-    // Bind explicitly to 127.0.0.1, never 0.0.0.0
-    server.listen(0, "127.0.0.1", async () => {
-      const address = server.address();
-      if (!address || typeof address === "string") {
-        cleanup();
-        reject(new Error("Failed to start local server"));
-        return;
-      }
-
-      const port = address.port;
-      const redirectUrl = `http://localhost:${port}/callback`;
-
-      // Use Supabase SDK to generate auth URL with PKCE
-      const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
-        provider: "github",
-        options: {
-          redirectTo: redirectUrl,
-          skipBrowserRedirect: true,
-        },
-      });
-
-      if (oauthError || !data.url) {
-        cleanup();
-        reject(oauthError || new Error("Failed to generate auth URL"));
-        return;
-      }
-
-      // Notify caller of auth URL
-      callbacks?.onAuthUrl?.(data.url);
-
-      // Try to open browser
-      openBrowser(data.url);
-    });
-
-    // Timeout after 5 minutes
-    timeoutId = setTimeout(() => {
-      cleanup();
-      reject(new Error("Login timed out. Please try again."));
-    }, LOGIN_TIMEOUT_MS);
-
-    server.on("error", (err) => {
-      cleanup();
-      reject(err);
-    });
+  const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
+    provider,
+    options: {
+      redirectTo,
+      skipBrowserRedirect: true,
+    },
   });
+
+  if (oauthError || !data.url) {
+    throw oauthError || new Error("Failed to generate auth URL");
+  }
+
+  callbacks?.onAuthUrl?.(data.url);
+  openBrowser(data.url);
+
+  const code = await pollForAuthCode(sessionId);
+
+  const { data: sessionData, error: exchangeError } =
+    await supabase.auth.exchangeCodeForSession(code);
+
+  if (exchangeError) {
+    throw exchangeError;
+  }
+
+  // Explicitly save session instead of relying on async onAuthStateChange
+  if (sessionData.session) {
+    const toStore: StoredSession = {
+      access_token: sessionData.session.access_token,
+      refresh_token: sessionData.session.refresh_token,
+      expires_at: sessionData.session.expires_at,
+    };
+    saveGlobalSession(toStore);
+  }
 }
 
 /**
  * Email/password login (non-interactive, for CI/CD).
  */
-export async function emailLogin(email: string, password: string): Promise<void> {
+export async function emailLogin(
+  email: string,
+  password: string,
+): Promise<void> {
   const supabase = getSupabaseClient();
 
-  const { error: signInError } = await supabase.auth.signInWithPassword({
+  const { data, error: signInError } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
 
   if (signInError) {
     throw signInError;
+  }
+
+  // Explicitly save session instead of relying on async onAuthStateChange
+  if (data.session) {
+    const toStore: StoredSession = {
+      access_token: data.session.access_token,
+      refresh_token: data.session.refresh_token,
+      expires_at: data.session.expires_at,
+    };
+    saveGlobalSession(toStore);
   }
 }
