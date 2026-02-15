@@ -1,3 +1,10 @@
+# [6.19.0](https://github.com/grekt-labs/cli/compare/v6.18.0...v6.19.0) (2026-02-15)
+
+
+### Features
+
+* add worktree sync command for copying .grekt/ to worktrees ([2a3e53e](https://github.com/grekt-labs/cli/commit/2a3e53e8f315546e1c482ae39a449ba913ccf2fc))
+
 # [6.18.0](https://github.com/grekt-labs/cli/compare/v6.17.1...v6.18.0) (2026-02-14)
 
 
