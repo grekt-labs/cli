@@ -47,6 +47,20 @@ export function getProjectRoot(): string {
 }
 
 /**
+ * In-memory storage adapter for Supabase auth.
+ * We handle session persistence manually (to ~/.grekt/session.yaml),
+ * but Supabase needs a working storage to keep the PKCE code verifier
+ * between signInWithOAuth and exchangeCodeForSession.
+ */
+const memoryStorage: Record<string, string> = {};
+
+const inMemoryStorageAdapter = {
+  getItem: (key: string): string | null => memoryStorage[key] ?? null,
+  setItem: (key: string, value: string): void => { memoryStorage[key] = value; },
+  removeItem: (key: string): void => { delete memoryStorage[key]; },
+};
+
+/**
  * Create Supabase client with auto-refresh.
  */
 let _client: SupabaseClient | null = null;
@@ -63,8 +77,9 @@ export function getSupabaseClient(): SupabaseClient {
   _client = createClient(getSupabaseUrl(), getSupabaseAnonKey(), {
     auth: {
       autoRefreshToken: true,
-      persistSession: false, // We handle persistence manually
+      persistSession: true,
       flowType: "pkce",
+      storage: inMemoryStorageAdapter,
     },
   });
 
