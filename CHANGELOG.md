@@ -1,3 +1,10 @@
+## [6.21.1](https://github.com/grekt-labs/cli/compare/v6.21.0...v6.21.1) (2026-02-15)
+
+
+### Bug Fixes
+
+* enable PKCE flow for Supabase auth client ([2678798](https://github.com/grekt-labs/cli/commit/2678798ae9b327a402809ea7b71b9bd13ff63c7e))
+
 # [6.21.0](https://github.com/grekt-labs/cli/compare/v6.20.0...v6.21.0) (2026-02-15)
 
 
