@@ -1,3 +1,10 @@
+# [6.21.0](https://github.com/grekt-labs/cli/compare/v6.20.0...v6.21.0) (2026-02-15)
+
+
+### Features
+
+* add sibling file copying to folder sync plugins ([#146](https://github.com/grekt-labs/cli/issues/146)) ([c24fd50](https://github.com/grekt-labs/cli/commit/c24fd50d8ab5125aebf8a21c67f5e23fd8cc51eb))
+
 # [6.20.0](https://github.com/grekt-labs/cli/compare/v6.19.2...v6.20.0) (2026-02-15)
 
 
