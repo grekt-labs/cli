@@ -171,7 +171,7 @@ function buildGroupedChoices(
       choices.push({
         name: buildChoiceName(file, singular),
         value: { category, path: file.path },
-        checked: true,
+        checked: false,
       });
     }
   }
@@ -190,7 +190,7 @@ export async function selectComponents(artifactInfo: ArtifactInfo): Promise<Comp
     const choices = buildGroupedChoices(groups);
 
     const selected = await checkbox({
-      message: "Select components to install:",
+      message: "Select components to install (a: toggle all, i: invert):",
       choices,
     });
 
@@ -255,7 +255,7 @@ export async function selectComponentsWithPrecheck(
     const choices = buildGroupedChoicesWithPrecheck(groups, previousSelection);
 
     const selected = await checkbox({
-      message: "Select components to install:",
+      message: "Select components to install (a: toggle all, i: invert):",
       choices,
     });
 
