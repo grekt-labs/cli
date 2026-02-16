@@ -3,12 +3,46 @@ import { parse } from "yaml";
 import { isInitialized } from "#/config/project/project";
 import { fs } from "#/context";
 import { scanArtifact, ArtifactManifestSchema, isValidSemver, CATEGORIES, parseName } from "@grekt-labs/cli-engine";
+import type { ArtifactMode } from "@grekt-labs/cli-engine";
 import type { InvalidFile } from "@grekt-labs/cli-engine";
 import type {
   ValidatedArtifact,
   ValidationOptions,
   ValidationResult,
 } from "./validation.types";
+
+const VALID_ARTIFACT_MODES = new Set<string>(["lazy", "core", "core-sym"]);
+
+/**
+ * Resolve a path and verify it stays within the expected base directory.
+ * Prevents path traversal attacks via ".." segments, symlink tricks, etc.
+ * Returns the resolved absolute path, or throws if it escapes the base.
+ */
+export function resolveAndAssertWithinBase(basePath: string, untrustedPath: string): string {
+  const resolvedBase = resolve(basePath);
+  const resolvedTarget = resolve(basePath, untrustedPath);
+
+  // The resolved path must start with the base directory + separator (or be the base itself)
+  if (resolvedTarget !== resolvedBase && !resolvedTarget.startsWith(resolvedBase + "/")) {
+    throw new Error(
+      `Path traversal detected: "${untrustedPath}" resolves outside base directory`
+    );
+  }
+
+  return resolvedTarget;
+}
+
+/**
+ * Validate that a mode string is a known artifact mode.
+ * Falls back to "lazy" if the mode is unrecognized, preventing
+ * injection of arbitrary mode strings from untrusted config/lockfile data.
+ */
+export function sanitizeArtifactMode(mode: string | undefined): ArtifactMode {
+  if (mode && VALID_ARTIFACT_MODES.has(mode)) {
+    return mode as ArtifactMode;
+  }
+  return "lazy";
+}
 
 /**
  * Validate that an artifact ID is safe for filesystem operations.

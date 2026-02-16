@@ -47,14 +47,15 @@ Only updates a single rules file. No file copying.
 .cursorrules          # Prepends grekt block to existing content
 ```
 
-## Artifact Modes: CORE vs LAZY
+## Artifact Modes: CORE, CORE-SYM, and LAZY
 
 Not all artifacts are copied to the target. The mode determines behavior:
 
-| Mode | Files Copied | In Index | Use Case |
-|------|--------------|----------|----------|
-| **CORE** | Yes | Yes | Always in AI context |
-| **LAZY** | No | Yes | Discoverable, loaded on demand |
+| Mode | Files Synced | Method | In Index | Use Case |
+|------|-------------|--------|----------|----------|
+| **CORE** | Yes | Copy | Yes | Always in AI context |
+| **CORE-SYM** | Yes | Symlink | Yes | Always in AI context, no duplication |
+| **LAZY** | No | — | Yes | Discoverable, loaded on demand |
 
 ```yaml
 # grekt.yaml
@@ -62,10 +63,15 @@ artifacts:
   "@author/always-needed": "^1.0.0"        # String = LAZY (default)
   "@author/critical-rules":
     version: "^2.0.0"
-    mode: core                              # Explicit CORE
+    mode: core                              # Explicit CORE (copy)
+  "@author/dev-tools":
+    version: "^1.0.0"
+    mode: core-sym                          # CORE with symlinks
 ```
 
 **LAZY mode** keeps artifacts discoverable (in `.grekt/index`) without consuming context tokens. The AI can request them when needed.
+
+**CORE-SYM mode** works like CORE but creates symlinks instead of copies. This avoids file duplication and keeps target files always in sync with the artifact source. Note: if the artifact has content transformations (e.g., metadata injection), files are copied instead of symlinked.
 
 ## Built-in Plugins
 
@@ -132,14 +138,14 @@ The sync system and index generation are **separate operations**:
 │  grekt sync                                                         │
 │  └─► For each target (claude, cursor, etc.):                        │
 │      └─► plugin.sync()                                              │
-│          ├─► Copy CORE artifact files to target folders             │
+│          ├─► Copy/symlink CORE artifact files to target folders      │
 │          └─► Update context entry point (CLAUDE.md, etc.)           │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
 **Key distinction:**
 - **Index generation** (in add/install/remove): Creates `.grekt/index` with ALL artifacts for AI discoverability
-- **Sync** (in sync command): Copies only CORE mode files to AI tool folders
+- **Sync** (in sync command): Copies (or symlinks) only CORE/CORE-SYM mode files to AI tool folders
 
 ## Sync Command Flow
 
@@ -154,9 +160,9 @@ What happens when you run `grekt sync`:
 │    └─► Get plugin instance                                         │
 │                                                                    │
 │ 3. Plugin.sync() for each target:                                  │
-│    ├─► Filter: only CORE mode artifacts                            │
+│    ├─► Filter: only CORE/CORE-SYM mode artifacts                   │
 │    ├─► scanArtifact() - categorize files by frontmatter            │
-│    ├─► Copy files to target category folders                       │
+│    ├─► Copy or symlink files to target category folders            │
 │    └─► Update context entry point (prepend grekt block)            │
 └────────────────────────────────────────────────────────────────────┘
 ```

@@ -9,6 +9,7 @@ import { downloadAndExtractTarball } from "#/registry/download/download";
 import { verifyIntegrity } from "#/context";
 import { generateArtifactIndex } from "#/artifact/index/index";
 import { isSafeArtifactId } from "#/artifact/validation/validation";
+import { syncToTargets } from "#/sync/helpers/helpers";
 import { resolveRegistry } from "#/registry/factory/factory";
 import { parseArtifactId, getGitLabHeaders, getGitHubHeaders, scanArtifact } from "@grekt-labs/cli-engine";
 import { success, error, info, warning, log, newline, colors, spinner } from "#/shared/ui/ui";
@@ -198,8 +199,6 @@ export const installCommand = new Command("install")
     const config = getConfig(projectRoot);
     generateArtifactIndex(projectRoot, config);
 
-    if (installed > 0) {
-      newline();
-      info("Run 'grekt sync' to sync with your AI tools");
-    }
+    // Auto-sync to targets (same as add/upgrade)
+    await syncToTargets(config, lockfile, projectRoot);
   });

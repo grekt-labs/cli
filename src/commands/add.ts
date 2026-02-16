@@ -36,7 +36,8 @@ export const addCommand = new Command("add")
   .argument("[source]", "Artifact source (e.g., @grekt/code-reviewer, github:user/repo, gitlab:host/user/repo)")
   .option("-c, --choose", "Choose which components to install")
   .option("--core", "Mark artifact as CORE (copied to target on sync, not just indexed)")
-  .action(async (sourceArg: string | undefined, options: { choose?: boolean; core?: boolean }) => {
+  .option("--core-sym", "Mark artifact as CORE with symlinks (symlinked to target on sync, not copied)")
+  .action(async (sourceArg: string | undefined, options: { choose?: boolean; core?: boolean; coreSym?: boolean }) => {
     if (!sourceArg) {
       error("Source required. Examples:");
       info("  grekt add @scope/artifact");
@@ -222,8 +223,15 @@ export const addCommand = new Command("add")
     }
     // else: no --choose, previous was full (or new install) - keep all components
 
-    // Preserve core mode from previous installation
-    const isCore = options.core || previous?.isCore || false;
+    // Determine sync mode: core-sym > core > previous > lazy
+    const resolvedMode = options.coreSym
+      ? "core-sym" as const
+      : options.core
+        ? "core" as const
+        : previous?.isCore
+          ? previous.artifactMode
+          : "lazy" as const;
+    const isCore = resolvedMode === "core" || resolvedMode === "core-sym";
 
     // Check if all components were selected (no --choose or all selected)
     const allSelected = isFullSelection(artifactInfo, selection);
@@ -237,7 +245,7 @@ export const addCommand = new Command("add")
       const entry: Record<string, unknown> = {
         version: artifactInfo.manifest.version,
       };
-      if (isCore) entry.mode = "core";
+      if (isCore) entry.mode = resolvedMode;
       // Add selected components by category
       for (const category of CATEGORIES) {
         if (selection[category].length > 0) {
@@ -258,7 +266,7 @@ export const addCommand = new Command("add")
       integrity,
       source: source.raw,
       resolved: downloadResult.resolved, // Full URL, immutable after write
-      mode: isCore ? "core" : "lazy",
+      mode: resolvedMode,
       files: fileHashes,
     };
     saveLockfile(lockfile, projectRoot);
@@ -267,7 +275,7 @@ export const addCommand = new Command("add")
     generateArtifactIndex(projectRoot, config);
 
     newline();
-    const modeLabel = isCore ? ` ${colors.dim("(core)")}` : "";
+    const modeLabel = isCore ? ` ${colors.dim(`(${resolvedMode})`)}` : "";
     success(`Installed ${colors.highlight(resolvedArtifactId)}@${artifactInfo.manifest.version}${modeLabel}`);
 
     // Show what was actually installed
