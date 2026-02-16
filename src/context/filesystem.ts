@@ -8,6 +8,7 @@ import {
   unlinkSync,
   rmSync,
   copyFileSync,
+  symlinkSync,
   renameSync,
   chmodSync,
   cpSync,
@@ -68,6 +69,13 @@ export function createFileSystem(): ExtendedFileSystem {
       rmSync(path, { ...options, force: true });
     },
     copyFile: (src: string, dest: string) => copyFileSync(src, dest),
+    symlink: (target: string, path: string) => {
+      // Both paths must be absolute to prevent ambiguous resolution
+      if (!target.startsWith("/") || !path.startsWith("/")) {
+        throw new Error("Symlink requires absolute paths for both target and link path");
+      }
+      symlinkSync(target, path);
+    },
     rename: (src: string, dest: string) => renameSync(src, dest),
     chmod: (path: string, mode: number) => chmodSync(path, mode),
     copy: (src: string, dest: string, options?: CopyOptions) => {

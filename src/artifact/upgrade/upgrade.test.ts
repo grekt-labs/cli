@@ -73,6 +73,7 @@ describe("upgrade", () => {
         version: "1.0.0",
         mode: "full",
         isCore: false,
+        artifactMode: "lazy",
       });
     });
 
@@ -90,6 +91,7 @@ describe("upgrade", () => {
         version: "1.0.0",
         mode: "full",
         isCore: false,
+        artifactMode: "lazy",
       });
     });
 
@@ -132,6 +134,56 @@ describe("upgrade", () => {
       const result = getPreviousInstallation("@scope/test", config);
       expect(result).not.toBeNull();
       expect(result!.isCore).toBe(true);
+      expect(result!.artifactMode).toBe("core");
+    });
+
+    test("returns isCore true and artifactMode for core-sym mode", () => {
+      const config = {
+        artifacts: {
+          "@scope/test": {
+            version: "1.0.0",
+            mode: "core-sym" as const,
+          },
+        },
+        targets: [],
+        customTargets: {},
+      };
+
+      const result = getPreviousInstallation("@scope/test", config);
+      expect(result).not.toBeNull();
+      expect(result!.isCore).toBe(true);
+      expect(result!.artifactMode).toBe("core-sym");
+    });
+
+    test("returns artifactMode lazy for string entry", () => {
+      const config = {
+        artifacts: { "@scope/test": "1.0.0" },
+        targets: [],
+        customTargets: {},
+      };
+
+      const result = getPreviousInstallation("@scope/test", config);
+      expect(result).not.toBeNull();
+      expect(result!.artifactMode).toBe("lazy");
+    });
+
+    test("sanitizes unknown mode to lazy", () => {
+      const config = {
+        artifacts: {
+          "@scope/test": {
+            version: "1.0.0",
+            // Force an invalid mode past TypeScript for testing runtime sanitization
+            mode: "malicious" as unknown as "core",
+          },
+        },
+        targets: [],
+        customTargets: {},
+      };
+
+      const result = getPreviousInstallation("@scope/test", config);
+      expect(result).not.toBeNull();
+      expect(result!.isCore).toBe(false);
+      expect(result!.artifactMode).toBe("lazy");
     });
   });
 

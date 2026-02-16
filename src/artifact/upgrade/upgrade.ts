@@ -11,6 +11,7 @@ import { resolveRegistry, createRegistryClient } from "#/registry/factory/factor
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
 import { parseSource, downloadFromSource } from "#/registry/sources/sources";
 import { fs, cryptoProvider, scanArtifact, hashDirectory } from "#/context";
+import { sanitizeArtifactMode } from "#/artifact/validation/validation";
 import {
   CATEGORIES,
   compareSemver,
@@ -51,6 +52,7 @@ export function getPreviousInstallation(
       version: entry,
       mode: "full",
       isCore: false,
+      artifactMode: "lazy",
     };
   }
 
@@ -62,18 +64,22 @@ export function getPreviousInstallation(
 
   if (!hasSelection) {
     // Object but no category arrays = full install (e.g. just version + mode)
+    const sanitizedMode = sanitizeArtifactMode(entry.mode);
     return {
       version: entry.version,
       mode: "full",
-      isCore: entry.mode === "core",
+      isCore: sanitizedMode === "core" || sanitizedMode === "core-sym",
+      artifactMode: sanitizedMode,
     };
   }
 
+  const sanitizedMode = sanitizeArtifactMode(entry.mode);
   return {
     version: entry.version,
     mode: "partial",
     selection,
-    isCore: entry.mode === "core",
+    isCore: sanitizedMode === "core" || sanitizedMode === "core-sym",
+    artifactMode: sanitizedMode,
   };
 }
 
@@ -296,6 +302,7 @@ export async function performUpgrade(params: PerformUpgradeParams): Promise<Upgr
 
     // Update config entry
     const isCore = previous?.isCore ?? false;
+    const artifactMode = sanitizeArtifactMode(previous?.artifactMode);
 
     if (allSelected && !isCore) {
       config.artifacts[artifactId] = artifactInfo.manifest.version;
@@ -303,7 +310,7 @@ export async function performUpgrade(params: PerformUpgradeParams): Promise<Upgr
       const entry: Record<string, unknown> = {
         version: artifactInfo.manifest.version,
       };
-      if (isCore) entry.mode = "core";
+      if (isCore) entry.mode = artifactMode;
       for (const category of CATEGORIES) {
         if (selection[category].length > 0) {
           entry[category] = selection[category];
@@ -322,7 +329,7 @@ export async function performUpgrade(params: PerformUpgradeParams): Promise<Upgr
       integrity,
       source: previousLockEntry?.source || artifactId,
       resolved: downloadResult.resolved,
-      mode: isCore ? "core" : (previousLockEntry?.mode ?? "lazy"),
+      mode: isCore ? artifactMode : (previousLockEntry?.mode ?? "lazy"),
       files: fileHashes,
     };
 

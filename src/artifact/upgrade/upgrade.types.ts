@@ -1,5 +1,5 @@
 import type { ComponentSelection } from "#/artifact/selector/selector";
-import type { ProjectConfig, Lockfile } from "@grekt-labs/cli-engine";
+import type { ProjectConfig, Lockfile, ArtifactMode } from "@grekt-labs/cli-engine";
 
 export interface UpgradeResult {
   artifactId: string;
@@ -34,6 +34,7 @@ export interface PreviousInstallation {
   mode: "full" | "partial";
   selection?: ComponentSelection;
   isCore: boolean;
+  artifactMode: ArtifactMode;
 }
 
 /**

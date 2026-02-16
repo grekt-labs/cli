@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach, afterEach } from "bun:test";
-import { existsSync, mkdirSync, rmSync, writeFileSync, readFileSync } from "fs";
+import { existsSync, mkdirSync, rmSync, writeFileSync, readFileSync, lstatSync } from "fs";
 import { join } from "path";
 import { createFolderPlugin, createRulesOnlyPlugin } from "./base";
 import { GREKT_SECTION_HEADER, type Lockfile, type ProjectConfig } from "@grekt-labs/cli-engine";
@@ -303,6 +303,80 @@ grk-description: A skill
         expect(preview.willUpdate).toContain("RULES.md");
         expect(preview.willCreate).not.toContain(".test/RULES.md");
       });
+    });
+
+    test("skips files with path traversal in filePath", async () => {
+      const plugin = createTestPlugin();
+
+      // Create a malicious artifact with a traversal path
+      // We simulate this by having getTargetPath return a traversal path
+      const maliciousPlugin = createFolderPlugin({
+        id: "test",
+        name: "Test",
+        targetDir: ".test",
+        getTargetPath: () => "../../escaped.md",
+      });
+
+      const result = await maliciousPlugin.sync(testLockfile, testDir, {
+        projectConfig: testProjectConfig,
+      });
+
+      expect(result.skipped.some((s) => s.includes("unsafe path"))).toBe(true);
+      expect(existsSync(join(testDir, "escaped.md"))).toBe(false);
+    });
+
+    test("syncs core-sym artifacts as symlinks", async () => {
+      const coreSymConfig: ProjectConfig = {
+        targets: [],
+        artifacts: {
+          [TEST_ARTIFACT_ID]: {
+            version: "1.0.0",
+            mode: "core-sym",
+          },
+        },
+        customTargets: {},
+      };
+
+      const plugin = createTestPlugin();
+
+      await plugin.sync(testLockfile, testDir, { projectConfig: coreSymConfig });
+
+      const syncedFile = join(testDir, ".test/agents/scope-artifact_agent.md");
+      expect(existsSync(syncedFile)).toBe(true);
+
+      const stat = lstatSync(syncedFile);
+      expect(stat.isSymbolicLink()).toBe(true);
+    });
+
+    test("core-sym falls back to copy when transformContent is set", async () => {
+      const coreSymConfig: ProjectConfig = {
+        targets: [],
+        artifacts: {
+          [TEST_ARTIFACT_ID]: {
+            version: "1.0.0",
+            mode: "core-sym",
+          },
+        },
+        customTargets: {},
+      };
+
+      const plugin = createFolderPlugin({
+        id: "test",
+        name: "Test",
+        targetDir: ".test",
+        transformContent: (content) => `TRANSFORMED: ${content}`,
+      });
+
+      await plugin.sync(testLockfile, testDir, { projectConfig: coreSymConfig });
+
+      const syncedFile = join(testDir, ".test/agents/scope-artifact_agent.md");
+      expect(existsSync(syncedFile)).toBe(true);
+
+      const stat = lstatSync(syncedFile);
+      expect(stat.isSymbolicLink()).toBe(false);
+
+      const content = readFileSync(syncedFile, "utf-8");
+      expect(content).toStartWith("TRANSFORMED:");
     });
   });
 

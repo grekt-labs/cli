@@ -12,6 +12,7 @@ import {
 } from "@grekt-labs/cli-engine";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
 import { getSafeFilename, generateDefaultBlockContent, GREKT_SECTION_HEADER, GREKT_ENTRY_POINT_TEXT } from "@grekt-labs/cli-engine";
+import { resolveAndAssertWithinBase } from "#/artifact/validation/validation";
 import { fs } from "#/context";
 import { ensureDir, cleanEmptyDir } from "#/shared/filesystem/filesystem";
 
@@ -61,11 +62,19 @@ function getArtifactMode(config: ProjectConfig | undefined, artifactId: string):
 }
 
 /**
- * Check if an artifact should be synced (copied to target).
- * Only CORE mode artifacts are copied. LAZY mode artifacts are only in the index.
+ * Check if an artifact should be synced (copied/symlinked to target).
+ * Only CORE and CORE-SYM mode artifacts are synced. LAZY mode artifacts are only in the index.
  */
 function shouldSyncArtifact(config: ProjectConfig | undefined, artifactId: string): boolean {
-  return getArtifactMode(config, artifactId) === "core";
+  const mode = getArtifactMode(config, artifactId);
+  return mode === "core" || mode === "core-sym";
+}
+
+/**
+ * Check if an artifact should use symlinks instead of copies.
+ */
+function shouldUseSymlinks(config: ProjectConfig | undefined, artifactId: string): boolean {
+  return getArtifactMode(config, artifactId) === "core-sym";
 }
 
 /**
@@ -265,11 +274,27 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
             const targetName = getTargetPath(artifactId, category, filePath);
             const target = `${projectRoot}/${categoryDir}/${targetName}`;
 
+            // Validate paths stay within expected boundaries
+            try {
+              resolveAndAssertWithinBase(artifactDir, filePath);
+              resolveAndAssertWithinBase(`${projectRoot}/${categoryDir}`, targetName);
+            } catch {
+              result.skipped.push(`${artifactId}/${filePath} (unsafe path)`);
+              continue;
+            }
+
             if (fs.exists(source)) {
               ensureDir(target);
               const existed = fs.exists(target);
+              const useSymlinks = shouldUseSymlinks(options.projectConfig, artifactId);
 
-              if (config.transformContent) {
+              if (existed) {
+                fs.unlink(target);
+              }
+
+              if (useSymlinks && !config.transformContent) {
+                fs.symlink(source, target);
+              } else if (config.transformContent) {
                 const content = fs.readFile(source);
                 const transformed = config.transformContent(content, category, artifactId);
                 fs.writeFile(target, transformed);
