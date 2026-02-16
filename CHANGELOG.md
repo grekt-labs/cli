@@ -1,3 +1,10 @@
+# [6.22.0](https://github.com/grekt-labs/cli/compare/v6.21.2...v6.22.0) (2026-02-16)
+
+
+### Features
+
+* core-sym mode, install auto-sync, and security hardening ([#147](https://github.com/grekt-labs/cli/issues/147)) ([c7c892a](https://github.com/grekt-labs/cli/commit/c7c892ae0f9073af73f741a187d22fe87e530d9f))
+
 ## [6.21.2](https://github.com/grekt-labs/cli/compare/v6.21.1...v6.21.2) (2026-02-15)
 
 
