@@ -1,3 +1,5 @@
+import { resolve } from "path";
+import { homedir } from "os";
 import { getLocalConfig, getToken } from "#/config/project/project";
 import {
   type DownloadResult,
@@ -11,6 +13,7 @@ import {
   downloadAndExtractTarball,
 } from "@grekt-labs/cli-engine";
 import { resolveRegistry, createRegistryClient } from "#/registry/factory/factory";
+import { copyDirectoryRecursive } from "#/sync/helpers/siblings";
 import { fs, http, shell } from "#/context";
 
 // Re-export parseSource and ParsedSource for backwards compatibility
@@ -89,6 +92,30 @@ async function downloadFromGitLab(
 }
 
 /**
+ * Copy a local directory as an artifact source.
+ * Resolves relative paths and ~ expansion.
+ */
+function downloadFromLocal(source: ParsedSource, targetDir: string): DownloadResult {
+  const expandedPath = source.identifier.startsWith("~/")
+    ? source.identifier.replace("~", homedir())
+    : source.identifier;
+  const sourcePath = resolve(expandedPath);
+
+  if (!fs.exists(sourcePath)) {
+    return { success: false, error: `Local path not found: ${sourcePath}` };
+  }
+
+  const stat = fs.stat(sourcePath);
+  if (!stat.isDirectory) {
+    return { success: false, error: `Local path is not a directory: ${sourcePath}` };
+  }
+
+  copyDirectoryRecursive(sourcePath, targetDir);
+
+  return { success: true, resolved: sourcePath };
+}
+
+/**
  * Download artifact from any supported source
  */
 export async function downloadFromSource(
@@ -103,6 +130,8 @@ export async function downloadFromSource(
       return downloadFromGitLab(source, targetDir, projectRoot);
     case "registry":
       return downloadFromRegistrySource(source.identifier, targetDir, projectRoot);
+    case "local":
+      return downloadFromLocal(source, targetDir);
     default:
       return { success: false };
   }

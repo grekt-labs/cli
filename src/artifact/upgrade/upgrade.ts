@@ -165,11 +165,12 @@ export function buildSelectionFromPrevious(
 }
 
 /**
- * Check if a lockfile entry comes from a registry source (not git).
+ * Check if a lockfile entry comes from a registry source (not git or local).
+ * Uses parseSource to avoid duplicating source type detection logic.
  */
 export function isRegistrySource(entry: LockfileEntry): boolean {
   const source = entry.source || "";
-  return !source.startsWith("github:") && !source.startsWith("gitlab:");
+  return parseSource(source).type === "registry";
 }
 
 /**

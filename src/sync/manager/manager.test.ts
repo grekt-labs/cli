@@ -11,7 +11,7 @@ import {
 } from "./manager";
 import type { SyncPlugin } from "#/sync/sync.types";
 
-const BUILTIN_PLUGINS = ["claude", "cursor", "opencode", "windsurf", "cline", "copilot", "aider", "continue", "amazonq", "global"] as const;
+const BUILTIN_PLUGINS = ["claude", "cursor", "opencode", "windsurf", "cline", "copilot", "aider", "continue", "amazonq", "openclaw", "global"] as const;
 
 describe("manager", () => {
   describe("getPlugin", () => {

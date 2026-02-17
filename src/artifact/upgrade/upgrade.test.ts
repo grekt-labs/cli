@@ -397,6 +397,42 @@ describe("upgrade", () => {
       expect(isRegistrySource(entry)).toBe(false);
     });
 
+    test("returns false for local relative path source", () => {
+      const entry = {
+        version: "1.0.0",
+        integrity: "sha256:abc",
+        source: "./my-skills",
+        mode: "lazy" as const,
+        files: {},
+      };
+
+      expect(isRegistrySource(entry)).toBe(false);
+    });
+
+    test("returns false for local absolute path source", () => {
+      const entry = {
+        version: "1.0.0",
+        integrity: "sha256:abc",
+        source: "/home/user/skills",
+        mode: "lazy" as const,
+        files: {},
+      };
+
+      expect(isRegistrySource(entry)).toBe(false);
+    });
+
+    test("returns false for local home path source", () => {
+      const entry = {
+        version: "1.0.0",
+        integrity: "sha256:abc",
+        source: "~/my-skills",
+        mode: "lazy" as const,
+        files: {},
+      };
+
+      expect(isRegistrySource(entry)).toBe(false);
+    });
+
     test("returns true for empty source", () => {
       const entry = {
         version: "1.0.0",
