@@ -1,3 +1,10 @@
+# [6.23.0](https://github.com/grekt-labs/cli/compare/v6.22.0...v6.23.0) (2026-02-17)
+
+
+### Features
+
+* OpenClaw sync plugin + local source support ([#148](https://github.com/grekt-labs/cli/issues/148)) ([d6dca60](https://github.com/grekt-labs/cli/commit/d6dca60b7ce7c24a7ae1357c62699486431f95d0))
+
 # [6.22.0](https://github.com/grekt-labs/cli/compare/v6.21.2...v6.22.0) (2026-02-16)
 
 
