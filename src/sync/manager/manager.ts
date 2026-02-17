@@ -38,6 +38,12 @@ const builtInPlugins: Record<string, SyncPlugin> = {
 /** The global plugin ID uses the agentskills.io standard (.agents/) */
 export const GLOBAL_PLUGIN_ID = "global";
 
+/** AI tools covered by the global plugin (agentskills.io standard) */
+export const GLOBAL_COVERS = [
+  "Codex", "Gemini CLI", "Jules", "Zed", "Goose",
+  "Devin", "RooCode", "Kilo Code", "Amp", "Warp",
+] as const;
+
 // Registry for all loaded plugins
 const plugins: Map<string, SyncPlugin> = new Map(Object.entries(builtInPlugins));
 

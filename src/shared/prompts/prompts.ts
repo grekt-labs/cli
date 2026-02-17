@@ -2,7 +2,7 @@ import { ExitPromptError, Separator } from "@inquirer/core";
 import { input, confirm, checkbox } from "@inquirer/prompts";
 import { newline, info, log, colors } from "#/shared/ui/ui";
 import { CATEGORIES, type CustomTarget, type ComponentPaths, type Category } from "@grekt-labs/cli-engine";
-import { GLOBAL_PLUGIN_ID } from "#/sync/manager/manager";
+import { GLOBAL_PLUGIN_ID, GLOBAL_COVERS } from "#/sync/manager/manager";
 
 export interface PromptCustomTargetResult {
   id: string;
@@ -99,6 +99,14 @@ export async function promptCustomTarget(
 
 const OTHER_TARGET_VALUE = "__other__";
 
+function printGlobalCoversBanner(): void {
+  const toolList = GLOBAL_COVERS.join(", ") + ", ...";
+  newline();
+  log(colors.dim("┌ ") + colors.bold("Global covers:"));
+  log(colors.dim("│ ") + toolList);
+  log(colors.dim("└"));
+}
+
 type PluginChoice = { name: string; value: string };
 
 /**
@@ -158,6 +166,10 @@ export async function selectTargets(
       checked: false,
     },
   ];
+
+  if (globalChoices.length > 0) {
+    printGlobalCoversBanner();
+  }
 
   const selected = await checkbox<string>({
     message: "Select AI tools to sync with:",
@@ -240,6 +252,10 @@ export async function selectTargetsToAdd(
   const hasAvailableTargets = choices.some((c) => !Separator.isSeparator(c) && !c.disabled);
   if (!hasAvailableTargets) {
     return { newTargets: [], newCustomTargets: {} };
+  }
+
+  if (globalChoices.length > 0) {
+    printGlobalCoversBanner();
   }
 
   const selected = await checkbox<string>({
