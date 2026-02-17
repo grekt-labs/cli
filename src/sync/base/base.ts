@@ -292,7 +292,7 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
                 fs.unlink(target);
               }
 
-              if (useSymlinks && !config.transformContent) {
+              if (useSymlinks) {
                 fs.symlink(source, target);
               } else if (config.transformContent) {
                 const content = fs.readFile(source);

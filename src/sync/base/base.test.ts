@@ -348,7 +348,7 @@ grk-description: A skill
       expect(stat.isSymbolicLink()).toBe(true);
     });
 
-    test("core-sym falls back to copy when transformContent is set", async () => {
+    test("core-sym always symlinks even when transformContent is set", async () => {
       const coreSymConfig: ProjectConfig = {
         targets: [],
         artifacts: {
@@ -373,10 +373,7 @@ grk-description: A skill
       expect(existsSync(syncedFile)).toBe(true);
 
       const stat = lstatSync(syncedFile);
-      expect(stat.isSymbolicLink()).toBe(false);
-
-      const content = readFileSync(syncedFile, "utf-8");
-      expect(content).toStartWith("TRANSFORMED:");
+      expect(stat.isSymbolicLink()).toBe(true);
     });
   });
 
