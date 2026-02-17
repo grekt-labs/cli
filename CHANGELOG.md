@@ -1,3 +1,10 @@
+# [6.24.0](https://github.com/grekt-labs/cli/compare/v6.23.1...v6.24.0) (2026-02-17)
+
+
+### Features
+
+* ask about remoteSearch during grekt init ([#150](https://github.com/grekt-labs/cli/issues/150)) ([417431f](https://github.com/grekt-labs/cli/commit/417431f0c8cbc87a896915a1bfa92f9afa45bbf5))
+
 ## [6.23.1](https://github.com/grekt-labs/cli/compare/v6.23.0...v6.23.1) (2026-02-17)
 
 
