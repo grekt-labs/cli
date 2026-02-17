@@ -58,6 +58,27 @@ describe("sources", () => {
       expect(result.host).toBe("gitlab.mycompany.com");
       expect(result.identifier).toBe("team/project");
     });
+
+    test("detects local relative path", () => {
+      const result = parseSource("./my-skills");
+
+      expect(result.type).toBe("local");
+      expect(result.identifier).toBe("./my-skills");
+    });
+
+    test("detects local absolute path", () => {
+      const result = parseSource("/home/user/skills");
+
+      expect(result.type).toBe("local");
+      expect(result.identifier).toBe("/home/user/skills");
+    });
+
+    test("detects local home path", () => {
+      const result = parseSource("~/my-skills");
+
+      expect(result.type).toBe("local");
+      expect(result.identifier).toBe("~/my-skills");
+    });
   });
 
   describe("getSourceToken", () => {
@@ -113,6 +134,13 @@ describe("sources", () => {
 
     test("returns undefined for registry sources", () => {
       const source = parseSource("@author/artifact");
+      const token = getSourceToken(source, testDir);
+
+      expect(token).toBeUndefined();
+    });
+
+    test("returns undefined for local sources", () => {
+      const source = parseSource("./my-skills");
       const token = getSourceToken(source, testDir);
 
       expect(token).toBeUndefined();
