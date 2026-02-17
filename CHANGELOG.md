@@ -1,3 +1,10 @@
+## [6.23.1](https://github.com/grekt-labs/cli/compare/v6.23.0...v6.23.1) (2026-02-17)
+
+
+### Bug Fixes
+
+* core-sym always creates symlinks regardless of transformContent ([#149](https://github.com/grekt-labs/cli/issues/149)) ([23ac7b9](https://github.com/grekt-labs/cli/commit/23ac7b9ec59ab53bed1eddd0e3bf1d80e8d98cae))
+
 # [6.23.0](https://github.com/grekt-labs/cli/compare/v6.22.0...v6.23.0) (2026-02-17)
 
 
