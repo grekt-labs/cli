@@ -115,6 +115,17 @@ export const initCommand = new Command("init")
       }
     }
 
+    // Ask about remote search (skip for artifacts and --yes)
+    let remoteSearch = true;
+    if (!options.artifact && !options.yes) {
+      newline();
+      info("When no installed skill matches, grekt can search the public registry for one that does.");
+      remoteSearch = await confirm({
+        message: "Allow remote skill search?",
+        default: true,
+      });
+    }
+
     // Create .grekt/artifacts/ directory
     const artifactsPath = `${projectRoot}/${ARTIFACTS_DIR}`;
     if (!fs.exists(artifactsPath)) {
@@ -125,6 +136,7 @@ export const initCommand = new Command("init")
     saveConfig({
       ...manifestFields,
       targets,
+      remoteSearch,
       artifacts: {},
       customTargets,
     }, projectRoot);
