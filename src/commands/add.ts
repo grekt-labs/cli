@@ -32,8 +32,8 @@ import { confirm } from "@inquirer/prompts";
 
 
 export const addCommand = new Command("add")
-  .description("Add an artifact from registry, GitHub, or GitLab")
-  .argument("[source]", "Artifact source (e.g., @grekt/code-reviewer, github:user/repo, gitlab:host/user/repo)")
+  .description("Add an artifact from registry, GitHub, GitLab, or local path")
+  .argument("[source]", "Artifact source (e.g., @grekt/code-reviewer, github:user/repo, gitlab:host/user/repo, ./local/path)")
   .option("-c, --choose", "Choose which components to install")
   .option("--core", "Mark artifact as CORE (copied to target on sync, not just indexed)")
   .option("--core-sym", "Mark artifact as CORE with symlinks (symlinked to target on sync, not copied)")
@@ -43,6 +43,7 @@ export const addCommand = new Command("add")
       info("  grekt add @scope/artifact");
       info("  grekt add github:user/repo");
       info("  grekt add gitlab:host/user/repo");
+      info("  grekt add ./local/path");
       process.exit(1);
     }
 
@@ -98,6 +99,8 @@ export const addCommand = new Command("add")
       } else if (source.type === "gitlab") {
         info("Check the repository exists and you have access");
         info("For private repos, set GITLAB_TOKEN environment variable");
+      } else if (source.type === "local") {
+        info("Check the path exists and contains a valid artifact with grekt.yaml");
       }
       process.exit(1);
     }
@@ -128,11 +131,12 @@ export const addCommand = new Command("add")
 
     try {
       // Check if already installed - update if newer version, skip if same/older
+      // Local sources always replace (no version comparison)
       if (fs.exists(targetDir)) {
         const existing = lockfile.artifacts[resolvedArtifactId];
         const newVersion = artifactInfo.manifest.version;
 
-        if (existing) {
+        if (existing && source.type !== "local") {
           try {
             const comparison = compareSemver(newVersion, existing.version);
             if (comparison <= 0) {
