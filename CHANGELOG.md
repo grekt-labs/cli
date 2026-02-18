@@ -1,3 +1,10 @@
+## [6.24.1](https://github.com/grekt-labs/cli/compare/v6.24.0...v6.24.1) (2026-02-18)
+
+
+### Bug Fixes
+
+* update sh urls ([5a5af92](https://github.com/grekt-labs/cli/commit/5a5af92a28c2b69b3ca5e05b3455386e0648efbb))
+
 # [6.24.0](https://github.com/grekt-labs/cli/compare/v6.23.1...v6.24.0) (2026-02-17)
 
 
