@@ -9,17 +9,17 @@ AI artifacts versioned, synced, and shared across tools, teams, and the [communi
 ### Linux / macOS
 
 ```bash
-curl -fsSL https://grekt.com/install.sh | sh
+curl -fsSL https://cli.grekt.com/install.sh | sh
 ```
 
 Or with custom options:
 
 ```bash
 # Install specific version
-GREKT_VERSION=2.3.4 curl -fsSL https://grekt.com/install.sh | sh
+GREKT_VERSION=2.3.4 curl -fsSL https://cli.grekt.com/install.sh | sh
 
 # Custom install directory
-GREKT_INSTALL=/opt/bin curl -fsSL https://grekt.com/install.sh | sh
+GREKT_INSTALL=/opt/bin curl -fsSL https://cli.grekt.com/install.sh | sh
 ```
 
 ### macOS (Homebrew)

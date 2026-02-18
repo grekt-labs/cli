@@ -105,7 +105,7 @@ function printNotice(currentVersion: string, latestVersion: string): void {
     `  ${colors.info("Update available:")} ${colors.dim(currentVersion)} ${colors.dim("→")} ${colors.highlight(latestVersion)}`
   );
   console.log();
-  console.log(`  ${colors.dim("curl -fsSL https://grekt.com/install.sh | sh")}`);
+  console.log(`  ${colors.dim("curl -fsSL https://cli.grekt.com/install.sh | sh")}`);
   console.log(`  ${colors.dim("brew upgrade grekt")}`);
   console.log(`  ${line}`);
   console.log();
