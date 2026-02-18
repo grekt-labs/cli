@@ -22,6 +22,7 @@ import { upgradeCommand } from "#/commands/upgrade";
 import { versionCommand } from "#/commands/version";
 import { workspaceCommand } from "#/commands/workspace";
 import { worktreeCommand } from "#/commands/worktree";
+import { scanCommand } from "#/commands/scan";
 import { loginCommand } from "#/commands/login";
 import { logoutCommand } from "#/commands/logout";
 import { whoamiCommand } from "#/commands/whoami";
@@ -73,6 +74,9 @@ program.addCommand(workspaceCommand);
 
 // Worktree commands
 program.addCommand(worktreeCommand);
+
+// Security commands
+program.addCommand(scanCommand);
 
 setupUpdateCheck(pkg.version);
 
