@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { getSupabaseClient, clearSession, setProjectRoot } from "#/auth/session/session";
+import { getSupabaseClient, clearSession } from "#/auth/session/session";
 import { requireInitialized } from "#/shared/guards/guards";
 import { success, error } from "#/shared/ui/ui";
 
@@ -9,9 +9,6 @@ export const logoutCommand = new Command("logout")
     const projectRoot = process.cwd();
 
     requireInitialized(projectRoot);
-
-    // Set project root for session operations
-    setProjectRoot(projectRoot);
 
     const supabase = getSupabaseClient();
 
