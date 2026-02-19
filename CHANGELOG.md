@@ -1,3 +1,15 @@
+# [6.25.0](https://github.com/grekt-labs/cli/compare/v6.24.1...v6.25.0) (2026-02-19)
+
+
+### Bug Fixes
+
+* bump cli-engine to ^5.20.0 for scan support ([84fcc71](https://github.com/grekt-labs/cli/commit/84fcc719ab70f437854d3de9257760f7a9cb33a9))
+
+
+### Features
+
+* add grekt scan command for local security scanning ([b0135b3](https://github.com/grekt-labs/cli/commit/b0135b3c4feb990b307f2091f1828f4928fffcfa))
+
 ## [6.24.1](https://github.com/grekt-labs/cli/compare/v6.24.0...v6.24.1) (2026-02-18)
 
 
