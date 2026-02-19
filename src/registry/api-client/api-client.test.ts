@@ -5,7 +5,9 @@ let mockSupabase: any;
 let mockSession: any;
 let mockSupabaseUrl = "https://supabase.test";
 
+const realSession = await import("#/auth/session/session");
 vi.mock("#/auth/session/session", () => ({
+  ...realSession,
   getSupabaseClient: () => mockSupabase,
   getSession: () => mockSession,
   getSupabaseUrl: () => mockSupabaseUrl,

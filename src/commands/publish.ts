@@ -15,7 +15,7 @@ import {
 import type { ValidationError } from "#/artifact/publish/publish";
 import type { PublishContext, Publisher } from "#/registry/publishers/publisher.types";
 import { CustomPublisher } from "#/registry/publishers/custom-publisher";
-import { RegistryError } from "#/registry/api-client/registry-error";
+import { RegistryApiError } from "@grekt-labs/cli-engine";
 import { CATEGORIES, isWorkspaceRoot, compareSemver } from "@grekt-labs/cli-engine";
 import { success, error, info, log, colors, spinner } from "#/shared/ui/ui";
 import { logComponentSummary } from "./display";
@@ -177,7 +177,7 @@ async function publishSingleArtifact(
   }
 
   const { artifact, components } = validated;
-  const categories = Object.keys(components);
+  const categories = Object.keys(components ?? {});
 
   if (categories.length === 0) {
     error(`Artifact must contain at least one component (${CATEGORIES.join(", ")})`);
@@ -265,7 +265,7 @@ async function publishSingleArtifact(
 
   if (isApproachingSizeLimit(tarballSize) && !silent) {
     log("");
-    log(colors.yellow(`Warning: Artifact is ${formatBytes(tarballSize)} (approaching limit)`));
+    log(colors.warning(`Warning: Artifact is ${formatBytes(tarballSize)} (approaching limit)`));
     log("");
   }
 
@@ -299,9 +299,9 @@ async function publishSingleArtifact(
     spin?.stop();
     removeTarball(tarballPath);
 
-    if (err instanceof RegistryError) {
+    if (err instanceof RegistryApiError) {
       error(err.message);
-      showRegistryErrorHint(err);
+      showRegistryApiErrorHint(err);
       throw err;
     }
 
@@ -395,7 +395,7 @@ const REGISTRY_ERROR_HINTS: Record<string, string> = {
   INVALID_CATEGORIES: `Artifact categories are invalid. Valid categories: ${CATEGORIES.join(", ")}`,
 };
 
-function showRegistryErrorHint(err: RegistryError): void {
+function showRegistryApiErrorHint(err: RegistryApiError): void {
   const hint = REGISTRY_ERROR_HINTS[err.code];
   if (hint) {
     info(hint);

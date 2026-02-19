@@ -1,5 +1,7 @@
 import { Command } from "commander";
-import { createRegistryClient } from "#/registry/api-client/api-client";
+import { parseArtifactId, type DefaultRegistryOperations } from "@grekt-labs/cli-engine";
+import { resolveRegistry, createRegistryClient } from "#/registry/factory/factory";
+import { getLocalConfig } from "#/config/project/project";
 import { isAuthenticated, setProjectRoot } from "#/auth/session/session";
 import { requireInitialized } from "#/shared/guards/guards";
 import { getS3CredentialsFromEnv } from "#/registry/publishers/s3-publisher";
@@ -36,6 +38,7 @@ interface DeprecateOperationParams {
   artifactId: string;
   version: string;
   message: string;
+  projectRoot: string;
 }
 
 export const deprecateCommand = new Command("deprecate")
@@ -66,7 +69,7 @@ export const deprecateCommand = new Command("deprecate")
 
     const { artifactId, version } = parsed;
 
-    const params: DeprecateOperationParams = { artifactId, version, message: options.message };
+    const params: DeprecateOperationParams = { artifactId, version, message: options.message, projectRoot };
 
     if (options.s3) {
       await deprecateS3(params);
@@ -79,7 +82,7 @@ export const deprecateCommand = new Command("deprecate")
  * Deprecate using the API-based registry
  */
 async function deprecateApi(params: DeprecateOperationParams): Promise<void> {
-  const { artifactId, version, message } = params;
+  const { artifactId, version, message, projectRoot } = params;
   const authenticated = await isAuthenticated();
 
   if (!authenticated) {
@@ -90,7 +93,11 @@ async function deprecateApi(params: DeprecateOperationParams): Promise<void> {
     process.exit(1);
   }
 
-  const client = createRegistryClient();
+  const localConfig = getLocalConfig(projectRoot);
+  const { scope } = parseArtifactId(artifactId);
+  const registry = resolveRegistry(scope, localConfig, projectRoot);
+  const client = createRegistryClient(registry) as ReturnType<typeof createRegistryClient> & DefaultRegistryOperations;
+
   const spin = spinner("Deprecating version...");
   spin.start();
 
