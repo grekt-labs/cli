@@ -1,3 +1,10 @@
+# [6.26.0](https://github.com/grekt-labs/cli/compare/v6.25.0...v6.26.0) (2026-02-19)
+
+
+### Features
+
+* support scanning remote artifacts before installing ([e97be78](https://github.com/grekt-labs/cli/commit/e97be78df1c0ee4580a81d935df7776b9e607c4c))
+
 # [6.25.0](https://github.com/grekt-labs/cli/compare/v6.24.1...v6.25.0) (2026-02-19)
 
 
