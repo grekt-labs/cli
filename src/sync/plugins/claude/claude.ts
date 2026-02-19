@@ -45,8 +45,6 @@ export const claudePlugin = createFolderPlugin({
   setup: (projectRoot) => {
     const skillRouterFile = `${projectRoot}/${SKILL_ROUTER_PATH}`;
 
-    if (fs.exists(skillRouterFile)) return;
-
     ensureDir(skillRouterFile);
     fs.writeFile(skillRouterFile, buildSkillRouterContent());
   },

@@ -201,6 +201,9 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
         };
       }
 
+      // Run plugin setup on every sync (e.g., skill-router stays up to date)
+      config.setup?.(projectRoot);
+
       // Create target directories
       const dirs = [targetDir, ...categoriesToSync.map(getCategoryDir)];
       for (const dir of dirs) {
