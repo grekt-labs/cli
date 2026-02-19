@@ -16,6 +16,9 @@ export const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // Breaking change: rejects uppercase or special characters in scope/name
 export const ARTIFACT_ID_REGEX = /^@?([a-z0-9](?:[a-z0-9-]*[a-z0-9])?)\/([a-z0-9](?:[a-z0-9-]*[a-z0-9])?)(?:@(.+))?$/;
 
+// Project file names
+export const LOCKFILE = "grekt.lock";
+
 // Artifact size limits (in bytes)
 export const ARTIFACT_MAX_BYTES = 10 * 1024 * 1024;      // 10 MB - hard limit
 export const ARTIFACT_WARNING_BYTES = 8 * 1024 * 1024;   // 8 MB - warning threshold

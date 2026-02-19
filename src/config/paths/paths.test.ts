@@ -6,6 +6,7 @@ import {
   ARTIFACTS_DIR,
   DEFAULT_REGISTRY,
 } from "./paths";
+import { LOCKFILE as LOCKFILE_FROM_CONSTANTS } from "#/constants";
 
 describe("paths", () => {
   test("GREKT_YAML is grekt.yaml", () => {
@@ -26,5 +27,9 @@ describe("paths", () => {
 
   test("DEFAULT_REGISTRY is https://registry.grekt.com", () => {
     expect(DEFAULT_REGISTRY).toBe("https://registry.grekt.com");
+  });
+
+  test("LOCKFILE re-exported from constants matches", () => {
+    expect(LOCKFILE).toBe(LOCKFILE_FROM_CONSTANTS);
   });
 });
