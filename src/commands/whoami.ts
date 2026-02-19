@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { getSupabaseClient, setProjectRoot, getSupabaseUrl } from "#/auth/session/session";
+import { getSupabaseClient, getSupabaseUrl } from "#/auth/session/session";
 import { requireInitialized } from "#/shared/guards/guards";
 import { log, colors, spinner, error as showError } from "#/shared/ui/ui";
 
@@ -9,9 +9,6 @@ export const whoamiCommand = new Command("whoami")
     const projectRoot = process.cwd();
 
     requireInitialized(projectRoot);
-
-    // Set project root for session operations
-    setProjectRoot(projectRoot);
 
     const spin = spinner("Checking...");
     spin.start();

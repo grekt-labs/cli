@@ -28,24 +28,6 @@ export function isSupabaseConfigured(): boolean {
   return Boolean(getSupabaseUrl() && getSupabaseAnonKey());
 }
 
-// Deprecated: project root is no longer used for session storage
-// Session is now stored globally in ~/.grekt/session.yaml
-let _projectRoot: string = process.cwd();
-
-/**
- * @deprecated Session is now stored globally. This function is kept for backwards compatibility.
- */
-export function setProjectRoot(projectRoot: string): void {
-  _projectRoot = projectRoot;
-}
-
-/**
- * @deprecated Session is now stored globally. This function is kept for backwards compatibility.
- */
-export function getProjectRoot(): string {
-  return _projectRoot;
-}
-
 /**
  * In-memory storage adapter for Supabase auth.
  * We handle session persistence manually (to ~/.grekt/session.yaml),

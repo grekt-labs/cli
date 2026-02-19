@@ -2,7 +2,7 @@ import { Command } from "commander";
 import { parseArtifactId, type DefaultRegistryOperations } from "@grekt-labs/cli-engine";
 import { resolveRegistry, createRegistryClient } from "#/registry/factory/factory";
 import { getLocalConfig } from "#/config/project/project";
-import { isAuthenticated, setProjectRoot } from "#/auth/session/session";
+import { isAuthenticated } from "#/auth/session/session";
 import { requireInitialized } from "#/shared/guards/guards";
 import { getS3CredentialsFromEnv } from "#/registry/publishers/s3-publisher";
 import {
@@ -42,9 +42,6 @@ export const deprecateCommand = new Command("deprecate")
     }
 
     requireInitialized(projectRoot);
-
-    // Set project root for session operations
-    setProjectRoot(projectRoot);
 
     const parsed = parseArtifactVersion(artifactVersion);
     if (!parsed) {
