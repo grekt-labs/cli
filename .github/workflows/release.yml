@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - beta
 
 permissions:
   contents: write
@@ -40,6 +41,7 @@ jobs:
     outputs:
       new-release: ${{ steps.release.outputs.new-release }}
       version: ${{ steps.release.outputs.version }}
+      is-prerelease: ${{ steps.release.outputs.is-prerelease }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -70,11 +72,18 @@ jobs:
           echo "$OUTPUT"
 
           if echo "$OUTPUT" | grep -q "Published release"; then
-            VERSION=$(echo "$OUTPUT" | grep -oP "Published release \K[0-9]+\.[0-9]+\.[0-9]+")
+            VERSION=$(echo "$OUTPUT" | grep -oP "Published release \K[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?")
             echo "new-release=true" >> $GITHUB_OUTPUT
             echo "version=v$VERSION" >> $GITHUB_OUTPUT
+
+            if echo "$VERSION" | grep -q "-"; then
+              echo "is-prerelease=true" >> $GITHUB_OUTPUT
+            else
+              echo "is-prerelease=false" >> $GITHUB_OUTPUT
+            fi
           else
             echo "new-release=false" >> $GITHUB_OUTPUT
+            echo "is-prerelease=false" >> $GITHUB_OUTPUT
           fi
 
   build:
@@ -160,14 +169,21 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.RELEASES_REPO_TOKEN }}
         run: |
+          PRERELEASE_FLAG=""
+          if [ "${{ needs.semantic-release.outputs.is-prerelease }}" = "true" ]; then
+            PRERELEASE_FLAG="--prerelease"
+          fi
+
           gh release create ${{ needs.semantic-release.outputs.version }} \
             --repo grekt-labs/cli-releases \
             --title "${{ needs.semantic-release.outputs.version }}" \
             --notes "${{ steps.notes.outputs.notes }}" \
+            $PRERELEASE_FLAG \
             artifacts/*
 
   update-homebrew:
     needs: [semantic-release, publish]
+    if: needs.semantic-release.outputs.is-prerelease != 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Update Homebrew formula

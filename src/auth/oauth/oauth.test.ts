@@ -1,37 +1,49 @@
-import { describe, test, expect } from "bun:test";
-import { openBrowser } from "./oauth";
+import { describe, test, expect, mock } from "bun:test";
+
+const execFileMock = mock(() => "");
+
+// Only override shell, re-export everything else from the real module
+const realContext = await import("#/context");
+mock.module("#/context", () => ({
+  ...realContext,
+  shell: { execFile: execFileMock },
+}));
+
+const { openBrowser, browserLogin, emailLogin } = await import("./oauth");
 
 describe("oauth", () => {
   describe("openBrowser", () => {
-    test("returns boolean", () => {
-      // openBrowser will return true/false based on platform command
-      // We can't fully test browser opening without side effects
-      // but we can verify the function signature works
+    test("returns true when shell command succeeds", () => {
+      execFileMock.mockImplementation(() => "");
       const result = openBrowser("https://example.com");
-      expect(typeof result).toBe("boolean");
+      expect(result).toBe(true);
+    });
+
+    test("returns false when shell command throws", () => {
+      execFileMock.mockImplementation(() => {
+        throw new Error("command not found");
+      });
+      const result = openBrowser("https://example.com");
+      expect(result).toBe(false);
     });
 
     test("handles URL with special characters", () => {
-      // Should not throw
-      const result = openBrowser("https://example.com/callback?code=abc&state=xyz");
-      expect(typeof result).toBe("boolean");
+      execFileMock.mockImplementation(() => "");
+      const result = openBrowser(
+        "https://example.com/callback?code=abc&state=xyz",
+      );
+      expect(result).toBe(true);
     });
   });
 
-  // Note: browserLogin and emailLogin tests require mocking Supabase client
-  // which is complex due to the module structure. These are integration tests
-  // that should be tested with actual Supabase instance or comprehensive mocking.
-
   describe("browserLogin", () => {
-    test("is exported as async function", async () => {
-      const { browserLogin } = await import("./oauth");
+    test("is exported as async function", () => {
       expect(typeof browserLogin).toBe("function");
     });
   });
 
   describe("emailLogin", () => {
-    test("is exported as async function", async () => {
-      const { emailLogin } = await import("./oauth");
+    test("is exported as async function", () => {
       expect(typeof emailLogin).toBe("function");
     });
   });
