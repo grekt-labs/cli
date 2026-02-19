@@ -1,5 +1,7 @@
 import { Command } from "commander";
-import { createRegistryClient } from "#/registry/api-client/api-client";
+import { parseArtifactId, type DefaultRegistryOperations } from "@grekt-labs/cli-engine";
+import { resolveRegistry, createRegistryClient } from "#/registry/factory/factory";
+import { getLocalConfig } from "#/config/project/project";
 import { isAuthenticated, setProjectRoot } from "#/auth/session/session";
 import { requireInitialized } from "#/shared/guards/guards";
 import { getS3CredentialsFromEnv } from "#/registry/publishers/s3-publisher";
@@ -59,14 +61,14 @@ export const undeprecateCommand = new Command("undeprecate")
     if (options.s3) {
       await undeprecateS3(artifactId, version);
     } else {
-      await undeprecateApi(artifactId, version);
+      await undeprecateApi(artifactId, version, projectRoot);
     }
   });
 
 /**
  * Undeprecate using the API-based registry
  */
-async function undeprecateApi(artifactId: string, version: string): Promise<void> {
+async function undeprecateApi(artifactId: string, version: string, projectRoot: string): Promise<void> {
   const authenticated = await isAuthenticated();
 
   if (!authenticated) {
@@ -77,7 +79,11 @@ async function undeprecateApi(artifactId: string, version: string): Promise<void
     process.exit(1);
   }
 
-  const client = createRegistryClient();
+  const localConfig = getLocalConfig(projectRoot);
+  const { scope } = parseArtifactId(artifactId);
+  const registry = resolveRegistry(scope, localConfig, projectRoot);
+  const client = createRegistryClient(registry) as ReturnType<typeof createRegistryClient> & DefaultRegistryOperations;
+
   const spin = spinner("Removing deprecation...");
   spin.start();
 
