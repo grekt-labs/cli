@@ -1,14 +1,15 @@
 import { join } from "path";
 import { Command } from "commander";
 import { requireInitialized } from "#/shared/guards/guards";
-import { fs, getLockfile } from "#/context";
+import { fs, cryptoProvider, getLockfile } from "#/context";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
 import {
   scanArtifactSecurity,
   type SecurityReport,
-  type SecurityFinding,
 } from "@grekt-labs/cli-engine";
-import { success, error, warning, info, log, newline, colors, symbols, spinner } from "#/shared/ui/ui";
+import { parseSource, downloadFromSource, type ParsedSource } from "#/registry/sources/sources";
+import { getSourceDisplayName } from "#/registry/registry";
+import { error, warning, info, log, newline, colors, symbols, spinner } from "#/shared/ui/ui";
 
 const BADGE_COLORS: Record<string, (text: string) => string> = {
   certified: colors.success,
@@ -17,12 +18,12 @@ const BADGE_COLORS: Record<string, (text: string) => string> = {
   rejected: colors.error,
 };
 
-function formatBadge(badge: string): string {
+export function formatBadge(badge: string): string {
   const colorFn = BADGE_COLORS[badge] ?? colors.dim;
   return colorFn(badge);
 }
 
-function severityIcon(severity: string): string {
+export function severityIcon(severity: string): string {
   switch (severity) {
     case "critical":
     case "high":
@@ -78,24 +79,92 @@ function displaySummaryTable(results: Array<{ artifactId: string; report: Securi
   newline();
 }
 
-function truncate(text: string, maxLength: number): string {
+export function truncate(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;
   return `${text.slice(0, maxLength)}...`;
 }
 
 export const scanCommand = new Command("scan")
   .description("Scan artifacts for security issues using AgentVerus")
-  .argument("[path]", "Path to a specific artifact directory to scan")
+  .argument("[source]", "Artifact source (@scope/name, github:user/repo, or local path)")
   .option("--json", "Output results as JSON")
-  .action(async (pathArg: string | undefined, options: { json?: boolean }) => {
+  .action(async (sourceArg: string | undefined, options: { json?: boolean }) => {
     const projectRoot = process.cwd();
 
-    if (pathArg) {
-      await scanSingleArtifact(pathArg, options.json);
-    } else {
+    if (!sourceArg) {
       await scanAllInstalled(projectRoot, options.json);
+      return;
+    }
+
+    const source = parseSource(sourceArg);
+
+    if (source.type === "local") {
+      await scanSingleArtifact(sourceArg, options.json);
+    } else {
+      await scanRemoteArtifact(source, projectRoot, options.json);
     }
   });
+
+async function scanRemoteArtifact(source: ParsedSource, projectRoot: string, jsonOutput?: boolean): Promise<void> {
+  const displayName = getSourceDisplayName(source);
+  const tempDir = join(projectRoot, ARTIFACTS_DIR, `.tmp-scan-${cryptoProvider.randomUUID()}`);
+
+  try {
+    if (!jsonOutput) {
+      const spin = spinner(`Downloading ${colors.highlight(displayName)}...`);
+      spin.start();
+
+      fs.mkdir(tempDir, { recursive: true });
+      const downloadResult = await downloadFromSource(source, tempDir, projectRoot);
+
+      spin.stop();
+
+      if (!downloadResult.success) {
+        const reason = downloadResult.error || "Download failed";
+        error(`Failed to download ${colors.highlight(displayName)}: ${reason}`);
+        process.exit(1);
+      }
+
+      const scanSpin = spinner(`Scanning ${colors.highlight(displayName)}...`);
+      scanSpin.start();
+
+      try {
+        const report = await scanArtifactSecurity(fs, tempDir);
+        scanSpin.stop();
+
+        log(`Scanning ${colors.highlight(displayName)}...`);
+        displaySingleReport(displayName, report);
+      } catch (err) {
+        scanSpin.stop();
+        const message = err instanceof Error ? err.message : "Scan failed";
+        error(`Failed to scan ${displayName}: ${message}`);
+        process.exit(1);
+      }
+    } else {
+      fs.mkdir(tempDir, { recursive: true });
+      const downloadResult = await downloadFromSource(source, tempDir, projectRoot);
+
+      if (!downloadResult.success) {
+        const reason = downloadResult.error || "Download failed";
+        console.log(JSON.stringify({ error: reason }));
+        process.exit(1);
+      }
+
+      try {
+        const report = await scanArtifactSecurity(fs, tempDir);
+        console.log(JSON.stringify(report, null, 2));
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Scan failed";
+        console.log(JSON.stringify({ error: message }));
+        process.exit(1);
+      }
+    }
+  } finally {
+    if (fs.exists(tempDir)) {
+      fs.rmdir(tempDir, { recursive: true });
+    }
+  }
+}
 
 async function scanSingleArtifact(artifactPath: string, jsonOutput?: boolean): Promise<void> {
   const resolvedPath = join(process.cwd(), artifactPath);
