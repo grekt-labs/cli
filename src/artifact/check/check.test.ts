@@ -148,4 +148,24 @@ describe("runCheck", () => {
     expect(summary.okCount).toBe(1);
     expect(summary.missingCount).toBe(1);
   });
+
+  test("accepts lockfile as parameter to avoid re-reading from disk", () => {
+    createArtifact("@scope/artifact", { "agent.md": "# Agent" });
+    const lockfile: Lockfile = {
+      version: 1,
+      artifacts: {
+        "@scope/artifact": {
+          version: "1.0.0",
+          integrity: "sha256:abc",
+          files: {},
+        },
+      },
+    };
+
+    // Pass lockfile directly — no need to write to disk
+    const summary = runCheck(testDir, lockfile);
+
+    expect(summary.healthy).toBe(true);
+    expect(summary.okCount).toBe(1);
+  });
 });

@@ -1,8 +1,7 @@
-import { getLockfile, verifyIntegrity, getDirectorySize, fs } from "#/context";
+import { verifyIntegrity, getDirectorySize, fs, getLockfile } from "#/context";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
-import { formatBytes, estimateTokens } from "@grekt-labs/cli-engine";
+import { formatBytes, estimateTokens, type Lockfile } from "@grekt-labs/cli-engine";
 import { success, warning, log, newline, colors, symbols } from "#/shared/ui/ui";
-import { type Lockfile } from "@grekt-labs/cli-engine";
 
 // TODO: Make this configurable via grekt.yaml or config
 // Disabled for now - 10KB was too low, needs proper configuration
@@ -24,10 +23,11 @@ export interface CheckSummary {
 }
 
 /**
- * Run integrity check on all installed artifacts
+ * Run integrity check on all installed artifacts.
+ * Accepts an optional lockfile to avoid re-reading from disk.
  */
-export function runCheck(projectRoot: string): CheckSummary {
-  const lockfile = getLockfile(projectRoot);
+export function runCheck(projectRoot: string, lockfile?: Lockfile): CheckSummary {
+  lockfile ??= getLockfile(projectRoot);
   const artifactIds = Object.keys(lockfile.artifacts);
 
   const results: CheckResult[] = [];
