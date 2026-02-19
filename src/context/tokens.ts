@@ -1,11 +1,15 @@
 import type { TokenProvider } from "@grekt-labs/cli-engine";
-import { getToken } from "#/config/project/project";
+
+type TokenLookup = (name: string, projectRoot: string) => string | undefined;
 
 /**
  * Real TokenProvider implementation.
  * Gets tokens from project config and environment variables.
+ *
+ * Accepts a token lookup function to avoid importing config/project directly,
+ * breaking the circular dependency between context and config.
  */
-export function createTokenProvider(projectRoot: string): TokenProvider {
+export function createTokenProvider(projectRoot: string, getToken: TokenLookup): TokenProvider {
   return {
     getRegistryToken: (scope: string) => {
       // Registry tokens from env var (highest priority for CI/CD)
