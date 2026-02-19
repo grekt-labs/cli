@@ -17,7 +17,7 @@ import type { PublishContext, Publisher } from "#/registry/publishers/publisher.
 import { RegistryApiError, CATEGORIES, isWorkspaceRoot, compareSemver } from "@grekt-labs/cli-engine";
 import { success, error, info, log, colors, spinner } from "#/shared/ui/ui";
 import { logComponentSummary } from "./display";
-import { loadWorkspace } from "./workspace";
+import { loadWorkspace } from "#/workspace/workspace";
 import { fs } from "#/context";
 
 interface PublishOptions {
