@@ -14,9 +14,7 @@ import {
 } from "#/artifact/publish/publish";
 import type { ValidationError } from "#/artifact/publish/publish";
 import type { PublishContext, Publisher } from "#/registry/publishers/publisher.types";
-import { CustomPublisher } from "#/registry/publishers/custom-publisher";
-import { RegistryApiError } from "@grekt-labs/cli-engine";
-import { CATEGORIES, isWorkspaceRoot, compareSemver } from "@grekt-labs/cli-engine";
+import { RegistryApiError, CATEGORIES, isWorkspaceRoot, compareSemver } from "@grekt-labs/cli-engine";
 import { success, error, info, log, colors, spinner } from "#/shared/ui/ui";
 import { logComponentSummary } from "./display";
 import { loadWorkspace } from "./workspace";
@@ -312,11 +310,8 @@ async function publishSingleArtifact(
   if (!publishResult.success) {
     removeTarball(tarballPath);
 
-    if (publisher instanceof CustomPublisher) {
-      const registry = publisher.getRegistry();
-      if (registry.type === "gitlab" && !registry.token) {
-        showGitLabHelp(artifact.scope, projectRoot);
-      }
+    if (publisher.type === "gitlab") {
+      showGitLabHelp(artifact.scope, projectRoot);
     }
 
     throw new Error(`Publish failed: ${publishResult.error}`);
@@ -411,9 +406,8 @@ function showRegistryApiErrorHint(err: RegistryApiError): void {
 }
 
 function showAuthHelp(publisher: Publisher): void {
-  if (publisher instanceof CustomPublisher) {
-    const registry = publisher.getRegistry();
-    error(`Authentication failed for ${registry.type} registry`);
+  if (publisher.type !== "api" && publisher.type !== "s3") {
+    error(`Authentication failed for ${publisher.type} registry`);
     info("Verify your token and registry URL in .grekt/config.yaml");
   } else {
     error("Not authenticated. Run 'grekt login' or check that the registry is reachable");
