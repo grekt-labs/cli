@@ -5,6 +5,7 @@ set -eu
 REPO="grekt-labs/cli-releases"
 INSTALL_DIR="${GREKT_INSTALL:-$HOME/.grekt/bin}"
 BINARY_NAME="grekt"
+CHANNEL="${GREKT_CHANNEL:-stable}"
 GITHUB_API="https://api.github.com"
 GITHUB_RELEASES="https://github.com/${REPO}/releases"
 
@@ -65,27 +66,57 @@ detect_arch() {
     esac
 }
 
-# Get latest version from GitHub API
-get_latest_version() {
-    url="${GITHUB_API}/repos/${REPO}/releases/latest"
+# Fetch JSON from GitHub API
+fetch_github() {
+    url="$1"
 
     if command -v curl >/dev/null 2>&1; then
-        response=$(curl -fsSL "$url" 2>/dev/null) || error "Failed to fetch latest version from GitHub"
+        response=$(curl -fsSL "$url" 2>/dev/null) || error "Failed to fetch from GitHub API"
     elif command -v wget >/dev/null 2>&1; then
-        response=$(wget -qO- "$url" 2>/dev/null) || error "Failed to fetch latest version from GitHub"
+        response=$(wget -qO- "$url" 2>/dev/null) || error "Failed to fetch from GitHub API"
     else
         error "Either curl or wget is required"
     fi
 
-    # Extract tag_name from JSON (simple grep, no jq dependency)
+    echo "$response"
+}
+
+# Get latest stable version from GitHub API
+get_latest_stable_version() {
+    response=$(fetch_github "${GITHUB_API}/repos/${REPO}/releases/latest")
+
     version=$(echo "$response" | grep -o '"tag_name"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')
 
     if [ -z "$version" ]; then
-        error "Could not determine latest version"
+        error "Could not determine latest stable version"
     fi
 
-    # Remove 'v' prefix if present
     echo "$version" | sed 's/^v//'
+}
+
+# Get latest beta version from GitHub API
+# /releases/latest only returns stable releases, so we list recent releases and find the first pre-release
+get_latest_beta_version() {
+    response=$(fetch_github "${GITHUB_API}/repos/${REPO}/releases?per_page=20")
+
+    # Find the first release where prerelease is true and extract its tag_name
+    # JSON structure: each release has "prerelease": true/false and "tag_name": "vX.Y.Z-beta.N"
+    version=$(echo "$response" | grep -B5 '"prerelease"[[:space:]]*:[[:space:]]*true' | grep -o '"tag_name"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')
+
+    if [ -z "$version" ]; then
+        error "No beta releases found. Check available releases at ${GITHUB_RELEASES}"
+    fi
+
+    echo "$version" | sed 's/^v//'
+}
+
+# Get latest version based on channel
+get_latest_version() {
+    case "$CHANNEL" in
+        stable) get_latest_stable_version ;;
+        beta)   get_latest_beta_version ;;
+        *)      error "Unknown channel: $CHANNEL. Use 'stable' or 'beta'" ;;
+    esac
 }
 
 # Download file
@@ -164,7 +195,11 @@ add_to_path() {
 }
 
 main() {
-    info "Installing grekt CLI..."
+    if [ "$CHANNEL" = "beta" ]; then
+        info "Installing grekt CLI (beta channel)..."
+    else
+        info "Installing grekt CLI..."
+    fi
     echo
 
     # Detect platform
