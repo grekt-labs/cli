@@ -1,26 +1,38 @@
-import { describe, test, expect } from "bun:test";
-import { openBrowser } from "./oauth";
+import { describe, test, expect, mock, beforeEach } from "bun:test";
+import * as context from "#/context";
+
+// Mock shell.execFile to prevent actually opening a browser
+const execFileMock = mock(() => "");
+beforeEach(() => {
+  execFileMock.mockClear();
+  (context.shell as { execFile: typeof execFileMock }).execFile = execFileMock;
+});
 
 describe("oauth", () => {
   describe("openBrowser", () => {
-    test("returns boolean", () => {
-      // openBrowser will return true/false based on platform command
-      // We can't fully test browser opening without side effects
-      // but we can verify the function signature works
+    test("returns true when shell command succeeds", async () => {
+      const { openBrowser } = await import("./oauth");
       const result = openBrowser("https://example.com");
-      expect(typeof result).toBe("boolean");
+      expect(result).toBe(true);
+      expect(execFileMock).toHaveBeenCalled();
     });
 
-    test("handles URL with special characters", () => {
-      // Should not throw
+    test("returns false when shell command throws", async () => {
+      execFileMock.mockImplementationOnce(() => {
+        throw new Error("command not found");
+      });
+      const { openBrowser } = await import("./oauth");
+      const result = openBrowser("https://example.com");
+      expect(result).toBe(false);
+    });
+
+    test("handles URL with special characters", async () => {
+      const { openBrowser } = await import("./oauth");
       const result = openBrowser("https://example.com/callback?code=abc&state=xyz");
-      expect(typeof result).toBe("boolean");
+      expect(result).toBe(true);
+      expect(execFileMock).toHaveBeenCalled();
     });
   });
-
-  // Note: browserLogin and emailLogin tests require mocking Supabase client
-  // which is complex due to the module structure. These are integration tests
-  // that should be tested with actual Supabase instance or comprehensive mocking.
 
   describe("browserLogin", () => {
     test("is exported as async function", async () => {
