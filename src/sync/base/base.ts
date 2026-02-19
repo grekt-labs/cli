@@ -15,6 +15,7 @@ import { getSafeFilename, generateDefaultBlockContent, GREKT_SECTION_HEADER, GRE
 import { resolveAndAssertWithinBase } from "#/artifact/validation/validation";
 import { fs } from "#/context";
 import { ensureDir, cleanEmptyDir } from "#/shared/filesystem/filesystem";
+import { formatSkipped } from "#/sync/skip-reason/skip-reason";
 
 // MD categories can be synced to folder targets
 const SYNCABLE_CATEGORIES = getCategoriesForFormat("md");
@@ -248,7 +249,7 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
           // Clean up previously synced files for CORE→LAZY transitions
           cleanupArtifactFiles(projectRoot, artifactId, getCategoryDir, getTargetPath, categoriesToSync);
 
-          result.skipped.push(`${artifactId} (lazy mode)`);
+          result.skipped.push(formatSkipped(artifactId, "lazy"));
           continue;
         }
 
@@ -257,7 +258,7 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
         // Scan artifact to determine file categories from frontmatter
         const artifactInfo = scanArtifact(fs, artifactDir);
         if (!artifactInfo) {
-          result.skipped.push(`${artifactId} (invalid artifact)`);
+          result.skipped.push(formatSkipped(artifactId, "invalid-artifact"));
           continue;
         }
 
@@ -279,7 +280,7 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
               resolveAndAssertWithinBase(artifactDir, filePath);
               resolveAndAssertWithinBase(`${projectRoot}/${categoryDir}`, targetName);
             } catch {
-              result.skipped.push(`${artifactId}/${filePath} (unsafe path)`);
+              result.skipped.push(formatSkipped(`${artifactId}/${filePath}`, "unsafe-path"));
               continue;
             }
 
@@ -318,7 +319,7 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
                 });
               }
             } else {
-              result.skipped.push(`${artifactId}/${filePath} (source not found)`);
+              result.skipped.push(formatSkipped(`${artifactId}/${filePath}`, "source-not-found"));
             }
           }
         }
@@ -337,7 +338,7 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
 
       for (const [artifactId] of Object.entries(lockfile.artifacts)) {
         if (!shouldSyncArtifact(options?.projectConfig, artifactId)) {
-          preview.willSkip.push(`${artifactId} (lazy mode)`);
+          preview.willSkip.push(formatSkipped(artifactId, "lazy"));
           continue;
         }
 
@@ -346,7 +347,7 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
         // Scan artifact to determine file categories from frontmatter
         const artifactInfo = scanArtifact(fs, artifactDir);
         if (!artifactInfo) {
-          preview.willSkip.push(`${artifactId} (invalid artifact)`);
+          preview.willSkip.push(formatSkipped(artifactId, "invalid-artifact"));
           continue;
         }
 
@@ -363,7 +364,7 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
             const target = `${projectRoot}/${categoryDir}/${targetName}`;
 
             if (!fs.exists(source)) {
-              preview.willSkip.push(`${artifactId}/${filePath} (source not found)`);
+              preview.willSkip.push(formatSkipped(`${artifactId}/${filePath}`, "source-not-found"));
             } else if (fs.exists(target)) {
               preview.willUpdate.push(`${categoryDir}/${targetName}`);
             } else {
@@ -434,7 +435,7 @@ export function createRulesOnlyPlugin(config: RulesOnlyPluginConfig): SyncPlugin
 
       if (!existing) {
         if (!options.createTarget) {
-          result.skipped.push(`${entryPoints[0]} (file doesn't exist)`);
+          result.skipped.push(formatSkipped(entryPoints[0], "file-not-found"));
           return result;
         }
         const primaryPath = `${projectRoot}/${entryPoints[0]}`;
