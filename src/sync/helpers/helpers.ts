@@ -1,6 +1,7 @@
 import type { Lockfile, ProjectConfig, CustomTarget, SyncPlugin } from "@grekt-labs/cli-engine";
 import { getPlugin } from "#/sync/manager/manager";
 import { success, info, warning, log, colors, symbols, spinner } from "#/shared/ui/ui";
+import { isSkipReason, extractSkippedPath } from "#/sync/skip-reason/skip-reason";
 
 type PluginResolver = (target: string, customTargets?: Record<string, CustomTarget>) => SyncPlugin;
 
@@ -78,11 +79,11 @@ export async function runSync(options: RunSyncOptions): Promise<RunSyncResult> {
     const lazyItems: string[] = [];
     const skippedItems: string[] = [];
 
-    for (const file of syncResult.skipped) {
-      if (file.endsWith("(lazy mode)")) {
-        lazyItems.push(file.replace(" (lazy mode)", ""));
+    for (const entry of syncResult.skipped) {
+      if (isSkipReason(entry, "lazy")) {
+        lazyItems.push(extractSkippedPath(entry, "lazy"));
       } else {
-        skippedItems.push(file);
+        skippedItems.push(entry);
       }
     }
 

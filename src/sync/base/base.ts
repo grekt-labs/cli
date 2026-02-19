@@ -2,8 +2,6 @@ import { basename, dirname, join } from "path";
 import type { SyncPlugin, SyncResult, SyncOptions, SyncPreview, FolderPluginConfig, RulesOnlyPluginConfig, TargetPaths } from "#/sync/sync.types";
 import {
   type Lockfile,
-  type ProjectConfig,
-  type ArtifactMode,
   type Category,
   CATEGORIES,
   CATEGORY_CONFIG,
@@ -15,6 +13,8 @@ import { getSafeFilename, generateDefaultBlockContent, GREKT_SECTION_HEADER, GRE
 import { resolveAndAssertWithinBase } from "#/artifact/validation/validation";
 import { fs } from "#/context";
 import { ensureDir, cleanEmptyDir } from "#/shared/filesystem/filesystem";
+import { formatSkipped } from "#/sync/skip-reason/skip-reason";
+import { shouldSyncArtifact, shouldUseSymlinks } from "#/artifact/mode/mode";
 
 // MD categories can be synced to folder targets
 const SYNCABLE_CATEGORIES = getCategoriesForFormat("md");
@@ -44,38 +44,6 @@ export function findEntryPointPath(projectRoot: string, entryPoint: string): str
 export { getSafeFilename } from "@grekt-labs/cli-engine";
 export type { FolderPluginConfig, RulesOnlyPluginConfig, TargetPaths } from "@grekt-labs/cli-engine";
 
-/**
- * Get the sync mode for an artifact from the project config.
- * Default is "lazy" if not specified.
- */
-function getArtifactMode(config: ProjectConfig | undefined, artifactId: string): ArtifactMode {
-  if (!config) return "lazy";
-
-  const entry = config.artifacts[artifactId];
-  if (!entry) return "lazy";
-
-  if (typeof entry === "string") {
-    return "lazy"; // Version string = lazy mode
-  }
-
-  return entry.mode ?? "lazy";
-}
-
-/**
- * Check if an artifact should be synced (copied/symlinked to target).
- * Only CORE and CORE-SYM mode artifacts are synced. LAZY mode artifacts are only in the index.
- */
-function shouldSyncArtifact(config: ProjectConfig | undefined, artifactId: string): boolean {
-  const mode = getArtifactMode(config, artifactId);
-  return mode === "core" || mode === "core-sym";
-}
-
-/**
- * Check if an artifact should use symlinks instead of copies.
- */
-function shouldUseSymlinks(config: ProjectConfig | undefined, artifactId: string): boolean {
-  return getArtifactMode(config, artifactId) === "core-sym";
-}
 
 /**
  * Find the first existing entry point from an array of candidates.
@@ -247,11 +215,11 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
 
       // Sync each artifact (only CORE mode artifacts are copied)
       for (const [artifactId] of Object.entries(lockfile.artifacts)) {
-        if (!shouldSyncArtifact(options.projectConfig, artifactId)) {
+        if (!shouldSyncArtifact(artifactId, options.projectConfig)) {
           // Clean up previously synced files for CORE→LAZY transitions
           cleanupArtifactFiles(projectRoot, artifactId, getCategoryDir, getTargetPath, categoriesToSync);
 
-          result.skipped.push(`${artifactId} (lazy mode)`);
+          result.skipped.push(formatSkipped(artifactId, "lazy"));
           continue;
         }
 
@@ -260,7 +228,7 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
         // Scan artifact to determine file categories from frontmatter
         const artifactInfo = scanArtifact(fs, artifactDir);
         if (!artifactInfo) {
-          result.skipped.push(`${artifactId} (invalid artifact)`);
+          result.skipped.push(formatSkipped(artifactId, "invalid-artifact"));
           continue;
         }
 
@@ -282,14 +250,14 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
               resolveAndAssertWithinBase(artifactDir, filePath);
               resolveAndAssertWithinBase(`${projectRoot}/${categoryDir}`, targetName);
             } catch {
-              result.skipped.push(`${artifactId}/${filePath} (unsafe path)`);
+              result.skipped.push(formatSkipped(`${artifactId}/${filePath}`, "unsafe-path"));
               continue;
             }
 
             if (fs.exists(source)) {
               ensureDir(target);
               const existed = fs.exists(target);
-              const useSymlinks = shouldUseSymlinks(options.projectConfig, artifactId);
+              const useSymlinks = shouldUseSymlinks(artifactId, options.projectConfig);
 
               if (existed) {
                 fs.unlink(target);
@@ -321,7 +289,7 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
                 });
               }
             } else {
-              result.skipped.push(`${artifactId}/${filePath} (source not found)`);
+              result.skipped.push(formatSkipped(`${artifactId}/${filePath}`, "source-not-found"));
             }
           }
         }
@@ -339,8 +307,8 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
       }
 
       for (const [artifactId] of Object.entries(lockfile.artifacts)) {
-        if (!shouldSyncArtifact(options?.projectConfig, artifactId)) {
-          preview.willSkip.push(`${artifactId} (lazy mode)`);
+        if (!shouldSyncArtifact(artifactId, options?.projectConfig)) {
+          preview.willSkip.push(formatSkipped(artifactId, "lazy"));
           continue;
         }
 
@@ -349,7 +317,7 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
         // Scan artifact to determine file categories from frontmatter
         const artifactInfo = scanArtifact(fs, artifactDir);
         if (!artifactInfo) {
-          preview.willSkip.push(`${artifactId} (invalid artifact)`);
+          preview.willSkip.push(formatSkipped(artifactId, "invalid-artifact"));
           continue;
         }
 
@@ -366,7 +334,7 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
             const target = `${projectRoot}/${categoryDir}/${targetName}`;
 
             if (!fs.exists(source)) {
-              preview.willSkip.push(`${artifactId}/${filePath} (source not found)`);
+              preview.willSkip.push(formatSkipped(`${artifactId}/${filePath}`, "source-not-found"));
             } else if (fs.exists(target)) {
               preview.willUpdate.push(`${categoryDir}/${targetName}`);
             } else {
@@ -437,7 +405,7 @@ export function createRulesOnlyPlugin(config: RulesOnlyPluginConfig): SyncPlugin
 
       if (!existing) {
         if (!options.createTarget) {
-          result.skipped.push(`${entryPoints[0]} (file doesn't exist)`);
+          result.skipped.push(formatSkipped(entryPoints[0], "file-not-found"));
           return result;
         }
         const primaryPath = `${projectRoot}/${entryPoints[0]}`;

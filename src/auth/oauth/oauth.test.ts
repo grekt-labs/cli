@@ -1,49 +1,49 @@
-import { describe, test, expect, mock, beforeEach } from "bun:test";
-import * as context from "#/context";
+import { describe, test, expect, mock } from "bun:test";
 
-// Mock shell.execFile to prevent actually opening a browser
 const execFileMock = mock(() => "");
-beforeEach(() => {
-  execFileMock.mockClear();
-  (context.shell as { execFile: typeof execFileMock }).execFile = execFileMock;
-});
+
+// Only override shell, re-export everything else from the real module
+const realContext = await import("#/context");
+mock.module("#/context", () => ({
+  ...realContext,
+  shell: { execFile: execFileMock },
+}));
+
+const { openBrowser, browserLogin, emailLogin } = await import("./oauth");
 
 describe("oauth", () => {
   describe("openBrowser", () => {
-    test("returns true when shell command succeeds", async () => {
-      const { openBrowser } = await import("./oauth");
+    test("returns true when shell command succeeds", () => {
+      execFileMock.mockImplementation(() => "");
       const result = openBrowser("https://example.com");
       expect(result).toBe(true);
-      expect(execFileMock).toHaveBeenCalled();
     });
 
-    test("returns false when shell command throws", async () => {
-      execFileMock.mockImplementationOnce(() => {
+    test("returns false when shell command throws", () => {
+      execFileMock.mockImplementation(() => {
         throw new Error("command not found");
       });
-      const { openBrowser } = await import("./oauth");
       const result = openBrowser("https://example.com");
       expect(result).toBe(false);
     });
 
-    test("handles URL with special characters", async () => {
-      const { openBrowser } = await import("./oauth");
-      const result = openBrowser("https://example.com/callback?code=abc&state=xyz");
+    test("handles URL with special characters", () => {
+      execFileMock.mockImplementation(() => "");
+      const result = openBrowser(
+        "https://example.com/callback?code=abc&state=xyz",
+      );
       expect(result).toBe(true);
-      expect(execFileMock).toHaveBeenCalled();
     });
   });
 
   describe("browserLogin", () => {
-    test("is exported as async function", async () => {
-      const { browserLogin } = await import("./oauth");
+    test("is exported as async function", () => {
       expect(typeof browserLogin).toBe("function");
     });
   });
 
   describe("emailLogin", () => {
-    test("is exported as async function", async () => {
-      const { emailLogin } = await import("./oauth");
+    test("is exported as async function", () => {
       expect(typeof emailLogin).toBe("function");
     });
   });

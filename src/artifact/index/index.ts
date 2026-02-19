@@ -8,45 +8,19 @@ import {
   CATEGORIES,
   createCategoryRecord,
   type IndexGeneratorInput,
-  type ArtifactMode,
   type ProjectConfig,
   type Lockfile,
   type CategoryFilePaths,
 } from "@grekt-labs/cli-engine";
-
-/**
- * Get the sync mode for an artifact.
- * Priority: lockfile > config > default (lazy)
- */
-function getArtifactMode(
-  lockfile: Lockfile,
-  config: ProjectConfig,
-  artifactId: string
-): ArtifactMode {
-  // First check lockfile (source of truth for installed artifacts)
-  const lockEntry = lockfile.artifacts[artifactId];
-  if (lockEntry?.mode) {
-    return lockEntry.mode;
-  }
-
-  // Fall back to config
-  const configEntry = config.artifacts[artifactId];
-  if (!configEntry) return "lazy";
-
-  if (typeof configEntry === "string") {
-    return "lazy"; // Version string = lazy mode
-  }
-
-  return configEntry.mode ?? "lazy";
-}
+import { getArtifactMode } from "#/artifact/mode/mode";
 
 /**
  * Scan all installed artifacts and generate the index file.
  * Includes ALL artifacts (CORE and LAZY) for observability.
  */
-export function generateArtifactIndex(projectRoot: string, config: ProjectConfig): void {
+export function generateArtifactIndex(projectRoot: string, config: ProjectConfig, lockfile?: Lockfile): void {
   const artifactsDir = join(projectRoot, ARTIFACTS_DIR);
-  const lockfile = getLockfile(projectRoot);
+  lockfile ??= getLockfile(projectRoot);
   const inputs: IndexGeneratorInput[] = [];
 
   // Only scan if artifacts directory exists
@@ -71,7 +45,7 @@ export function generateArtifactIndex(projectRoot: string, config: ProjectConfig
 
         if (!scanned) continue;
 
-        const mode = getArtifactMode(lockfile, config, artifactId);
+        const mode = getArtifactMode(artifactId, config, lockfile);
         const keywords = scanned.manifest.keywords ?? [];
 
         // Build components map dynamically from categories

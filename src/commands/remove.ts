@@ -165,7 +165,7 @@ export const removeCommand = new Command("remove")
     saveLockfile(lockfile, projectRoot);
 
     // Regenerate artifact index
-    generateArtifactIndex(projectRoot, config);
+    generateArtifactIndex(projectRoot, config, lockfile);
 
     newline();
     success(`Removed ${colors.highlight(artifactId)}`);

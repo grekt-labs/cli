@@ -1,9 +1,9 @@
 import { join } from "path";
-import { REGISTRY_URL } from "#/constants";
+import { REGISTRY_URL, LOCKFILE } from "#/constants";
 
 // Project-level paths (relative to project root)
 export const GREKT_YAML = "grekt.yaml"; // project config: sync targets and artifact declarations
-export const LOCKFILE = "grekt.lock"; // pinned versions, integrity hashes, resolved URLs
+export { LOCKFILE }; // re-export from constants (canonical source)
 
 // Hidden directory for artifacts (gitignored, stores downloaded artifacts)
 export const GREKT_DIR = ".grekt";

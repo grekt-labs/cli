@@ -1,8 +1,9 @@
 import { Command } from "commander";
 import { requireInitialized } from "#/shared/guards/guards";
 import { getLockfile } from "#/context";
-import { createRegistryClient } from "#/registry/api-client/api-client";
-import { compareSemver } from "@grekt-labs/cli-engine";
+import { resolveRegistry, createRegistryClient } from "#/registry/factory/factory";
+import { getLocalConfig } from "#/config/project/project";
+import { compareSemver, parseArtifactId } from "@grekt-labs/cli-engine";
 import { error, info, log, colors, spinner } from "#/shared/ui/ui";
 
 interface OutdatedEntry {
@@ -41,18 +42,21 @@ export const outdatedCommand = new Command("outdated")
     const spin = spinner("Checking for updates...");
     spin.start();
 
-    const client = createRegistryClient();
+    const localConfig = getLocalConfig(projectRoot);
     const results: OutdatedEntry[] = [];
 
     for (const [artifactId, entry] of registryArtifacts) {
       try {
-        const metadata = await client.getArtifact(artifactId);
-        if (metadata) {
-          const isOutdated = compareSemver(entry.version, metadata.latest) < 0;
+        const { scope } = parseArtifactId(artifactId);
+        const registry = resolveRegistry(scope, localConfig, projectRoot);
+        const client = createRegistryClient(registry);
+        const latest = await client.getLatestVersion(artifactId);
+        if (latest) {
+          const isOutdated = compareSemver(entry.version, latest) < 0;
           results.push({
             artifactId,
             current: entry.version,
-            latest: metadata.latest,
+            latest,
             isOutdated,
           });
         }
