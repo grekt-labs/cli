@@ -44,9 +44,9 @@ function getArtifactMode(
  * Scan all installed artifacts and generate the index file.
  * Includes ALL artifacts (CORE and LAZY) for observability.
  */
-export function generateArtifactIndex(projectRoot: string, config: ProjectConfig): void {
+export function generateArtifactIndex(projectRoot: string, config: ProjectConfig, lockfile?: Lockfile): void {
   const artifactsDir = join(projectRoot, ARTIFACTS_DIR);
-  const lockfile = getLockfile(projectRoot);
+  lockfile ??= getLockfile(projectRoot);
   const inputs: IndexGeneratorInput[] = [];
 
   // Only scan if artifacts directory exists
