@@ -2,6 +2,7 @@ import { basename } from "path";
 import { createFolderPlugin } from "#/sync/base/base";
 import { toSafeName, scanArtifact, GREKT_SECTION_HEADER, type Lockfile, type Category } from "@grekt-labs/cli-engine";
 import { copySiblingFiles } from "#/sync/helpers/siblings";
+import { writeSkillRouter } from "#/sync/helpers/skillRouter";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
 import { fs } from "#/context";
 import matter from "gray-matter";
@@ -131,6 +132,9 @@ export const openclawPlugin = createFolderPlugin({
   },
   afterFileSync: ({ sourcePath, sourceDir, targetDir }) => {
     copySiblingFiles(sourceDir, targetDir, sourcePath);
+  },
+  setup: (projectRoot) => {
+    writeSkillRouter(projectRoot, TARGET_DIR);
   },
 });
 
