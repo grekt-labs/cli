@@ -2,8 +2,6 @@ import { basename, dirname, join } from "path";
 import type { SyncPlugin, SyncResult, SyncOptions, SyncPreview, FolderPluginConfig, RulesOnlyPluginConfig, TargetPaths } from "#/sync/sync.types";
 import {
   type Lockfile,
-  type ProjectConfig,
-  type ArtifactMode,
   type Category,
   CATEGORIES,
   CATEGORY_CONFIG,
@@ -16,6 +14,7 @@ import { resolveAndAssertWithinBase } from "#/artifact/validation/validation";
 import { fs } from "#/context";
 import { ensureDir, cleanEmptyDir } from "#/shared/filesystem/filesystem";
 import { formatSkipped } from "#/sync/skip-reason/skip-reason";
+import { shouldSyncArtifact, shouldUseSymlinks } from "#/artifact/mode/mode";
 
 // MD categories can be synced to folder targets
 const SYNCABLE_CATEGORIES = getCategoriesForFormat("md");
@@ -45,38 +44,6 @@ export function findEntryPointPath(projectRoot: string, entryPoint: string): str
 export { getSafeFilename } from "@grekt-labs/cli-engine";
 export type { FolderPluginConfig, RulesOnlyPluginConfig, TargetPaths } from "@grekt-labs/cli-engine";
 
-/**
- * Get the sync mode for an artifact from the project config.
- * Default is "lazy" if not specified.
- */
-function getArtifactMode(config: ProjectConfig | undefined, artifactId: string): ArtifactMode {
-  if (!config) return "lazy";
-
-  const entry = config.artifacts[artifactId];
-  if (!entry) return "lazy";
-
-  if (typeof entry === "string") {
-    return "lazy"; // Version string = lazy mode
-  }
-
-  return entry.mode ?? "lazy";
-}
-
-/**
- * Check if an artifact should be synced (copied/symlinked to target).
- * Only CORE and CORE-SYM mode artifacts are synced. LAZY mode artifacts are only in the index.
- */
-function shouldSyncArtifact(config: ProjectConfig | undefined, artifactId: string): boolean {
-  const mode = getArtifactMode(config, artifactId);
-  return mode === "core" || mode === "core-sym";
-}
-
-/**
- * Check if an artifact should use symlinks instead of copies.
- */
-function shouldUseSymlinks(config: ProjectConfig | undefined, artifactId: string): boolean {
-  return getArtifactMode(config, artifactId) === "core-sym";
-}
 
 /**
  * Find the first existing entry point from an array of candidates.
@@ -245,7 +212,7 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
 
       // Sync each artifact (only CORE mode artifacts are copied)
       for (const [artifactId] of Object.entries(lockfile.artifacts)) {
-        if (!shouldSyncArtifact(options.projectConfig, artifactId)) {
+        if (!shouldSyncArtifact(artifactId, options.projectConfig)) {
           // Clean up previously synced files for CORE→LAZY transitions
           cleanupArtifactFiles(projectRoot, artifactId, getCategoryDir, getTargetPath, categoriesToSync);
 
@@ -287,7 +254,7 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
             if (fs.exists(source)) {
               ensureDir(target);
               const existed = fs.exists(target);
-              const useSymlinks = shouldUseSymlinks(options.projectConfig, artifactId);
+              const useSymlinks = shouldUseSymlinks(artifactId, options.projectConfig);
 
               if (existed) {
                 fs.unlink(target);
@@ -337,7 +304,7 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
       }
 
       for (const [artifactId] of Object.entries(lockfile.artifacts)) {
-        if (!shouldSyncArtifact(options?.projectConfig, artifactId)) {
+        if (!shouldSyncArtifact(artifactId, options?.projectConfig)) {
           preview.willSkip.push(formatSkipped(artifactId, "lazy"));
           continue;
         }
