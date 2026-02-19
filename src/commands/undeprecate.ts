@@ -11,22 +11,7 @@ import {
   undeprecateVersion,
 } from "#/registry/metadata/metadata";
 import { success, error, info, log, colors, spinner } from "#/shared/ui/ui";
-
-/**
- * Parse "@author/name@version" format.
- * Returns null if format is invalid.
- */
-function parseArtifactVersion(input: string): { artifactId: string; version: string } | null {
-  const ARTIFACT_AT_VERSION = /^(?<artifactId>@[^@]+)@(?<version>.+)$/;
-
-  const match = input.match(ARTIFACT_AT_VERSION);
-  if (!match?.groups?.artifactId || !match?.groups?.version) return null;
-
-  return {
-    artifactId: match.groups.artifactId,
-    version: match.groups.version,
-  };
-}
+import { parseArtifactVersion } from "#/artifact/version-parser/version-parser";
 
 interface UndeprecateOptions {
   s3?: boolean;
