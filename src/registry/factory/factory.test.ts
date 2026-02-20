@@ -4,7 +4,7 @@ import type { LocalConfig } from "#/registry/registry.types";
 
 describe("factory", () => {
   describe("createRegistryClient", () => {
-    test("returns client for default type", () => {
+    test("returns default client with download and publish capabilities", () => {
       const registry = {
         type: "default" as const,
         host: "registry.grekt.com",
@@ -12,12 +12,11 @@ describe("factory", () => {
 
       const client = createRegistryClient(registry);
 
-      expect(client).toBeDefined();
-      expect(typeof client.download).toBe("function");
-      expect(typeof client.publish).toBe("function");
+      expect(client.download).toBeFunction();
+      expect(client.publish).toBeFunction();
     });
 
-    test("returns client for gitlab type", () => {
+    test("returns gitlab client with download capability", () => {
       const registry = {
         type: "gitlab" as const,
         host: "gitlab.com",
@@ -26,8 +25,7 @@ describe("factory", () => {
 
       const client = createRegistryClient(registry);
 
-      expect(client).toBeDefined();
-      expect(typeof client.download).toBe("function");
+      expect(client.download).toBeFunction();
     });
 
     test("throws for gitlab without project", () => {

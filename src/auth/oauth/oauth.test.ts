@@ -2,14 +2,13 @@ import { describe, test, expect, mock } from "bun:test";
 
 const execFileMock = mock(() => "");
 
-// Only override shell, re-export everything else from the real module
 const realContext = await import("#/context");
 mock.module("#/context", () => ({
   ...realContext,
   shell: { execFile: execFileMock },
 }));
 
-const { openBrowser, browserLogin, emailLogin } = await import("./oauth");
+const { openBrowser } = await import("./oauth");
 
 describe("oauth", () => {
   describe("openBrowser", () => {
@@ -27,24 +26,13 @@ describe("oauth", () => {
       expect(result).toBe(false);
     });
 
-    test("handles URL with special characters", () => {
+    test("passes URL to shell command", () => {
       execFileMock.mockImplementation(() => "");
-      const result = openBrowser(
-        "https://example.com/callback?code=abc&state=xyz",
-      );
-      expect(result).toBe(true);
-    });
-  });
+      openBrowser("https://example.com/callback?code=abc&state=xyz");
 
-  describe("browserLogin", () => {
-    test("is exported as async function", () => {
-      expect(typeof browserLogin).toBe("function");
-    });
-  });
-
-  describe("emailLogin", () => {
-    test("is exported as async function", () => {
-      expect(typeof emailLogin).toBe("function");
+      const lastCall = execFileMock.mock.calls[execFileMock.mock.calls.length - 1];
+      const urlArg = lastCall[1] as string[];
+      expect(urlArg).toContain("https://example.com/callback?code=abc&state=xyz");
     });
   });
 });

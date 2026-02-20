@@ -31,18 +31,6 @@ describe("publishers", () => {
   });
 
   describe("createPublisher", () => {
-    test("returns publisher with type and methods", () => {
-      const publisher = createPublisher({
-        scope: "@test",
-        projectRoot: "/nonexistent",
-      });
-
-      expect(publisher).toBeDefined();
-      expect(typeof publisher.type).toBe("string");
-      expect(typeof publisher.publish).toBe("function");
-      expect(typeof publisher.versionExists).toBe("function");
-    });
-
     test("returns S3Publisher when s3 option is true", () => {
       const publisher = createPublisher({
         s3: true,

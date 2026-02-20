@@ -252,16 +252,15 @@ describe("helpers", () => {
   });
 
   describe("syncToTargets", () => {
-    test("does nothing when no targets configured", async () => {
+    test("returns without error when no targets configured", async () => {
       const config: ProjectConfig = {
         targets: [],
         artifacts: {},
         customTargets: {},
       };
 
-      // syncToTargets returns early before calling any plugin
-      // so this should complete without errors
-      await syncToTargets(config, baseLockfile, "/tmp/test");
+      const result = await syncToTargets(config, baseLockfile, "/tmp/test");
+      expect(result).toBeUndefined();
     });
   });
 });

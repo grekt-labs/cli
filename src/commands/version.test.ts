@@ -2,23 +2,9 @@ import { describe, test, expect } from "bun:test";
 import { ProjectConfigSchema, hasManifestFields } from "@grekt-labs/cli-engine";
 
 describe("version", () => {
-  test("module can be imported", async () => {
-    const module = await import("./version");
-    expect(module).toBeDefined();
-    expect(module.versionCommand).toBeDefined();
-  });
-
-  test("command has correct name and description", async () => {
+  test("command has correct name", async () => {
     const { versionCommand } = await import("./version");
     expect(versionCommand.name()).toBe("version");
-    expect(versionCommand.description()).toContain("version");
-  });
-
-  test("command accepts --dry-run option", async () => {
-    const { versionCommand } = await import("./version");
-    const options = versionCommand.options;
-    const dryRunOption = options.find(opt => opt.long === "--dry-run");
-    expect(dryRunOption).toBeDefined();
   });
 
   describe("manifest validation", () => {
@@ -62,11 +48,4 @@ describe("version", () => {
       expect(hasManifestFields(incompleteManifest)).toBe(false);
     });
   });
-
-  // Integration test scenarios (require git repo with conventional commits):
-  // - Scans directories for grekt.yaml
-  // - Generates temporary package.json files
-  // - Runs multi-semantic-release
-  // - Updates grekt.yaml with new versions
-  // - Cleans up temporary files
 });

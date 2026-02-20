@@ -59,12 +59,6 @@ describe("api-client", () => {
     vi.restoreAllMocks();
   });
 
-  test("module exports RegistryClient", async () => {
-    const module = await import("./api-client");
-    expect(module.RegistryClient).toBeDefined();
-    expect(module.createRegistryClient).toBeDefined();
-  });
-
   test("getArtifact returns metadata with latest semver and updatedAt", async () => {
     mockSupabase = createSupabaseMock({
       artifacts: {
