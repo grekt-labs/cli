@@ -1,7 +1,8 @@
 import { Command } from "commander";
 import { requireInitialized } from "#/shared/guards/guards";
 import { getLockfile } from "#/context";
-import { runCheck, displayCheckResults } from "#/artifact/check/check";
+import { runCheck } from "#/artifact/check/check";
+import { displayCheckResults } from "#/artifact/check/display";
 import { error, info, newline } from "#/shared/ui/ui";
 
 export const checkCommand = new Command("check")
@@ -19,7 +20,7 @@ export const checkCommand = new Command("check")
       process.exit(0);
     }
 
-    const summary = runCheck(projectRoot);
+    const summary = runCheck(projectRoot, lockfile);
     displayCheckResults(summary, lockfile);
 
     if (!summary.healthy) {

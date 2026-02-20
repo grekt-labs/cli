@@ -197,7 +197,7 @@ export const installCommand = new Command("install")
 
     // Generate artifact index
     const config = getConfig(projectRoot);
-    generateArtifactIndex(projectRoot, config);
+    generateArtifactIndex(projectRoot, config, lockfile);
 
     // Auto-sync to targets (same as add/upgrade)
     await syncToTargets(config, lockfile, projectRoot);

@@ -106,7 +106,7 @@ export const upgradeCommand = new Command("upgrade")
     saveLockfile(lockfile, projectRoot);
 
     // Regenerate index
-    generateArtifactIndex(projectRoot, config);
+    generateArtifactIndex(projectRoot, config, lockfile);
 
     // Auto-sync to targets
     newline();

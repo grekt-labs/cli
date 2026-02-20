@@ -1,6 +1,8 @@
 import { Command } from "commander";
-import { createRegistryClient } from "#/registry/api-client/api-client";
-import { isAuthenticated, setProjectRoot } from "#/auth/session/session";
+import { parseArtifactId, type DefaultRegistryOperations } from "@grekt-labs/cli-engine";
+import { resolveRegistry, createRegistryClient } from "#/registry/factory/factory";
+import { getLocalConfig } from "#/config/project/project";
+import { isAuthenticated } from "#/auth/session/session";
 import { requireInitialized } from "#/shared/guards/guards";
 import { getS3CredentialsFromEnv } from "#/registry/publishers/s3-publisher";
 import {
@@ -10,22 +12,7 @@ import {
   deprecateVersion,
 } from "#/registry/metadata/metadata";
 import { success, error, info, log, colors, spinner } from "#/shared/ui/ui";
-
-/**
- * Parse "@author/name@version" format.
- * Returns null if format is invalid.
- */
-function parseArtifactVersion(input: string): { artifactId: string; version: string } | null {
-  const ARTIFACT_AT_VERSION = /^(?<artifactId>@[^@]+)@(?<version>.+)$/;
-
-  const match = input.match(ARTIFACT_AT_VERSION);
-  if (!match?.groups?.artifactId || !match?.groups?.version) return null;
-
-  return {
-    artifactId: match.groups.artifactId,
-    version: match.groups.version,
-  };
-}
+import { parseArtifactVersion } from "#/artifact/version-parser/version-parser";
 
 interface DeprecateCommandOptions {
   message: string;
@@ -36,6 +23,7 @@ interface DeprecateOperationParams {
   artifactId: string;
   version: string;
   message: string;
+  projectRoot: string;
 }
 
 export const deprecateCommand = new Command("deprecate")
@@ -55,9 +43,6 @@ export const deprecateCommand = new Command("deprecate")
 
     requireInitialized(projectRoot);
 
-    // Set project root for session operations
-    setProjectRoot(projectRoot);
-
     const parsed = parseArtifactVersion(artifactVersion);
     if (!parsed) {
       error("Invalid format. Use: @author/name@version");
@@ -66,7 +51,7 @@ export const deprecateCommand = new Command("deprecate")
 
     const { artifactId, version } = parsed;
 
-    const params: DeprecateOperationParams = { artifactId, version, message: options.message };
+    const params: DeprecateOperationParams = { artifactId, version, message: options.message, projectRoot };
 
     if (options.s3) {
       await deprecateS3(params);
@@ -79,7 +64,7 @@ export const deprecateCommand = new Command("deprecate")
  * Deprecate using the API-based registry
  */
 async function deprecateApi(params: DeprecateOperationParams): Promise<void> {
-  const { artifactId, version, message } = params;
+  const { artifactId, version, message, projectRoot } = params;
   const authenticated = await isAuthenticated();
 
   if (!authenticated) {
@@ -90,7 +75,11 @@ async function deprecateApi(params: DeprecateOperationParams): Promise<void> {
     process.exit(1);
   }
 
-  const client = createRegistryClient();
+  const localConfig = getLocalConfig(projectRoot);
+  const { scope } = parseArtifactId(artifactId);
+  const registry = resolveRegistry(scope, localConfig, projectRoot);
+  const client = createRegistryClient(registry) as ReturnType<typeof createRegistryClient> & DefaultRegistryOperations;
+
   const spin = spinner("Deprecating version...");
   spin.start();
 

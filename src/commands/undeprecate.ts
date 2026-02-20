@@ -1,6 +1,8 @@
 import { Command } from "commander";
-import { createRegistryClient } from "#/registry/api-client/api-client";
-import { isAuthenticated, setProjectRoot } from "#/auth/session/session";
+import { parseArtifactId, type DefaultRegistryOperations } from "@grekt-labs/cli-engine";
+import { resolveRegistry, createRegistryClient } from "#/registry/factory/factory";
+import { getLocalConfig } from "#/config/project/project";
+import { isAuthenticated } from "#/auth/session/session";
 import { requireInitialized } from "#/shared/guards/guards";
 import { getS3CredentialsFromEnv } from "#/registry/publishers/s3-publisher";
 import {
@@ -9,22 +11,7 @@ import {
   undeprecateVersion,
 } from "#/registry/metadata/metadata";
 import { success, error, info, log, colors, spinner } from "#/shared/ui/ui";
-
-/**
- * Parse "@author/name@version" format.
- * Returns null if format is invalid.
- */
-function parseArtifactVersion(input: string): { artifactId: string; version: string } | null {
-  const ARTIFACT_AT_VERSION = /^(?<artifactId>@[^@]+)@(?<version>.+)$/;
-
-  const match = input.match(ARTIFACT_AT_VERSION);
-  if (!match?.groups?.artifactId || !match?.groups?.version) return null;
-
-  return {
-    artifactId: match.groups.artifactId,
-    version: match.groups.version,
-  };
-}
+import { parseArtifactVersion } from "#/artifact/version-parser/version-parser";
 
 interface UndeprecateOptions {
   s3?: boolean;
@@ -45,9 +32,6 @@ export const undeprecateCommand = new Command("undeprecate")
 
     requireInitialized(projectRoot);
 
-    // Set project root for session operations
-    setProjectRoot(projectRoot);
-
     const parsed = parseArtifactVersion(artifactVersion);
     if (!parsed) {
       error("Invalid format. Use: @author/name@version");
@@ -59,14 +43,14 @@ export const undeprecateCommand = new Command("undeprecate")
     if (options.s3) {
       await undeprecateS3(artifactId, version);
     } else {
-      await undeprecateApi(artifactId, version);
+      await undeprecateApi(artifactId, version, projectRoot);
     }
   });
 
 /**
  * Undeprecate using the API-based registry
  */
-async function undeprecateApi(artifactId: string, version: string): Promise<void> {
+async function undeprecateApi(artifactId: string, version: string, projectRoot: string): Promise<void> {
   const authenticated = await isAuthenticated();
 
   if (!authenticated) {
@@ -77,7 +61,11 @@ async function undeprecateApi(artifactId: string, version: string): Promise<void
     process.exit(1);
   }
 
-  const client = createRegistryClient();
+  const localConfig = getLocalConfig(projectRoot);
+  const { scope } = parseArtifactId(artifactId);
+  const registry = resolveRegistry(scope, localConfig, projectRoot);
+  const client = createRegistryClient(registry) as ReturnType<typeof createRegistryClient> & DefaultRegistryOperations;
+
   const spin = spinner("Removing deprecation...");
   spin.start();
 

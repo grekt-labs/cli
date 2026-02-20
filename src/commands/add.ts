@@ -276,7 +276,7 @@ export const addCommand = new Command("add")
     saveLockfile(lockfile, projectRoot);
 
     // Regenerate artifact index
-    generateArtifactIndex(projectRoot, config);
+    generateArtifactIndex(projectRoot, config, lockfile);
 
     newline();
     const modeLabel = isCore ? ` ${colors.dim(`(${resolvedMode})`)}` : "";

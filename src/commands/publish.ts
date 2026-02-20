@@ -14,12 +14,10 @@ import {
 } from "#/artifact/publish/publish";
 import type { ValidationError } from "#/artifact/publish/publish";
 import type { PublishContext, Publisher } from "#/registry/publishers/publisher.types";
-import { CustomPublisher } from "#/registry/publishers/custom-publisher";
-import { RegistryError } from "#/registry/api-client/registry-error";
-import { CATEGORIES, isWorkspaceRoot, compareSemver } from "@grekt-labs/cli-engine";
+import { RegistryApiError, CATEGORIES, isWorkspaceRoot, compareSemver } from "@grekt-labs/cli-engine";
 import { success, error, info, log, colors, spinner } from "#/shared/ui/ui";
 import { logComponentSummary } from "./display";
-import { loadWorkspace } from "./workspace";
+import { loadWorkspace } from "#/workspace/workspace";
 import { fs } from "#/context";
 
 interface PublishOptions {
@@ -177,7 +175,7 @@ async function publishSingleArtifact(
   }
 
   const { artifact, components } = validated;
-  const categories = Object.keys(components);
+  const categories = Object.keys(components ?? {});
 
   if (categories.length === 0) {
     error(`Artifact must contain at least one component (${CATEGORIES.join(", ")})`);
@@ -265,7 +263,7 @@ async function publishSingleArtifact(
 
   if (isApproachingSizeLimit(tarballSize) && !silent) {
     log("");
-    log(colors.yellow(`Warning: Artifact is ${formatBytes(tarballSize)} (approaching limit)`));
+    log(colors.warning(`Warning: Artifact is ${formatBytes(tarballSize)} (approaching limit)`));
     log("");
   }
 
@@ -299,9 +297,9 @@ async function publishSingleArtifact(
     spin?.stop();
     removeTarball(tarballPath);
 
-    if (err instanceof RegistryError) {
+    if (err instanceof RegistryApiError) {
       error(err.message);
-      showRegistryErrorHint(err);
+      showRegistryApiErrorHint(err);
       throw err;
     }
 
@@ -312,11 +310,8 @@ async function publishSingleArtifact(
   if (!publishResult.success) {
     removeTarball(tarballPath);
 
-    if (publisher instanceof CustomPublisher) {
-      const registry = publisher.getRegistry();
-      if (registry.type === "gitlab" && !registry.token) {
-        showGitLabHelp(artifact.scope, projectRoot);
-      }
+    if (publisher.type === "gitlab") {
+      showGitLabHelp(artifact.scope, projectRoot);
     }
 
     throw new Error(`Publish failed: ${publishResult.error}`);
@@ -395,7 +390,7 @@ const REGISTRY_ERROR_HINTS: Record<string, string> = {
   INVALID_CATEGORIES: `Artifact categories are invalid. Valid categories: ${CATEGORIES.join(", ")}`,
 };
 
-function showRegistryErrorHint(err: RegistryError): void {
+function showRegistryApiErrorHint(err: RegistryApiError): void {
   const hint = REGISTRY_ERROR_HINTS[err.code];
   if (hint) {
     info(hint);
@@ -411,9 +406,8 @@ function showRegistryErrorHint(err: RegistryError): void {
 }
 
 function showAuthHelp(publisher: Publisher): void {
-  if (publisher instanceof CustomPublisher) {
-    const registry = publisher.getRegistry();
-    error(`Authentication failed for ${registry.type} registry`);
+  if (publisher.type !== "api" && publisher.type !== "s3") {
+    error(`Authentication failed for ${publisher.type} registry`);
     info("Verify your token and registry URL in .grekt/config.yaml");
   } else {
     error("Not authenticated. Run 'grekt login' or check that the registry is reachable");

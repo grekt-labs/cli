@@ -1,5 +1,6 @@
 import { describe, test, expect, beforeEach, afterEach } from "bun:test";
 import { parseArtifactId, resolveRegistry, resolveRegistryForArtifact } from "./resolver";
+import { parseArtifactId as engineParseArtifactId } from "@grekt-labs/cli-engine";
 import type { LocalConfig } from "#/registry/registry.types";
 
 describe("resolver", () => {
@@ -37,6 +38,10 @@ describe("resolver", () => {
     test("throws on invalid format", () => {
       expect(() => parseArtifactId("invalid")).toThrow("Invalid artifact ID");
       expect(() => parseArtifactId("no-scope")).toThrow("Invalid artifact ID");
+    });
+
+    test("re-export matches cli-engine implementation", () => {
+      expect(parseArtifactId).toBe(engineParseArtifactId);
     });
   });
 
