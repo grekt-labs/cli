@@ -1,3 +1,10 @@
+# [6.27.0-beta.1](https://github.com/grekt-labs/cli/compare/v6.26.0...v6.27.0-beta.1) (2026-02-20)
+
+
+### Features
+
+* add --fail-on flag to scan and trust/untrust commands ([cc811fb](https://github.com/grekt-labs/cli/commit/cc811fbd7a98e7ed2d592a36befc7f05d29e3aeb))
+
 # [6.27.0](https://github.com/grekt-labs/cli/compare/v6.26.0...v6.27.0) (2026-02-20)
 
 
