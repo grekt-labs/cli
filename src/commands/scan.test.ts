@@ -1,6 +1,7 @@
 import { describe, test, expect } from "bun:test";
 import { parseSource } from "#/registry/sources/sources";
-import { formatBadge, severityIcon, truncate } from "./scan";
+import { formatBadge, severityIcon, truncate, evaluateFailOn } from "./scan";
+import type { SecurityReport, TrustBadge } from "@grekt-labs/cli-engine";
 
 describe("scan", () => {
   describe("source detection", () => {
@@ -129,6 +130,84 @@ describe("scan", () => {
 
     test("truncates at exact position", () => {
       expect(truncate("abcdef", 3)).toBe("abc...");
+    });
+  });
+
+  describe("evaluateFailOn", () => {
+    function makeReport(badge: TrustBadge, score = 80): SecurityReport {
+      return {
+        score,
+        badge,
+        findings: [],
+        categoryScores: {},
+        scannedAt: new Date().toISOString(),
+        filesScanned: 1,
+      };
+    }
+
+    test("returns no failure when all badges are below threshold", () => {
+      const results = [
+        { artifactId: "@scope/a", report: makeReport("certified") },
+        { artifactId: "@scope/b", report: makeReport("conditional") },
+      ];
+      const result = evaluateFailOn(results, "suspicious");
+      expect(result.failed).toBe(false);
+      expect(result.failedArtifacts).toHaveLength(0);
+    });
+
+    test("returns failure when one badge meets threshold exactly", () => {
+      const results = [
+        { artifactId: "@scope/a", report: makeReport("suspicious") },
+      ];
+      const result = evaluateFailOn(results, "suspicious");
+      expect(result.failed).toBe(true);
+      expect(result.failedArtifacts).toHaveLength(1);
+      expect(result.failedArtifacts[0].artifactId).toBe("@scope/a");
+    });
+
+    test("returns failure when one badge exceeds threshold", () => {
+      const results = [
+        { artifactId: "@scope/a", report: makeReport("rejected") },
+      ];
+      const result = evaluateFailOn(results, "suspicious");
+      expect(result.failed).toBe(true);
+      expect(result.failedArtifacts[0].badge).toBe("rejected");
+    });
+
+    test("excludes trusted artifacts from evaluation", () => {
+      const results = [
+        { artifactId: "@scope/a", report: makeReport("rejected"), trusted: true },
+      ];
+      const result = evaluateFailOn(results, "suspicious");
+      expect(result.failed).toBe(false);
+      expect(result.failedArtifacts).toHaveLength(0);
+    });
+
+    test("does not trigger failure for trusted artifact with bad badge", () => {
+      const results = [
+        { artifactId: "@scope/risky", report: makeReport("rejected"), trusted: true },
+        { artifactId: "@scope/safe", report: makeReport("certified") },
+      ];
+      const result = evaluateFailOn(results, "suspicious");
+      expect(result.failed).toBe(false);
+    });
+
+    test("evaluates only untrusted artifacts in mixed results", () => {
+      const results = [
+        { artifactId: "@scope/trusted-bad", report: makeReport("rejected"), trusted: true },
+        { artifactId: "@scope/untrusted-bad", report: makeReport("suspicious") },
+        { artifactId: "@scope/untrusted-good", report: makeReport("certified") },
+      ];
+      const result = evaluateFailOn(results, "suspicious");
+      expect(result.failed).toBe(true);
+      expect(result.failedArtifacts).toHaveLength(1);
+      expect(result.failedArtifacts[0].artifactId).toBe("@scope/untrusted-bad");
+    });
+
+    test("returns no failure for empty results array", () => {
+      const result = evaluateFailOn([], "suspicious");
+      expect(result.failed).toBe(false);
+      expect(result.failedArtifacts).toHaveLength(0);
     });
   });
 });

@@ -53,3 +53,18 @@ export function shouldUseSymlinks(
 ): boolean {
   return getArtifactMode(artifactId, config, lockfile) === "core-sym";
 }
+
+/**
+ * Check if an artifact is marked as trusted in the project config.
+ * Trusted artifacts are excluded from --fail-on evaluation in scan.
+ */
+export function isArtifactTrusted(artifactId: string, config?: ProjectConfig): boolean {
+  if (!config) return false;
+
+  const configEntry = config.artifacts[artifactId];
+  if (!configEntry) return false;
+
+  if (typeof configEntry === "string") return false;
+
+  return configEntry.trusted === true;
+}
