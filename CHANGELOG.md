@@ -1,3 +1,10 @@
+# [6.27.0-beta.2](https://github.com/grekt-labs/cli/compare/v6.27.0-beta.1...v6.27.0-beta.2) (2026-02-20)
+
+
+### Bug Fixes
+
+* resolve filename collisions for generic SKILL.md and agent.md in sync ([1a2b150](https://github.com/grekt-labs/cli/commit/1a2b1502190f7505c25bca5a4f5dee62890e34f7))
+
 # [6.27.0-beta.1](https://github.com/grekt-labs/cli/compare/v6.26.0...v6.27.0-beta.1) (2026-02-19)
 
 
