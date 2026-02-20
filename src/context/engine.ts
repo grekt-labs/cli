@@ -14,7 +14,7 @@ import {
   getDirectorySize as _getDirectorySize,
   type Lockfile,
 } from "@grekt-labs/cli-engine";
-import { LOCKFILE } from "#/config/paths/paths";
+import { LOCKFILE } from "#/constants";
 
 // Lockfile operations
 export function getLockfile(projectRoot: string = process.cwd()): Lockfile {

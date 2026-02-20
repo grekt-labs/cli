@@ -1,8 +1,6 @@
 import { describe, test, expect, beforeEach, afterEach } from "bun:test";
 import {
   isSupabaseConfigured,
-  setProjectRoot,
-  getProjectRoot,
   resetClient,
   clearSession,
 } from "./session";
@@ -35,21 +33,6 @@ describe("session", () => {
     });
   });
 
-  describe("setProjectRoot and getProjectRoot", () => {
-    test("setProjectRoot updates the project root", () => {
-      setProjectRoot("/custom/path");
-
-      expect(getProjectRoot()).toBe("/custom/path");
-    });
-
-    test("getProjectRoot returns default cwd initially", () => {
-      // Reset to a known state
-      setProjectRoot(process.cwd());
-
-      expect(getProjectRoot()).toBe(process.cwd());
-    });
-  });
-
   describe("resetClient", () => {
     test("can be called without error", () => {
       expect(() => resetClient()).not.toThrow();
@@ -65,9 +48,14 @@ describe("session", () => {
 
   describe("clearSession", () => {
     test("can be called without error when no session exists", () => {
-      setProjectRoot("/tmp/grekt-test-session-nonexistent");
       expect(() => clearSession()).not.toThrow();
     });
+  });
+
+  test("does not export setProjectRoot or getProjectRoot (removed)", async () => {
+    const module = await import("./session");
+    expect("setProjectRoot" in module).toBe(false);
+    expect("getProjectRoot" in module).toBe(false);
   });
 
   // Note: getSupabaseClient, getSession, and isAuthenticated require

@@ -119,9 +119,10 @@ export const initCommand = new Command("init")
     let remoteSearch = true;
     if (!options.artifact && !options.yes) {
       newline();
-      info("When no installed skill matches, grekt can search the public registry for one that does.");
+      info("grekt includes a skill that improves artifact discovery in your project.");
+      info("It can also search the public registry when no local match is found.");
       remoteSearch = await confirm({
-        message: "Allow remote skill search?",
+        message: "Allow public registry search?",
         default: true,
       });
     }

@@ -60,6 +60,48 @@ GREKT_CHANNEL=beta curl -fsSL https://github.com/grekt-labs/cli-releases/release
 GREKT_VERSION=6.27.0-beta.1 curl -fsSL https://github.com/grekt-labs/cli-releases/releases/latest/download/install.sh | sh
 ```
 
+## Local Beta Testing (alongside Homebrew)
+
+If you use Homebrew for the stable CLI and want to test betas without replacing it, add this to your `.zshrc`:
+
+```bash
+# grekt beta testing - installs to ~/.grekt/beta/ without affecting Homebrew
+alias grekt-beta="$HOME/.grekt/beta/grekt"
+grekt-beta-install() {
+  local script="$HOME/projects/grekt/cli/scripts/install.sh"
+  if [ ! -f "$script" ]; then
+    echo "Error: install script not found at $script"
+    return 1
+  fi
+  if [ -z "$1" ]; then
+    GREKT_INSTALL="$HOME/.grekt/beta" GREKT_CHANNEL=beta sh "$script"
+  else
+    GREKT_INSTALL="$HOME/.grekt/beta" GREKT_CHANNEL=beta GREKT_VERSION="$1" sh "$script"
+  fi
+  # The install script appends PATH config to .zshrc — remove it since we use an alias
+  sed -i '/# grekt CLI/{N;/\.grekt\/beta/d;}' "$HOME/.zshrc"
+}
+```
+
+Then:
+
+```bash
+# Install latest beta
+grekt-beta-install
+
+# Install specific beta version
+grekt-beta-install 6.27.0-beta.1
+
+# Run beta
+grekt-beta --version
+grekt-beta add @scope/artifact
+
+# Stable stays untouched
+grekt --version
+```
+
+Each `grekt-beta-install` overwrites the previous beta binary, so you always have the latest.
+
 ## Commit Conventions
 
 Commits follow [Conventional Commits](https://www.conventionalcommits.org/). semantic-release uses the commit type to determine the version bump:

@@ -48,4 +48,10 @@ export interface Publisher {
    * Returns null if artifact has never been published.
    */
   getLatestVersion(ctx: PublishContext): Promise<string | null>;
+
+  /**
+   * Whether the publisher has valid credentials configured.
+   * Used to fail fast before creating tarballs.
+   */
+  hasCredentials?(): boolean;
 }

@@ -3,6 +3,7 @@ import matter from "gray-matter";
 import { createFolderPlugin, generateDefaultBlockContent } from "#/sync/base/base";
 import { toSafeName } from "@grekt-labs/cli-engine";
 import { copySiblingFiles } from "#/sync/helpers/siblings";
+import { writeSkillRouter } from "#/sync/helpers/skillRouter";
 
 const TARGET_DIR = ".agents";
 const ENTRY_POINTS = ["AGENTS.md"];
@@ -78,6 +79,9 @@ export const globalPlugin = createFolderPlugin({
 
   afterFileSync: ({ sourcePath, sourceDir, targetDir }) => {
     copySiblingFiles(sourceDir, targetDir, sourcePath);
+  },
+  setup: (projectRoot) => {
+    writeSkillRouter(projectRoot, TARGET_DIR);
   },
 });
 

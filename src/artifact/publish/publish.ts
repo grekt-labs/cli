@@ -1,4 +1,3 @@
-import { setProjectRoot } from "#/auth/session/session";
 import { validateArtifact } from "#/artifact/validation/validation";
 import { createTarball, removeTarball } from "#/artifact/tarball/tarball";
 import { generateComponents } from "@grekt-labs/cli-engine";
@@ -6,8 +5,6 @@ import {
   createPublisher,
   getPublisherTypeName,
 } from "#/registry/publishers/factory";
-import { S3Publisher } from "#/registry/publishers/s3-publisher";
-import { CustomPublisher } from "#/registry/publishers/custom-publisher";
 import { isApiAuthenticated } from "#/registry/publishers/api-publisher";
 import type { PublishContext, Publisher } from "#/registry/publishers/publisher.types";
 import { ARTIFACT_MAX_BYTES, ARTIFACT_WARNING_BYTES } from "#/constants";
@@ -51,8 +48,6 @@ export function validateForPublish(
       validationError: { message: "Cannot publish: artifact name must include scope", type: "no-scope" } as ValidationError,
     });
   }
-
-  setProjectRoot(projectRoot);
 
   const components = generateComponents(artifact.scanned);
 
@@ -145,7 +140,7 @@ export async function verifyPublisherAuth(
   publisher: Publisher,
   projectRoot: string
 ): Promise<string | null> {
-  if (publisher instanceof S3Publisher && !publisher.hasCredentials()) {
+  if (publisher.hasCredentials?.() === false) {
     return "no-s3-credentials";
   }
 

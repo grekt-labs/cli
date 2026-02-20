@@ -1,7 +1,6 @@
 import { Command } from "commander";
 import { select, input, password } from "@inquirer/prompts";
 import { browserLogin, emailLogin, type OAuthProvider } from "#/auth/oauth/oauth";
-import { setProjectRoot } from "#/auth/session/session";
 import { requireInitialized } from "#/shared/guards/guards";
 import { withPromptHandler } from "#/shared/prompts/prompts";
 import { success, error, info, log, spinner } from "#/shared/ui/ui";
@@ -78,8 +77,6 @@ export const loginCommand = new Command("login")
     const projectRoot = process.cwd();
 
     requireInitialized(projectRoot);
-
-    setProjectRoot(projectRoot);
 
     if (options.email && options.password) {
       await nonInteractiveEmailFlow(options.email, options.password);

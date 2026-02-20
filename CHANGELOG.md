@@ -1,3 +1,35 @@
+# [6.27.0-beta.2](https://github.com/grekt-labs/cli/compare/v6.27.0-beta.1...v6.27.0-beta.2) (2026-02-20)
+
+
+### Bug Fixes
+
+* resolve filename collisions for generic SKILL.md and agent.md in sync ([1a2b150](https://github.com/grekt-labs/cli/commit/1a2b1502190f7505c25bca5a4f5dee62890e34f7))
+
+# [6.27.0-beta.1](https://github.com/grekt-labs/cli/compare/v6.26.0...v6.27.0-beta.1) (2026-02-19)
+
+
+### Bug Fixes
+
+* accept lockfile as parameter in runCheck and generateArtifactIndex ([ac85685](https://github.com/grekt-labs/cli/commit/ac856856a6a271eb703b01091b85fd5603574df5))
+* break circular dependency between context and config ([99a8d86](https://github.com/grekt-labs/cli/commit/99a8d860af35112d0c0c7b932d60b91b4e269c97))
+* deduplicate parseArtifactId, use cli-engine as single source ([b9e29e3](https://github.com/grekt-labs/cli/commit/b9e29e3da060e18116e0da6fe39532c4fddc9b39))
+* extract duplicated parseArtifactVersion to shared module ([0ba1c6f](https://github.com/grekt-labs/cli/commit/0ba1c6f967e82cb19069997ff8b7abed06b74e41))
+* fix global mock bleeding in bun test suite ([608e881](https://github.com/grekt-labs/cli/commit/608e881f335a108a4ffa32f2254d1972eb260c93))
+* mock shell in oauth test to prevent flaky timeout ([6272ad1](https://github.com/grekt-labs/cli/commit/6272ad116cf3c13b73125c20193660c42d80bb2b))
+* move workspace utilities from command to domain module ([65caec5](https://github.com/grekt-labs/cli/commit/65caec54931b2e720c2e3904473675dc47899660))
+* remove deprecated setProjectRoot/getProjectRoot from session ([562d017](https://github.com/grekt-labs/cli/commit/562d017e3ac98328007ac07d9cd3e4d17bdbebe4))
+* remove instanceof checks and setProjectRoot side effect ([c7cebd3](https://github.com/grekt-labs/cli/commit/c7cebd3b41d76ed18f225280b9a6c13b26c1043a))
+* replace magic strings in SyncResult.skipped with centralized skip-reason protocol ([581ae1a](https://github.com/grekt-labs/cli/commit/581ae1a28fc0a80a5f021d519536b264a4b86f1c))
+* separate display logic from domain logic in check module ([e0c5b63](https://github.com/grekt-labs/cli/commit/e0c5b63ce7c0cfc6aa897ddf62ab7e3dbc7fd99f))
+* unify duplicated getArtifactMode into shared artifact/mode module ([5bc7c47](https://github.com/grekt-labs/cli/commit/5bc7c47ceffd699881f151e10be6b243d744ec29))
+* update cli-engine to 5.21.0 ([fd6abbf](https://github.com/grekt-labs/cli/commit/fd6abbfe7bea5850dd7c37ac8795eecf39cf3d6e))
+
+
+### Features
+
+* install skill-router on all folder plugins and update on every sync ([f9ba10d](https://github.com/grekt-labs/cli/commit/f9ba10d4c53ba506e1129a541f216b9b9df1ed62))
+* migrate legacy api-client callers to canonical registry factory ([24a69ff](https://github.com/grekt-labs/cli/commit/24a69ff7124c721a471d978d1a72b125ad18ccd2))
+
 # [6.26.0](https://github.com/grekt-labs/cli/compare/v6.25.0...v6.26.0) (2026-02-19)
 
 

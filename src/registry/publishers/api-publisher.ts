@@ -1,12 +1,22 @@
 import { logger } from "#/shared/logger/logger";
 import { isAuthenticated, isSupabaseConfigured } from "#/auth/session/session";
 import { fs, http } from "#/context";
-import { createRegistryClient } from "#/registry/api-client/api-client";
-import { RegistryError } from "#/registry/api-client/registry-error";
+import { resolveRegistry, createRegistryClient } from "#/registry/factory/factory";
+import { getLocalConfig } from "#/config/project/project";
+import { RegistryApiError, type DefaultRegistryOperations, type RegistryClient } from "@grekt-labs/cli-engine";
 import type { Publisher, PublishContext, PublishResult } from "./publisher.types";
 
 /**
- * Publisher for the default API-based registry (Supabase).
+ * Create a registry client for the given publish context.
+ */
+function createClientForContext(ctx: PublishContext): RegistryClient & DefaultRegistryOperations {
+  const localConfig = getLocalConfig(ctx.projectRoot);
+  const registry = resolveRegistry(ctx.scope, localConfig, ctx.projectRoot);
+  return createRegistryClient(registry) as RegistryClient & DefaultRegistryOperations;
+}
+
+/**
+ * Publisher for the default API-based registry.
  */
 export class ApiPublisher implements Publisher {
   readonly type = "api";
@@ -17,7 +27,7 @@ export class ApiPublisher implements Publisher {
       return false;
     }
 
-    const client = createRegistryClient();
+    const client = createClientForContext(ctx);
     try {
       return await client.versionExists(ctx.artifactId, ctx.version);
     } catch (err) {
@@ -32,7 +42,7 @@ export class ApiPublisher implements Publisher {
       return null;
     }
 
-    const client = createRegistryClient();
+    const client = createClientForContext(ctx);
     try {
       return await client.getLatestVersion(ctx.artifactId);
     } catch (err) {
@@ -51,10 +61,10 @@ export class ApiPublisher implements Publisher {
       };
     }
 
-    const client = createRegistryClient();
+    const client = createClientForContext(ctx);
 
     try {
-      const { uploadUrl } = await client.publish({
+      const { uploadUrl } = await client.requestPublish({
         artifactId: ctx.artifactId,
         version: ctx.version,
         categories: ctx.categories,
@@ -95,7 +105,7 @@ export class ApiPublisher implements Publisher {
 
       return { success: true };
     } catch (err) {
-      if (err instanceof RegistryError) {
+      if (err instanceof RegistryApiError) {
         throw err;
       }
 

@@ -93,6 +93,45 @@ describe("claudePlugin", () => {
     expect(targetPaths!.entryPoints).toEqual([".claude/CLAUDE.md", "CLAUDE.md"]);
   });
 
+  describe("resolveTargetPath", () => {
+    test("generates unique paths for skills with generic SKILL.md filename", () => {
+      const path1 = claudePlugin.resolveTargetPath!("@scope/art", "skills", "ops/lockfile-io/SKILL.md");
+      const path2 = claudePlugin.resolveTargetPath!("@scope/art", "skills", "ops/integrity/SKILL.md");
+      const path3 = claudePlugin.resolveTargetPath!("@scope/art", "skills", "ops/scanner/SKILL.md");
+
+      expect(path1).toBe("scope-art-lockfile-io/SKILL.md");
+      expect(path2).toBe("scope-art-integrity/SKILL.md");
+      expect(path3).toBe("scope-art-scanner/SKILL.md");
+      expect(new Set([path1, path2, path3]).size).toBe(3);
+    });
+
+    test("generates unique paths for agents with generic agent.md filename", () => {
+      const path1 = claudePlugin.resolveTargetPath!("@scope/art", "agents", "artifact-ops/agent.md");
+      const path2 = claudePlugin.resolveTargetPath!("@scope/art", "agents", "core-ops/agent.md");
+      const path3 = claudePlugin.resolveTargetPath!("@scope/art", "agents", "formatter-ops/agent.md");
+
+      expect(path1).toBe("scope-art_artifact-ops.md");
+      expect(path2).toBe("scope-art_core-ops.md");
+      expect(path3).toBe("scope-art_formatter-ops.md");
+      expect(new Set([path1, path2, path3]).size).toBe(3);
+    });
+
+    test("handles skills with unique filenames (non-generic)", () => {
+      const path = claudePlugin.resolveTargetPath!("@scope/art", "skills", "my-custom-skill.md");
+      expect(path).toBe("scope-art-my-custom-skill/SKILL.md");
+    });
+
+    test("handles agents with unique filenames (non-generic)", () => {
+      const path = claudePlugin.resolveTargetPath!("@scope/art", "agents", "my-agent.md");
+      expect(path).toBe("scope-art_my-agent.md");
+    });
+
+    test("falls back to getSafeFilename for other categories", () => {
+      const path = claudePlugin.resolveTargetPath!("@scope/art", "commands", "my-command.md");
+      expect(path).toBe("scope-art_my-command.md");
+    });
+  });
+
   describe("entryPoints: uses existing CLAUDE.md at root", () => {
     const testDir = join(process.cwd(), ".test-claude-entrypoints");
 

@@ -18,7 +18,7 @@ import {
   generatePackageJsonFiles,
   syncVersionsToManifest,
   cleanPackageJsonFiles,
-} from "./workspace";
+} from "#/workspace/workspace";
 
 const MANIFEST_FILE = "grekt.yaml";
 const BUMP_TYPES = ["patch", "minor", "major", "prerelease"] as const;
