@@ -2,7 +2,7 @@ import { describe, test, expect, beforeEach, afterEach } from "bun:test";
 import { existsSync, mkdirSync, rmSync, writeFileSync, readFileSync, lstatSync } from "fs";
 import { join } from "path";
 import { createFolderPlugin, createRulesOnlyPlugin } from "./base";
-import { GREKT_SECTION_HEADER, type Lockfile, type ProjectConfig } from "@grekt-labs/cli-engine";
+import { GREKT_SECTION_HEADER, resolveComponentFilename, toSafeName, type Lockfile, type ProjectConfig } from "@grekt-labs/cli-engine";
 
 const ARTIFACTS_DIR = ".grekt/artifacts";
 const TEST_ARTIFACT_ID = "@scope/artifact";
@@ -303,6 +303,103 @@ grk-description: A skill
         expect(preview.willUpdate).toContain("RULES.md");
         expect(preview.willCreate).not.toContain(".test/RULES.md");
       });
+    });
+
+    test("syncs multiple agents with generic agent.md filenames to unique targets", async () => {
+      const plugin = createTestPlugin();
+
+      // Create folder-based agents (all named agent.md)
+      mkdirSync(join(artifactDir, "core-ops"), { recursive: true });
+      mkdirSync(join(artifactDir, "formatter-ops"), { recursive: true });
+
+      writeFileSync(
+        join(artifactDir, "core-ops/agent.md"),
+        `---
+grk-type: agents
+grk-name: Core Ops
+grk-description: Core operations agent
+---
+# Core Ops`
+      );
+
+      writeFileSync(
+        join(artifactDir, "formatter-ops/agent.md"),
+        `---
+grk-type: agents
+grk-name: Formatter Ops
+grk-description: Formatter operations agent
+---
+# Formatter Ops`
+      );
+
+      const result = await plugin.sync(testLockfile, testDir, { projectConfig: testProjectConfig });
+
+      // Should create 3 unique files (original agent.md + core-ops + formatter-ops)
+      const agentFiles = result.created.filter((f) => f.includes("agents"));
+      const uniqueFiles = new Set(agentFiles);
+      expect(uniqueFiles.size).toBe(agentFiles.length);
+
+      // Verify each has unique content
+      const coreOpsFile = join(testDir, ".test/agents/scope-artifact_core-ops.md");
+      const formatterOpsFile = join(testDir, ".test/agents/scope-artifact_formatter-ops.md");
+      expect(existsSync(coreOpsFile)).toBe(true);
+      expect(existsSync(formatterOpsFile)).toBe(true);
+
+      const coreContent = readFileSync(coreOpsFile, "utf-8");
+      const formatterContent = readFileSync(formatterOpsFile, "utf-8");
+      expect(coreContent).toContain("Core Ops");
+      expect(formatterContent).toContain("Formatter Ops");
+    });
+
+    test("syncs multiple skills with generic SKILL.md filenames to unique targets", async () => {
+      const plugin = createFolderPlugin({
+        id: "test",
+        name: "Test",
+        targetDir: ".test",
+        getTargetPath: (artifactId, category, filePath) => {
+          if (category === "skills") {
+            const safeName = toSafeName(artifactId);
+            const skillName = resolveComponentFilename(filePath).replace(".md", "");
+            return `${safeName}-${skillName}/SKILL.md`;
+          }
+          return null;
+        },
+      });
+
+      // Create folder-based skills (all named SKILL.md)
+      mkdirSync(join(artifactDir, "lockfile-io"), { recursive: true });
+      mkdirSync(join(artifactDir, "integrity"), { recursive: true });
+
+      writeFileSync(
+        join(artifactDir, "lockfile-io/SKILL.md"),
+        `---
+grk-type: skills
+grk-name: Lockfile IO
+grk-description: Lockfile operations
+---
+# Lockfile IO`
+      );
+
+      writeFileSync(
+        join(artifactDir, "integrity/SKILL.md"),
+        `---
+grk-type: skills
+grk-name: Integrity
+grk-description: Integrity checks
+---
+# Integrity`
+      );
+
+      const result = await plugin.sync(testLockfile, testDir, { projectConfig: testProjectConfig });
+
+      const skillFiles = result.created.filter((f) => f.includes("skills"));
+      const uniqueFiles = new Set(skillFiles);
+      expect(uniqueFiles.size).toBe(skillFiles.length);
+
+      const lockfileSkill = join(testDir, ".test/skills/scope-artifact-lockfile-io/SKILL.md");
+      const integritySkill = join(testDir, ".test/skills/scope-artifact-integrity/SKILL.md");
+      expect(existsSync(lockfileSkill)).toBe(true);
+      expect(existsSync(integritySkill)).toBe(true);
     });
 
     test("skips files with path traversal in filePath", async () => {
