@@ -130,13 +130,7 @@ grk-description: A test skill
     rmSync(testDir, { recursive: true, force: true });
   });
 
-  test("module can be imported", async () => {
-    const module = await import("./remove");
-    expect(module).toBeDefined();
-    expect(module.removeCommand).toBeDefined();
-  });
-
-  test("command has correct name and description", async () => {
+  test("command has correct name and alias", async () => {
     const { removeCommand } = await import("./remove");
     expect(removeCommand.name()).toBe("remove");
     expect(removeCommand.alias()).toBe("rm");

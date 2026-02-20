@@ -1,33 +1,75 @@
 import { describe, test, expect } from "bun:test";
 import { sortVersionsDesc } from "@grekt-labs/cli-engine";
-
-// Note: The metadata module interacts with S3/external storage.
-// These tests document the expected behavior without making actual API calls.
+import { createMetadata, deprecateVersion, undeprecateVersion, updateMetadataVersion } from "./metadata";
 
 describe("metadata", () => {
-  test("module can be imported", async () => {
-    const module = await import("./metadata");
-    expect(module).toBeDefined();
+  describe("createMetadata", () => {
+    test("returns valid metadata structure with correct artifact id", () => {
+      const metadata = createMetadata("@scope/tool", "1.0.0");
+
+      expect(metadata.name).toBe("@scope/tool");
+      expect(metadata.latest).toBe("1.0.0");
+      expect(metadata.deprecated).toEqual({});
+      expect(metadata.createdAt).toBe(metadata.updatedAt);
+    });
+
+    test("sets timestamps to ISO format", () => {
+      const metadata = createMetadata("@scope/tool", "1.0.0");
+
+      expect(() => new Date(metadata.createdAt)).not.toThrow();
+      expect(new Date(metadata.createdAt).toISOString()).toBe(metadata.createdAt);
+    });
   });
 
-  test("exports required functions", async () => {
-    const module = await import("./metadata");
-    expect(module.getArtifactMetadata).toBeDefined();
-    expect(module.saveArtifactMetadata).toBeDefined();
-    expect(module.listVersions).toBeDefined();
-    expect(module.createMetadata).toBeDefined();
-    expect(module.deprecateVersion).toBeDefined();
-    expect(module.undeprecateVersion).toBeDefined();
+  describe("updateMetadataVersion", () => {
+    test("updates latest version and updatedAt", () => {
+      const original = createMetadata("@scope/tool", "1.0.0");
+      const updated = updateMetadataVersion(original, "2.0.0");
+
+      expect(updated.latest).toBe("2.0.0");
+      expect(updated.name).toBe("@scope/tool");
+      expect(updated.createdAt).toBe(original.createdAt);
+    });
   });
 
-  // Integration test scenarios (require S3 credentials):
-  // - getMetadata fetches from S3
-  // - saveMetadata uploads to S3
-  // - createEmptyMetadata returns valid structure
-  // - listVersions returns versions sorted by semver (highest first)
+  describe("deprecateVersion", () => {
+    test("adds deprecation message for specific version", () => {
+      const metadata = createMetadata("@scope/tool", "2.0.0");
+      const deprecated = deprecateVersion(metadata, "1.0.0", "Use v2 instead");
 
-  // These tests should be run with test credentials in CI
-  // or mocked using AWS SDK mocks.
+      expect(deprecated.deprecated["1.0.0"]).toBe("Use v2 instead");
+      expect(deprecated.latest).toBe("2.0.0");
+    });
+
+    test("preserves existing deprecations", () => {
+      const metadata = createMetadata("@scope/tool", "3.0.0");
+      const step1 = deprecateVersion(metadata, "1.0.0", "Old");
+      const step2 = deprecateVersion(step1, "2.0.0", "Also old");
+
+      expect(step2.deprecated["1.0.0"]).toBe("Old");
+      expect(step2.deprecated["2.0.0"]).toBe("Also old");
+    });
+  });
+
+  describe("undeprecateVersion", () => {
+    test("removes deprecation for specific version", () => {
+      const metadata = createMetadata("@scope/tool", "2.0.0");
+      const deprecated = deprecateVersion(metadata, "1.0.0", "Use v2");
+      const restored = undeprecateVersion(deprecated, "1.0.0");
+
+      expect(restored.deprecated["1.0.0"]).toBeUndefined();
+    });
+
+    test("preserves other deprecations", () => {
+      const metadata = createMetadata("@scope/tool", "3.0.0");
+      const step1 = deprecateVersion(metadata, "1.0.0", "Old");
+      const step2 = deprecateVersion(step1, "2.0.0", "Also old");
+      const restored = undeprecateVersion(step2, "1.0.0");
+
+      expect(restored.deprecated["1.0.0"]).toBeUndefined();
+      expect(restored.deprecated["2.0.0"]).toBe("Also old");
+    });
+  });
 });
 
 describe("version sorting", () => {

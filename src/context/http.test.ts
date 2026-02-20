@@ -16,9 +16,8 @@ describe("createHttpClient", () => {
       const client = createHttpClient();
       await client.fetch("https://example.com");
 
-      expect(capturedSignal).toBeDefined();
-      expect(capturedSignal).not.toBeNull();
       expect(capturedSignal).toBeInstanceOf(AbortSignal);
+      expect(capturedSignal!.aborted).toBe(false);
     } finally {
       globalThis.fetch = originalFetch;
     }

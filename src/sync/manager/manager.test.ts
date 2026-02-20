@@ -96,23 +96,30 @@ describe("manager", () => {
   });
 
   describe("getPluginChoices", () => {
-    test("returns valid name/value pairs", () => {
+    test("returns choices matching all built-in plugins", () => {
+      const choices = getPluginChoices();
+      const choiceValues = choices.map(c => c.value);
+
+      for (const id of BUILTIN_PLUGINS) {
+        expect(choiceValues).toContain(id);
+      }
+    });
+
+    test("each choice has a human-readable name and plugin id", () => {
       const choices = getPluginChoices();
 
-      expect(choices.length).toBeGreaterThan(0);
       for (const choice of choices) {
-        expect(choice.name).toBeTruthy();
-        expect(choice.value).toBeTruthy();
+        expect(choice.name.length).toBeGreaterThan(0);
+        expect(choice.value.length).toBeGreaterThan(0);
+        expect(choice.name).not.toBe(choice.value);
       }
     });
   });
 
   describe("getDefaultTarget", () => {
-    test("returns valid target string", () => {
+    test("returns global as the first registered plugin", () => {
       const target = getDefaultTarget();
-
-      expect(typeof target).toBe("string");
-      expect(getAvailableTargets()).toContain(target);
+      expect(target).toBe("global");
     });
   });
 

@@ -3,6 +3,7 @@ import {
   isSupabaseConfigured,
   resetClient,
   clearSession,
+  getSupabaseClient,
 } from "./session";
 
 describe("session", () => {
@@ -22,7 +23,6 @@ describe("session", () => {
       delete process.env.GREKT_SUPABASE_URL;
       delete process.env.GREKT_SUPABASE_ANON_KEY;
 
-      // Now always returns true because we have hardcoded defaults
       expect(isSupabaseConfigured()).toBe(true);
     });
 
@@ -34,20 +34,17 @@ describe("session", () => {
   });
 
   describe("resetClient", () => {
-    test("can be called without error", () => {
-      expect(() => resetClient()).not.toThrow();
-    });
+    test("allows getSupabaseClient to be called again after reset", () => {
+      getSupabaseClient();
+      resetClient();
 
-    test("can be called multiple times", () => {
-      resetClient();
-      resetClient();
-      resetClient();
-      expect(true).toBe(true);
+      // Should not throw, proving the client was cleared and recreated
+      expect(() => getSupabaseClient()).not.toThrow();
     });
   });
 
   describe("clearSession", () => {
-    test("can be called without error when no session exists", () => {
+    test("does not throw when no session exists", () => {
       expect(() => clearSession()).not.toThrow();
     });
   });
@@ -57,8 +54,4 @@ describe("session", () => {
     expect("setProjectRoot" in module).toBe(false);
     expect("getProjectRoot" in module).toBe(false);
   });
-
-  // Note: getSupabaseClient, getSession, and isAuthenticated require
-  // Supabase to be configured with valid credentials.
-  // These are integration tests that need a test Supabase instance.
 });
