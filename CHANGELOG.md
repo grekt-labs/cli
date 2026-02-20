@@ -3,6 +3,14 @@
 
 ### Bug Fixes
 
+* trigger beta release ([e3015f0](https://github.com/grekt-labs/cli/commit/e3015f018435d6f8e1d0c1582abcfabb77266d74))
+* trigger beta release with trust commands ([b3a4901](https://github.com/grekt-labs/cli/commit/b3a490107414762de453694b48b054b325cd61cb))
+
+# [6.27.0-beta.2](https://github.com/grekt-labs/cli/compare/v6.27.0-beta.1...v6.27.0-beta.2) (2026-02-20)
+
+
+### Bug Fixes
+
 * trigger beta release with trust commands ([b3a4901](https://github.com/grekt-labs/cli/commit/b3a490107414762de453694b48b054b325cd61cb))
 
 # [6.27.0-beta.1](https://github.com/grekt-labs/cli/compare/v6.26.0...v6.27.0-beta.1) (2026-02-20)
