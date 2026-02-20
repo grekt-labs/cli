@@ -1,3 +1,10 @@
+# [6.27.0](https://github.com/grekt-labs/cli/compare/v6.26.0...v6.27.0) (2026-02-20)
+
+
+### Features
+
+* trigger release ([4363bac](https://github.com/grekt-labs/cli/commit/4363bace02d68ed2c09d312030b5512c792f2441))
+
 # [6.27.0-beta.2](https://github.com/grekt-labs/cli/compare/v6.27.0-beta.1...v6.27.0-beta.2) (2026-02-20)
 
 
