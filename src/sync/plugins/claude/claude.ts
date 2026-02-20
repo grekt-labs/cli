@@ -1,7 +1,7 @@
 import { basename } from "path";
 import { createFolderPlugin, generateDefaultBlockContent } from "#/sync/base/base";
 import { ensureDir } from "#/shared/filesystem/filesystem";
-import { toSafeName, getSkillRouterTemplate } from "@grekt-labs/cli-engine";
+import { toSafeName, resolveComponentFilename, getSkillRouterTemplate } from "@grekt-labs/cli-engine";
 import { fs } from "#/context";
 import { copySiblingFiles } from "#/sync/helpers/siblings";
 
@@ -22,7 +22,7 @@ function buildSkillRouterContent(): string {
 
 function getSkillFolderName(artifactId: string, filePath: string): string {
   const safeName = toSafeName(artifactId);
-  const skillName = basename(filePath, ".md");
+  const skillName = basename(resolveComponentFilename(filePath), ".md");
   return `${safeName}-${skillName}`;
 }
 
@@ -36,6 +36,11 @@ export const claudePlugin = createFolderPlugin({
     if (category === "skills") {
       const folderName = getSkillFolderName(artifactId, filePath);
       return `${folderName}/SKILL.md`;
+    }
+    if (category === "agents") {
+      const safeName = toSafeName(artifactId);
+      const agentFilename = resolveComponentFilename(filePath);
+      return `${safeName}_${agentFilename}`;
     }
     return null;
   },
