@@ -5,11 +5,17 @@ import { fs, cryptoProvider, getLockfile } from "#/context";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
 import {
   scanArtifactSecurity,
+  isBadgeAtOrAbove,
   type SecurityReport,
+  type TrustBadge,
 } from "@grekt-labs/cli-engine";
 import { parseSource, downloadFromSource, type ParsedSource } from "#/registry/sources/sources";
 import { getSourceDisplayName } from "#/registry/registry";
+import { getConfig } from "#/config/project/project";
+import { isArtifactTrusted } from "#/artifact/mode/mode";
 import { error, warning, info, log, newline, colors, symbols, spinner } from "#/shared/ui/ui";
+
+const VALID_BADGES: TrustBadge[] = ["certified", "conditional", "suspicious", "rejected"];
 
 const BADGE_COLORS: Record<string, (text: string) => string> = {
   certified: colors.success,
@@ -60,12 +66,13 @@ function displaySingleReport(artifactLabel: string, report: SecurityReport): voi
   newline();
 }
 
-function displaySummaryTable(results: Array<{ artifactId: string; report: SecurityReport }>): void {
+function displaySummaryTable(results: Array<{ artifactId: string; report: SecurityReport; trusted?: boolean }>): void {
   const maxIdLen = Math.max(...results.map((r) => r.artifactId.length), 8);
 
   newline();
-  for (const { artifactId, report } of results) {
+  for (const { artifactId, report, trusted } of results) {
     const badgeStr = formatBadge(report.badge);
+    const trustedLabel = trusted ? colors.dim(" (trusted)") : "";
     const findingsStr = report.findings.length > 0
       ? colors.dim(`${report.findings.length} finding${report.findings.length === 1 ? "" : "s"}`)
       : "";
@@ -74,7 +81,7 @@ function displaySummaryTable(results: Array<{ artifactId: string; report: Securi
       ? symbols.success
       : symbols.warning;
 
-    log(`  ${icon} ${artifactId.padEnd(maxIdLen)}  ${scoreStr}  ${badgeStr}  ${findingsStr}`);
+    log(`  ${icon} ${artifactId.padEnd(maxIdLen)}  ${scoreStr}  ${badgeStr}${trustedLabel}  ${findingsStr}`);
   }
   newline();
 }
@@ -84,28 +91,59 @@ export function truncate(text: string, maxLength: number): string {
   return `${text.slice(0, maxLength)}...`;
 }
 
+export interface FailOnResult {
+  failed: boolean;
+  failedArtifacts: Array<{ artifactId: string; badge: TrustBadge }>;
+}
+
+export function evaluateFailOn(
+  results: Array<{ artifactId: string; report: SecurityReport; trusted?: boolean }>,
+  threshold: TrustBadge,
+): FailOnResult {
+  const failedArtifacts: Array<{ artifactId: string; badge: TrustBadge }> = [];
+
+  for (const { artifactId, report, trusted } of results) {
+    if (trusted) continue;
+    if (isBadgeAtOrAbove(report.badge, threshold)) {
+      failedArtifacts.push({ artifactId, badge: report.badge });
+    }
+  }
+
+  return { failed: failedArtifacts.length > 0, failedArtifacts };
+}
+
+function validateFailOnValue(value: string): TrustBadge {
+  if (!VALID_BADGES.includes(value as TrustBadge)) {
+    error(`Invalid --fail-on value: "${value}". Must be one of: ${VALID_BADGES.join(", ")}`);
+    process.exit(1);
+  }
+  return value as TrustBadge;
+}
+
 export const scanCommand = new Command("scan")
   .description("Scan artifacts for security issues using AgentVerus")
   .argument("[source]", "Artifact source (@scope/name, github:user/repo, or local path)")
   .option("--json", "Output results as JSON")
-  .action(async (sourceArg: string | undefined, options: { json?: boolean }) => {
+  .option("--fail-on <badge>", "Exit with code 1 if any artifact badge meets or exceeds this threshold")
+  .action(async (sourceArg: string | undefined, options: { json?: boolean; failOn?: string }) => {
     const projectRoot = process.cwd();
+    const failOnThreshold = options.failOn ? validateFailOnValue(options.failOn) : undefined;
 
     if (!sourceArg) {
-      await scanAllInstalled(projectRoot, options.json);
+      await scanAllInstalled(projectRoot, options.json, failOnThreshold);
       return;
     }
 
     const source = parseSource(sourceArg);
 
     if (source.type === "local") {
-      await scanSingleArtifact(sourceArg, options.json);
+      await scanSingleArtifact(sourceArg, options.json, failOnThreshold);
     } else {
-      await scanRemoteArtifact(source, projectRoot, options.json);
+      await scanRemoteArtifact(source, projectRoot, options.json, failOnThreshold);
     }
   });
 
-async function scanRemoteArtifact(source: ParsedSource, projectRoot: string, jsonOutput?: boolean): Promise<void> {
+async function scanRemoteArtifact(source: ParsedSource, projectRoot: string, jsonOutput?: boolean, failOnThreshold?: TrustBadge): Promise<void> {
   const displayName = getSourceDisplayName(source);
   const tempDir = join(projectRoot, ARTIFACTS_DIR, `.tmp-scan-${cryptoProvider.randomUUID()}`);
 
@@ -134,6 +172,11 @@ async function scanRemoteArtifact(source: ParsedSource, projectRoot: string, jso
 
         log(`Scanning ${colors.highlight(displayName)}...`);
         displaySingleReport(displayName, report);
+
+        if (failOnThreshold) {
+          const result = evaluateFailOn([{ artifactId: displayName, report }], failOnThreshold);
+          exitWithFailOnResult(result, failOnThreshold);
+        }
       } catch (err) {
         scanSpin.stop();
         const message = err instanceof Error ? err.message : "Scan failed";
@@ -153,6 +196,11 @@ async function scanRemoteArtifact(source: ParsedSource, projectRoot: string, jso
       try {
         const report = await scanArtifactSecurity(fs, tempDir);
         console.log(JSON.stringify(report, null, 2));
+
+        if (failOnThreshold) {
+          const result = evaluateFailOn([{ artifactId: displayName, report }], failOnThreshold);
+          if (result.failed) process.exit(1);
+        }
       } catch (err) {
         const message = err instanceof Error ? err.message : "Scan failed";
         console.log(JSON.stringify({ error: message }));
@@ -166,7 +214,7 @@ async function scanRemoteArtifact(source: ParsedSource, projectRoot: string, jso
   }
 }
 
-async function scanSingleArtifact(artifactPath: string, jsonOutput?: boolean): Promise<void> {
+async function scanSingleArtifact(artifactPath: string, jsonOutput?: boolean, failOnThreshold?: TrustBadge): Promise<void> {
   const resolvedPath = join(process.cwd(), artifactPath);
 
   if (!fs.exists(resolvedPath)) {
@@ -192,6 +240,11 @@ async function scanSingleArtifact(artifactPath: string, jsonOutput?: boolean): P
 
       log(`Scanning ${colors.highlight(label)}...`);
       displaySingleReport(label, report);
+
+      if (failOnThreshold) {
+        const result = evaluateFailOn([{ artifactId: label, report }], failOnThreshold);
+        exitWithFailOnResult(result, failOnThreshold);
+      }
     } catch (err) {
       spin.stop();
       const message = err instanceof Error ? err.message : "Scan failed";
@@ -202,6 +255,11 @@ async function scanSingleArtifact(artifactPath: string, jsonOutput?: boolean): P
     try {
       const report = await scanArtifactSecurity(fs, resolvedPath);
       console.log(JSON.stringify(report, null, 2));
+
+      if (failOnThreshold) {
+        const result = evaluateFailOn([{ artifactId: label, report }], failOnThreshold);
+        if (result.failed) process.exit(1);
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Scan failed";
       console.log(JSON.stringify({ error: message }));
@@ -210,7 +268,19 @@ async function scanSingleArtifact(artifactPath: string, jsonOutput?: boolean): P
   }
 }
 
-async function scanAllInstalled(projectRoot: string, jsonOutput?: boolean): Promise<void> {
+function exitWithFailOnResult(result: FailOnResult, threshold: TrustBadge): void {
+  if (!result.failed) return;
+
+  newline();
+  error(`Scan failed: ${result.failedArtifacts.length} artifact${result.failedArtifacts.length === 1 ? "" : "s"} at or above "${threshold}" threshold`);
+  for (const { artifactId, badge } of result.failedArtifacts) {
+    log(`  ${symbols.warning} ${artifactId}: ${formatBadge(badge)}`);
+  }
+  newline();
+  process.exit(1);
+}
+
+async function scanAllInstalled(projectRoot: string, jsonOutput?: boolean, failOnThreshold?: TrustBadge): Promise<void> {
   requireInitialized(projectRoot);
 
   const lockfile = getLockfile(projectRoot);
@@ -225,8 +295,9 @@ async function scanAllInstalled(projectRoot: string, jsonOutput?: boolean): Prom
     process.exit(0);
   }
 
+  const config = getConfig(projectRoot);
   const artifactsDir = join(projectRoot, ARTIFACTS_DIR);
-  const results: Array<{ artifactId: string; report: SecurityReport }> = [];
+  const results: Array<{ artifactId: string; report: SecurityReport; trusted?: boolean }> = [];
   const errors: Array<{ artifactId: string; message: string }> = [];
 
   if (!jsonOutput) {
@@ -243,7 +314,8 @@ async function scanAllInstalled(projectRoot: string, jsonOutput?: boolean): Prom
 
     try {
       const report = await scanArtifactSecurity(fs, artifactDir);
-      results.push({ artifactId, report });
+      const trusted = isArtifactTrusted(artifactId, config);
+      results.push({ artifactId, report, trusted });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Scan failed";
       errors.push({ artifactId, message });
@@ -259,6 +331,11 @@ async function scanAllInstalled(projectRoot: string, jsonOutput?: boolean): Prom
       output[artifactId] = { error: message };
     }
     console.log(JSON.stringify(output, null, 2));
+
+    if (failOnThreshold) {
+      const result = evaluateFailOn(results, failOnThreshold);
+      if (result.failed) process.exit(1);
+    }
     return;
   }
 
@@ -268,5 +345,10 @@ async function scanAllInstalled(projectRoot: string, jsonOutput?: boolean): Prom
 
   for (const { artifactId, message } of errors) {
     warning(`${colors.highlight(artifactId)}: ${message}`);
+  }
+
+  if (failOnThreshold) {
+    const result = evaluateFailOn(results, failOnThreshold);
+    exitWithFailOnResult(result, failOnThreshold);
   }
 }
