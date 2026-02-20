@@ -419,6 +419,8 @@ For real-world examples, look at these commands in `src/commands/`:
 | `upgrade.ts` | Batch operation | Iterating artifacts, selection preservation |
 | `init.ts` | Interactive | Prompts with `withPromptHandler` |
 | `sync.ts` | Multi-target | Iterating over plugins |
+| `trust.ts` | Paired commands | Two commands in one file, config mutation |
+| `scan.ts` | CI integration | `--fail-on` threshold, `evaluateFailOn` helper |
 
 ---
 
