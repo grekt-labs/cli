@@ -305,8 +305,12 @@ export const installCommand = new Command("install")
       resolved++;
     }
 
-    // Save lockfile (even on partial success)
-    saveLockfile(lockfile, projectRoot);
+    const hasChanges = installed > 0 || resolved > 0 || pruned > 0;
+
+    // Save lockfile only if something changed
+    if (hasChanges) {
+      saveLockfile(lockfile, projectRoot);
+    }
 
     newline();
 
@@ -327,11 +331,11 @@ export const installCommand = new Command("install")
       info(`Pruned ${pruned} artifact(s)`);
     }
 
-    // Generate artifact index
-    generateArtifactIndex(projectRoot, config, lockfile);
-
-    // Auto-sync to targets
-    await syncToTargets(config, lockfile, projectRoot);
+    // Only regenerate index and sync if something actually changed
+    if (hasChanges) {
+      generateArtifactIndex(projectRoot, config, lockfile);
+      await syncToTargets(config, lockfile, projectRoot);
+    }
 
     if (failed > 0) {
       process.exit(1);
