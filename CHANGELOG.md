@@ -1,3 +1,10 @@
+# [6.29.0-beta.2](https://github.com/grekt-labs/cli/compare/v6.29.0-beta.1...v6.29.0-beta.2) (2026-02-21)
+
+
+### Bug Fixes
+
+* skip index generation and sync when nothing was installed ([01989d9](https://github.com/grekt-labs/cli/commit/01989d9db8f8998029e4c75399cc7318434dd3a1))
+
 # [6.29.0-beta.1](https://github.com/grekt-labs/cli/compare/v6.28.1...v6.29.0-beta.1) (2026-02-21)
 
 
