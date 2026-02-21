@@ -2,7 +2,7 @@
 set -eu
 
 # Configuration
-REPO="grekt-labs/cli-releases"
+REPO="grekt-labs/cli"
 INSTALL_DIR="${GREKT_INSTALL:-$HOME/.grekt/bin}"
 BINARY_NAME="grekt"
 CHANNEL="${GREKT_CHANNEL:-stable}"

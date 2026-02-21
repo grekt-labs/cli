@@ -8,7 +8,7 @@ const CACHE_FILENAME = ".update-check";
 const STALENESS_MS = 24 * 60 * 60 * 1000; // 24 hours
 const FETCH_TIMEOUT_MS = 1500;
 const GITHUB_RELEASES_URL =
-  "https://api.github.com/repos/grekt-labs/cli-releases/releases/latest";
+  "https://api.github.com/repos/grekt-labs/cli/releases/latest";
 
 function getCachePath(): string {
   return join(homedir(), ".grekt", CACHE_FILENAME);
@@ -107,6 +107,7 @@ function printNotice(currentVersion: string, latestVersion: string): void {
   console.log();
   console.log(`  ${colors.dim("curl -fsSL https://cli.grekt.com/install.sh | sh")}`);
   console.log(`  ${colors.dim("brew upgrade grekt")}`);
+  console.log(`  ${colors.dim("npm install -g @grekt/cli")}`);
   console.log(`  ${line}`);
   console.log();
 }
