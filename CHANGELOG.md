@@ -1,3 +1,16 @@
+# [6.29.0](https://github.com/grekt-labs/cli/compare/v6.28.1...v6.29.0) (2026-02-21)
+
+
+### Bug Fixes
+
+* skip index generation and sync when nothing was installed ([81eca9c](https://github.com/grekt-labs/cli/commit/81eca9c9345c941a0c86fd45880371f4e9d7fd71))
+* use ArtifactMode type from cli-engine instead of inline literal ([10ddf5e](https://github.com/grekt-labs/cli/commit/10ddf5eb38c70ace2917ca6ac3608000bdad9281))
+
+
+### Features
+
+* reconcile-based install using grekt.yaml as source of truth ([f57a05a](https://github.com/grekt-labs/cli/commit/f57a05a9857023b49f3eb58c16d4a19d723bf107))
+
 # [6.29.0-beta.2](https://github.com/grekt-labs/cli/compare/v6.29.0-beta.1...v6.29.0-beta.2) (2026-02-21)
 
 
