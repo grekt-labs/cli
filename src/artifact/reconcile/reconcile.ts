@@ -1,4 +1,4 @@
-import type { ProjectConfig, ArtifactEntry, Lockfile } from "@grekt-labs/cli-engine";
+import type { ProjectConfig, ArtifactEntry, ArtifactMode, Lockfile } from "@grekt-labs/cli-engine";
 import type { ReconcileResult, ReconcileEntry } from "./reconcile.types";
 
 /**
@@ -14,7 +14,7 @@ export function extractVersion(entry: ArtifactEntry): string {
  * Extract mode from a config entry.
  * Simple string entries default to "lazy".
  */
-export function extractMode(entry: ArtifactEntry): "lazy" | "core" | "core-sym" {
+export function extractMode(entry: ArtifactEntry): ArtifactMode {
   if (typeof entry === "string") return "lazy";
   return entry.mode ?? "lazy";
 }
