@@ -13,7 +13,7 @@ function createMockPlugin(overrides: Partial<SyncPlugin> = {}): SyncPlugin {
     name: "Mock",
     targetFile: ".mock",
     targetExists: () => true,
-    sync: async () => ({ created: [], updated: [], skipped: [] }),
+    sync: async () => ({ created: [], updated: [], skipped: [], syncedFiles: {} }),
     preview: () => ({ willCreate: [], willUpdate: [], willSkip: [] }),
     ...overrides,
   };
@@ -43,6 +43,7 @@ describe("helpers", () => {
         created: ["file1.md", "file2.md"],
         updated: ["file3.md"],
         skipped: ["file4.md"],
+        syncedFiles: {},
       };
 
       const plugin = createMockPlugin({ sync: async () => syncResult });
@@ -64,11 +65,11 @@ describe("helpers", () => {
       const plugins: Record<string, SyncPlugin> = {
         p1: createMockPlugin({
           id: "p1",
-          sync: async () => ({ created: ["a.md"], updated: [], skipped: [] }),
+          sync: async () => ({ created: ["a.md"], updated: [], skipped: [], syncedFiles: {} }),
         }),
         p2: createMockPlugin({
           id: "p2",
-          sync: async () => ({ created: ["b.md"], updated: ["c.md"], skipped: [] }),
+          sync: async () => ({ created: ["b.md"], updated: ["c.md"], skipped: [], syncedFiles: {} }),
         }),
       };
 
@@ -86,7 +87,7 @@ describe("helpers", () => {
     });
 
     test("skips targets when createTarget is false and target does not exist", async () => {
-      const syncFn = mock(async () => ({ created: [], updated: [], skipped: [] }));
+      const syncFn = mock(async () => ({ created: [], updated: [], skipped: [], syncedFiles: {} }));
       const plugin = createMockPlugin({ targetExists: () => false, sync: syncFn });
 
       const result = await runSync({
@@ -103,7 +104,7 @@ describe("helpers", () => {
     });
 
     test("creates target when createTarget is true and target does not exist", async () => {
-      const syncFn = mock(async () => ({ created: ["new.md"], updated: [], skipped: [] }));
+      const syncFn = mock(async () => ({ created: ["new.md"], updated: [], skipped: [], syncedFiles: {} }));
       const plugin = createMockPlugin({ targetExists: () => false, sync: syncFn });
 
       const result = await runSync({
@@ -120,7 +121,7 @@ describe("helpers", () => {
     });
 
     test("passes force option to plugin sync", async () => {
-      const syncFn = mock(async () => ({ created: [], updated: [], skipped: [] }));
+      const syncFn = mock(async () => ({ created: [], updated: [], skipped: [], syncedFiles: {} }));
       const plugin = createMockPlugin({ sync: syncFn });
 
       await runSync({
@@ -145,6 +146,7 @@ describe("helpers", () => {
           "@scope/broken (invalid artifact)",
           "@other/pkg (lazy mode)",
         ],
+        syncedFiles: {},
       };
 
       const plugin = createMockPlugin({ sync: async () => syncResult });
@@ -165,6 +167,7 @@ describe("helpers", () => {
         created: [],
         updated: [],
         skipped: ["@obra/superpowers (lazy mode)"],
+        syncedFiles: {},
       };
 
       const plugin = createMockPlugin({ sync: async () => syncResult });
@@ -188,6 +191,7 @@ describe("helpers", () => {
           "@lazy/pkg (lazy mode)",
           "@broken/pkg (invalid artifact)",
         ],
+        syncedFiles: {},
       };
 
       const plugin = createMockPlugin({ sync: async () => syncResult });
@@ -218,7 +222,7 @@ describe("helpers", () => {
     });
 
     test("passes createTarget=true to plugin when target does not exist", async () => {
-      const syncFn = mock(async () => ({ created: [], updated: [], skipped: [] }));
+      const syncFn = mock(async () => ({ created: [], updated: [], skipped: [], syncedFiles: {} }));
       const plugin = createMockPlugin({ targetExists: () => false, sync: syncFn });
 
       await runSync({
@@ -235,7 +239,7 @@ describe("helpers", () => {
     });
 
     test("passes createTarget=false to plugin when target already exists", async () => {
-      const syncFn = mock(async () => ({ created: [], updated: [], skipped: [] }));
+      const syncFn = mock(async () => ({ created: [], updated: [], skipped: [], syncedFiles: {} }));
       const plugin = createMockPlugin({ targetExists: () => true, sync: syncFn });
 
       await runSync({

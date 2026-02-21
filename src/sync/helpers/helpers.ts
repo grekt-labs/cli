@@ -1,5 +1,6 @@
 import type { Lockfile, ProjectConfig, CustomTarget, SyncPlugin } from "@grekt-labs/cli-engine";
 import { getPlugin } from "#/sync/manager/manager";
+import { saveLockfile } from "#/context";
 import { success, info, warning, log, colors, symbols, spinner } from "#/shared/ui/ui";
 import { isSkipReason, extractSkippedPath } from "#/sync/skip-reason/skip-reason";
 
@@ -44,6 +45,8 @@ export async function runSync(options: RunSyncOptions): Promise<RunSyncResult> {
     totalSkipped: 0,
   };
 
+  let lockfileChanged = false;
+
   for (const target of targets) {
     const plugin = resolvePlugin(target, customTargets);
     log(colors.bold(`\nSyncing ${plugin.name}...`));
@@ -65,6 +68,18 @@ export async function runSync(options: RunSyncOptions): Promise<RunSyncResult> {
     });
 
     spin.stop();
+
+    // Merge synced file hashes into lockfile entries
+    for (const [artifactId, fileHashes] of Object.entries(syncResult.syncedFiles)) {
+      const entry = lockfile.artifacts[artifactId];
+      if (!entry) continue;
+
+      if (!entry.synced) {
+        entry.synced = {};
+      }
+      entry.synced[plugin.id] = fileHashes;
+      lockfileChanged = true;
+    }
 
     for (const file of syncResult.created) {
       success(`Created ${file}`);
@@ -99,6 +114,10 @@ export async function runSync(options: RunSyncOptions): Promise<RunSyncResult> {
       }
       result.totalSkipped += lazyItems.length;
     }
+  }
+
+  if (lockfileChanged) {
+    saveLockfile(lockfile, projectRoot);
   }
 
   return result;
