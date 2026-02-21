@@ -1,6 +1,7 @@
 import { describe, test, expect } from "bun:test";
 import { ensureLongForm } from "./trust";
 import type { ArtifactEntry } from "@grekt-labs/cli-engine";
+import { generateTrustKey, signTrust, TRUST_SIGNATURE_PREFIX } from "@grekt-labs/cli-engine";
 
 describe("ensureLongForm", () => {
   test("converts string entry to object with version and lazy mode", () => {
@@ -16,34 +17,48 @@ describe("ensureLongForm", () => {
     expect(result.mode).toBe("core");
   });
 
-  test("preserves existing fields on object entry", () => {
+  test("preserves existing signature on object entry", () => {
+    const key = generateTrustKey();
+    const sig = signTrust("@scope/name", key);
+    const entry: ArtifactEntry = { version: "1.0.0", mode: "lazy", trusted: sig };
+    const result = ensureLongForm(entry);
+    expect(result.trusted).toBe(sig);
+  });
+
+  test("preserves boolean trusted on object entry (for backwards compat parsing)", () => {
     const entry: ArtifactEntry = { version: "1.0.0", mode: "lazy", trusted: true };
     const result = ensureLongForm(entry);
     expect(result.trusted).toBe(true);
   });
 });
 
-describe("trust logic", () => {
-  test("setting trusted on short form entry produces correct result", () => {
+describe("trust signing flow", () => {
+  const trustKey = generateTrustKey();
+
+  test("setting signature on short form entry produces correct result", () => {
     const entry = ensureLongForm("1.0.0");
-    entry.trusted = true;
+    const sig = signTrust("@scope/name", trustKey);
+    entry.trusted = sig;
 
     expect(entry.version).toBe("1.0.0");
     expect(entry.mode).toBe("lazy");
-    expect(entry.trusted).toBe(true);
+    expect(typeof entry.trusted).toBe("string");
+    expect((entry.trusted as string).startsWith(TRUST_SIGNATURE_PREFIX)).toBe(true);
   });
 
-  test("setting trusted on long form entry preserves other fields", () => {
+  test("setting signature on long form entry preserves other fields", () => {
     const entry = ensureLongForm({ version: "2.0.0", mode: "core" });
-    entry.trusted = true;
+    const sig = signTrust("@scope/name", trustKey);
+    entry.trusted = sig;
 
     expect(entry.version).toBe("2.0.0");
     expect(entry.mode).toBe("core");
-    expect(entry.trusted).toBe(true);
+    expect(entry.trusted).toBe(sig);
   });
 
   test("deleting trusted from entry removes the field", () => {
-    const entry: Exclude<ArtifactEntry, string> = { version: "1.0.0", mode: "lazy", trusted: true };
+    const sig = signTrust("@scope/name", trustKey);
+    const entry: Exclude<ArtifactEntry, string> = { version: "1.0.0", mode: "lazy", trusted: sig };
     delete entry.trusted;
 
     expect(entry.trusted).toBeUndefined();
@@ -52,7 +67,6 @@ describe("trust logic", () => {
 
   test("short form entry has no trusted to delete", () => {
     const entry = "1.0.0";
-    // Short form is a string, typeof check prevents mutation
     expect(typeof entry).toBe("string");
   });
 });

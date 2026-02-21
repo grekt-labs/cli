@@ -1,4 +1,5 @@
 import type { ArtifactMode, ProjectConfig, Lockfile } from "@grekt-labs/cli-engine";
+import { verifyTrustSignature } from "@grekt-labs/cli-engine";
 
 /**
  * Get the sync mode for an artifact.
@@ -55,16 +56,26 @@ export function shouldUseSymlinks(
 }
 
 /**
- * Check if an artifact is marked as trusted in the project config.
- * Trusted artifacts are excluded from --fail-on evaluation in scan.
+ * Check if an artifact is cryptographically trusted via HMAC signature.
+ * Requires a valid trust key to verify signatures.
+ * Without a key, all artifacts are untrusted (safe default).
+ * Plain `trusted: true` is rejected — only HMAC signatures are accepted.
  */
-export function isArtifactTrusted(artifactId: string, config?: ProjectConfig): boolean {
+export function isArtifactTrusted(
+  artifactId: string,
+  config?: ProjectConfig,
+  trustKey?: string,
+): boolean {
   if (!config) return false;
+  if (!trustKey) return false;
 
   const configEntry = config.artifacts[artifactId];
   if (!configEntry) return false;
 
   if (typeof configEntry === "string") return false;
 
-  return configEntry.trusted === true;
+  const { trusted } = configEntry;
+  if (typeof trusted !== "string") return false;
+
+  return verifyTrustSignature(artifactId, trusted, trustKey);
 }
