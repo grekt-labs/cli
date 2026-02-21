@@ -1,3 +1,10 @@
+# [6.32.0](https://github.com/grekt-labs/cli/compare/v6.31.0...v6.32.0) (2026-02-21)
+
+
+### Features
+
+* move releases to cli repo and add npm publishing ([57d0ddb](https://github.com/grekt-labs/cli/commit/57d0ddb28704389dacf00daf7daa646939ee8575))
+
 # [6.31.0](https://github.com/grekt-labs/cli/compare/v6.30.0...v6.31.0) (2026-02-21)
 
 
