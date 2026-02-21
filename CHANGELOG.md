@@ -1,3 +1,10 @@
+## [6.28.1](https://github.com/grekt-labs/cli/compare/v6.28.0...v6.28.1) (2026-02-21)
+
+
+### Bug Fixes
+
+* resolve local path handling in scan command ([676a16b](https://github.com/grekt-labs/cli/commit/676a16bc1939065b59ee1eeaecba6be65e2322cf))
+
 # [6.28.0](https://github.com/grekt-labs/cli/compare/v6.27.0...v6.28.0) (2026-02-21)
 
 
