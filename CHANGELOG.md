@@ -1,3 +1,10 @@
+# [6.33.0](https://github.com/grekt-labs/cli/compare/v6.32.0...v6.33.0) (2026-02-21)
+
+
+### Features
+
+* extend list command to browse remote self-hosted registries ([4a974c0](https://github.com/grekt-labs/cli/commit/4a974c0b18ada5cbea28fdfe28c0b21f9e308c42))
+
 # [6.32.0](https://github.com/grekt-labs/cli/compare/v6.31.0...v6.32.0) (2026-02-21)
 
 
