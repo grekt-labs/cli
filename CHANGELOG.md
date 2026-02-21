@@ -1,3 +1,10 @@
+# [6.31.0](https://github.com/grekt-labs/cli/compare/v6.30.0...v6.31.0) (2026-02-21)
+
+
+### Features
+
+* HMAC signed trust for artifact verification ([bf4e9a9](https://github.com/grekt-labs/cli/commit/bf4e9a95caa05c1dab319384acdd215f7e3b9cdb))
+
 # [6.30.0](https://github.com/grekt-labs/cli/compare/v6.29.0...v6.30.0) (2026-02-21)
 
 
