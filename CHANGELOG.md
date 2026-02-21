@@ -1,3 +1,15 @@
+# [6.29.0-beta.1](https://github.com/grekt-labs/cli/compare/v6.28.1...v6.29.0-beta.1) (2026-02-21)
+
+
+### Bug Fixes
+
+* use ArtifactMode type from cli-engine instead of inline literal ([f6c3484](https://github.com/grekt-labs/cli/commit/f6c34840c878e761d3f78daf538bd3b7da59e7a8))
+
+
+### Features
+
+* reconcile-based install using grekt.yaml as source of truth ([7eb09b8](https://github.com/grekt-labs/cli/commit/7eb09b881de2ed82bfcc3c2d72f9bac768644661))
+
 ## [6.28.1](https://github.com/grekt-labs/cli/compare/v6.28.0...v6.28.1) (2026-02-21)
 
 
