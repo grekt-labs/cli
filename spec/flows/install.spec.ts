@@ -99,16 +99,16 @@ describe("grekt install", () => {
     expect(result.stdout).toContain("Installed");
   });
 
-  test("errors when lockfile missing", async () => {
+  test("exits cleanly when no lockfile and no artifacts in config", async () => {
     project = createTestProject({ initialized: true });
 
     const result = await runCli(["install"], { cwd: project.root });
 
-    expect(result.exitCode).toBe(1);
-    expect(result.stdout).toContain("No artifacts to install");
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain("No artifacts in grekt.yaml");
   });
 
-  test("handles empty lockfile gracefully", async () => {
+  test("exits cleanly when empty lockfile and no artifacts in config", async () => {
     project = createTestProject({
       initialized: true,
       lockfile: { version: 1, artifacts: {} },
@@ -117,7 +117,7 @@ describe("grekt install", () => {
     const result = await runCli(["install"], { cwd: project.root });
 
     expect(result.exitCode).toBe(0);
-    expect(result.stdout).toContain("No artifacts in lockfile");
+    expect(result.stdout).toContain("No artifacts in grekt.yaml");
   });
 
   test("errors when not initialized", async () => {
