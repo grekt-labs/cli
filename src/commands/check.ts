@@ -1,9 +1,9 @@
 import { Command } from "commander";
 import { requireInitialized } from "#/shared/guards/guards";
 import { getLockfile } from "#/context";
-import { runCheck } from "#/artifact/check/check";
-import { displayCheckResults } from "#/artifact/check/display";
-import { error, info, newline } from "#/shared/ui/ui";
+import { runCheck, runSyncCheck } from "#/artifact/check/check";
+import { displayCheckResults, displaySyncCheckResults } from "#/artifact/check/display";
+import { info, newline } from "#/shared/ui/ui";
 
 export const checkCommand = new Command("check")
   .description("Check artifact integrity, sync status, and detect conflicts")
@@ -23,7 +23,12 @@ export const checkCommand = new Command("check")
     const summary = runCheck(projectRoot, lockfile);
     displayCheckResults(summary, lockfile);
 
-    if (!summary.healthy) {
+    const syncSummary = runSyncCheck(projectRoot, lockfile);
+    displaySyncCheckResults(syncSummary);
+
+    const hasIssues = !summary.healthy || !syncSummary.healthy;
+
+    if (hasIssues) {
       newline();
 
       if (summary.driftCount > 0) {
@@ -31,6 +36,9 @@ export const checkCommand = new Command("check")
       }
       if (summary.missingCount > 0) {
         info("To reinstall missing artifacts: grekt install");
+      }
+      if (!syncSummary.healthy) {
+        info("To restore synced files: grekt sync --force");
       }
     }
   });

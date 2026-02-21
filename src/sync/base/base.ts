@@ -7,6 +7,7 @@ import {
   CATEGORY_CONFIG,
   getCategoriesForFormat,
   scanArtifact,
+  hashContent,
 } from "@grekt-labs/cli-engine";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
 import { getSafeFilename, generateDefaultBlockContent, GREKT_SECTION_HEADER, GREKT_ENTRY_POINT_TEXT } from "@grekt-labs/cli-engine";
@@ -190,7 +191,7 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
     },
 
     async sync(lockfile: Lockfile, projectRoot: string, options: SyncOptions): Promise<SyncResult> {
-      const result: SyncResult = { created: [], updated: [], skipped: [] };
+      const result: SyncResult = { created: [], updated: [], skipped: [], syncedFiles: {} };
 
       if (options.dryRun) {
         const preview = this.preview(lockfile, projectRoot);
@@ -198,6 +199,7 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
           created: preview.willCreate,
           updated: preview.willUpdate,
           skipped: preview.willSkip,
+          syncedFiles: {},
         };
       }
 
@@ -263,20 +265,31 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
                 fs.unlink(target);
               }
 
+              let syncedHash: string;
+
               if (useSymlinks) {
                 fs.symlink(source, target);
-              } else if (config.transformContent) {
-                const content = fs.readFile(source);
-                const transformed = config.transformContent(content, category, artifactId);
-                fs.writeFile(target, transformed);
+                syncedHash = `link:${source}`;
               } else {
-                fs.copyFile(source, target);
+                const content = fs.readFile(source);
+                const written = config.transformContent
+                  ? config.transformContent(content, category, artifactId)
+                  : content;
+                fs.writeFile(target, written);
+                syncedHash = hashContent(written);
               }
 
+              // Track synced file hash per artifact
+              const relativePath = `${categoryDir}/${targetName}`;
+              if (!result.syncedFiles[artifactId]) {
+                result.syncedFiles[artifactId] = {};
+              }
+              result.syncedFiles[artifactId][relativePath] = syncedHash;
+
               if (existed) {
-                result.updated.push(`${categoryDir}/${targetName}`);
+                result.updated.push(relativePath);
               } else {
-                result.created.push(`${categoryDir}/${targetName}`);
+                result.created.push(relativePath);
               }
 
               if (config.afterFileSync) {
@@ -389,7 +402,7 @@ export function createRulesOnlyPlugin(config: RulesOnlyPluginConfig): SyncPlugin
     },
 
     async sync(lockfile: Lockfile, projectRoot: string, options: SyncOptions): Promise<SyncResult> {
-      const result: SyncResult = { created: [], updated: [], skipped: [] };
+      const result: SyncResult = { created: [], updated: [], skipped: [], syncedFiles: {} };
 
       if (options.dryRun) {
         const preview = this.preview(lockfile, projectRoot);
@@ -397,6 +410,7 @@ export function createRulesOnlyPlugin(config: RulesOnlyPluginConfig): SyncPlugin
           created: preview.willCreate,
           updated: preview.willUpdate,
           skipped: preview.willSkip,
+          syncedFiles: {},
         };
       }
 
