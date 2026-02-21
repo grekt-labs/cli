@@ -74,7 +74,7 @@ describe("manager", () => {
         name: "Test",
         targetFile: ".test",
         targetExists: () => false,
-        sync: async () => ({ created: [], updated: [], skipped: [] }),
+        sync: async () => ({ created: [], updated: [], skipped: [], syncedFiles: {} }),
         preview: () => ({ willCreate: [], willUpdate: [], willSkip: [] }),
       };
 
