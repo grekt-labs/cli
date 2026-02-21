@@ -16,8 +16,9 @@ Push to `main` or `beta` triggers the release workflow:
 1. **validate** - Run tests and verify the build compiles
 2. **semantic-release** - Analyze commits, bump version, create git tag
 3. **build** - Compile binaries for linux-x64, macos-arm64, macos-x64
-4. **publish** - Upload binaries to `grekt-labs/cli-releases` as a GitHub release
-5. **update-homebrew** - Dispatch event to `grekt-labs/homebrew-grekt` (stable only)
+4. **publish** - Upload binaries as a GitHub release in this repo
+5. **npm-publish** - Publish to npm as `@grekt/cli` (stable only)
+6. **update-homebrew** - Dispatch event to `grekt-labs/homebrew-grekt` (stable only)
 
 ## Publishing a Beta
 
@@ -45,19 +46,25 @@ semantic-release on `main` strips the pre-release suffix and publishes `6.27.0` 
 ### Stable (default)
 
 ```bash
-curl -fsSL https://github.com/grekt-labs/cli-releases/releases/latest/download/install.sh | sh
+curl -fsSL https://github.com/grekt-labs/cli/releases/latest/download/install.sh | sh
+```
+
+### npm
+
+```bash
+npm install -g @grekt/cli
 ```
 
 ### Beta
 
 ```bash
-GREKT_CHANNEL=beta curl -fsSL https://github.com/grekt-labs/cli-releases/releases/latest/download/install.sh | sh
+GREKT_CHANNEL=beta curl -fsSL https://github.com/grekt-labs/cli/releases/latest/download/install.sh | sh
 ```
 
 ### Specific version
 
 ```bash
-GREKT_VERSION=6.27.0-beta.1 curl -fsSL https://github.com/grekt-labs/cli-releases/releases/latest/download/install.sh | sh
+GREKT_VERSION=6.27.0-beta.1 curl -fsSL https://github.com/grekt-labs/cli/releases/latest/download/install.sh | sh
 ```
 
 ## Local Beta Testing (alongside Homebrew)
@@ -119,9 +126,9 @@ The release workflow requires these repository secrets:
 
 | Secret | Purpose |
 |--------|---------|
-| `GITHUB_TOKEN` | Automatic, used by semantic-release for tags and commits |
+| `GITHUB_TOKEN` | Automatic, used by semantic-release for tags, commits, and GitHub releases |
 | `GREKT_PACKAGES_NPMRC` | Auth token for `@grekt-labs` GitHub Packages (private npm deps) |
-| `RELEASES_REPO_TOKEN` | PAT with repo access to `grekt-labs/cli-releases` for creating releases |
+| `NPM_TOKEN` | npm auth token for publishing `@grekt/cli` to the npm registry |
 | `HOMEBREW_TAP_TOKEN` | PAT with repo access to `grekt-labs/homebrew-grekt` for formula updates |
 
 ## Branch Setup
@@ -135,3 +142,7 @@ git push -u origin beta
 ```
 
 After creation, protect the branch with the same rules as `main` (require PR, no force push).
+
+## Archive
+
+Releases prior to v6.32.0 are available at [github.com/grekt-labs/cli-releases](https://github.com/grekt-labs/cli-releases). Starting from v6.32.0, all releases are published directly in this repo.

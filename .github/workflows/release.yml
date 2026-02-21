@@ -165,9 +165,9 @@ jobs:
           echo "$NOTES" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      - name: Create Release in cli-releases
+      - name: Create Release
         env:
-          GH_TOKEN: ${{ secrets.RELEASES_REPO_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           PRERELEASE_FLAG=""
           if [ "${{ needs.semantic-release.outputs.is-prerelease }}" = "true" ]; then
@@ -175,11 +175,51 @@ jobs:
           fi
 
           gh release create ${{ needs.semantic-release.outputs.version }} \
-            --repo grekt-labs/cli-releases \
             --title "${{ needs.semantic-release.outputs.version }}" \
             --notes "${{ steps.notes.outputs.notes }}" \
             $PRERELEASE_FLAG \
             artifacts/*
+
+  npm-publish:
+    needs: [semantic-release, publish]
+    if: needs.semantic-release.outputs.is-prerelease != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.semantic-release.outputs.version }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Configure GitHub Packages auth
+        run: |
+          echo "@grekt-labs:registry=https://npm.pkg.github.com" >> .npmrc
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GREKT_PACKAGES_NPMRC }}" >> .npmrc
+
+      - run: bun install --frozen-lockfile
+
+      - name: Build Node bundle
+        run: bun run build
+
+      - name: Prepare package for npm
+        run: |
+          node -e "
+            const pkg = require('./package.json');
+            pkg.bin = { grekt: './dist/index.js' };
+            require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+          "
+
+      - name: Configure npm auth
+        run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" >> .npmrc
+
+      - name: Publish to npm
+        run: npm publish --access public
 
   update-homebrew:
     needs: [semantic-release, publish]
