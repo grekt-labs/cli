@@ -293,6 +293,7 @@ async function scanAllInstalled(projectRoot: string, jsonOutput?: boolean, failO
   }
 
   const config = getConfig(projectRoot);
+  const trustKey = process.env.GREKT_TRUST_KEY;
   const artifactsDir = join(projectRoot, ARTIFACTS_DIR);
   const results: Array<{ artifactId: string; report: SecurityReport; trusted?: boolean }> = [];
   const errors: Array<{ artifactId: string; message: string }> = [];
@@ -311,7 +312,7 @@ async function scanAllInstalled(projectRoot: string, jsonOutput?: boolean, failO
 
     try {
       const report = await scanArtifactSecurity(fs, artifactDir);
-      const trusted = isArtifactTrusted(artifactId, config);
+      const trusted = isArtifactTrusted(artifactId, config, trustKey);
       results.push({ artifactId, report, trusted });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Scan failed";

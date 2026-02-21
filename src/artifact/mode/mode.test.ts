@@ -1,6 +1,7 @@
 import { describe, test, expect } from "bun:test";
 import { getArtifactMode, shouldSyncArtifact, shouldUseSymlinks, isArtifactTrusted } from "./mode";
 import type { ProjectConfig, Lockfile } from "@grekt-labs/cli-engine";
+import { generateTrustKey, signTrust } from "@grekt-labs/cli-engine";
 
 const baseConfig: ProjectConfig = {
   targets: [],
@@ -149,12 +150,24 @@ describe("shouldUseSymlinks", () => {
 });
 
 describe("isArtifactTrusted", () => {
+  const trustKey = generateTrustKey();
+
   test("returns false when config is undefined", () => {
-    expect(isArtifactTrusted("@scope/name")).toBe(false);
+    expect(isArtifactTrusted("@scope/name", undefined, trustKey)).toBe(false);
+  });
+
+  test("returns false when trust key is undefined", () => {
+    const config: ProjectConfig = {
+      ...baseConfig,
+      artifacts: {
+        "@scope/name": { version: "1.0.0", mode: "lazy", trusted: signTrust("@scope/name", trustKey) },
+      },
+    };
+    expect(isArtifactTrusted("@scope/name", config)).toBe(false);
   });
 
   test("returns false when artifact is not in config", () => {
-    expect(isArtifactTrusted("@scope/name", baseConfig)).toBe(false);
+    expect(isArtifactTrusted("@scope/name", baseConfig, trustKey)).toBe(false);
   });
 
   test("returns false for string entry (short form)", () => {
@@ -162,7 +175,7 @@ describe("isArtifactTrusted", () => {
       ...baseConfig,
       artifacts: { "@scope/name": "1.0.0" },
     };
-    expect(isArtifactTrusted("@scope/name", config)).toBe(false);
+    expect(isArtifactTrusted("@scope/name", config, trustKey)).toBe(false);
   });
 
   test("returns false when trusted is not set on object entry", () => {
@@ -172,38 +185,83 @@ describe("isArtifactTrusted", () => {
         "@scope/name": { version: "1.0.0", mode: "lazy" },
       },
     };
-    expect(isArtifactTrusted("@scope/name", config)).toBe(false);
+    expect(isArtifactTrusted("@scope/name", config, trustKey)).toBe(false);
   });
 
-  test("returns false when trusted is explicitly false", () => {
-    const config: ProjectConfig = {
-      ...baseConfig,
-      artifacts: {
-        "@scope/name": { version: "1.0.0", mode: "lazy", trusted: false },
-      },
-    };
-    expect(isArtifactTrusted("@scope/name", config)).toBe(false);
-  });
-
-  test("returns true when trusted is true", () => {
+  test("returns false when trusted is boolean true (rejects plain boolean)", () => {
     const config: ProjectConfig = {
       ...baseConfig,
       artifacts: {
         "@scope/name": { version: "1.0.0", mode: "lazy", trusted: true },
       },
     };
-    expect(isArtifactTrusted("@scope/name", config)).toBe(true);
+    expect(isArtifactTrusted("@scope/name", config, trustKey)).toBe(false);
+  });
+
+  test("returns false when trusted is boolean false", () => {
+    const config: ProjectConfig = {
+      ...baseConfig,
+      artifacts: {
+        "@scope/name": { version: "1.0.0", mode: "lazy", trusted: false },
+      },
+    };
+    expect(isArtifactTrusted("@scope/name", config, trustKey)).toBe(false);
+  });
+
+  test("returns true for valid HMAC signature with correct key", () => {
+    const signature = signTrust("@scope/name", trustKey);
+    const config: ProjectConfig = {
+      ...baseConfig,
+      artifacts: {
+        "@scope/name": { version: "1.0.0", mode: "lazy", trusted: signature },
+      },
+    };
+    expect(isArtifactTrusted("@scope/name", config, trustKey)).toBe(true);
+  });
+
+  test("returns false for valid signature with wrong key", () => {
+    const signature = signTrust("@scope/name", trustKey);
+    const otherKey = generateTrustKey();
+    const config: ProjectConfig = {
+      ...baseConfig,
+      artifacts: {
+        "@scope/name": { version: "1.0.0", mode: "lazy", trusted: signature },
+      },
+    };
+    expect(isArtifactTrusted("@scope/name", config, otherKey)).toBe(false);
+  });
+
+  test("returns false for forged signature string", () => {
+    const config: ProjectConfig = {
+      ...baseConfig,
+      artifacts: {
+        "@scope/name": { version: "1.0.0", mode: "lazy", trusted: "grk_sig_fakefakefake" },
+      },
+    };
+    expect(isArtifactTrusted("@scope/name", config, trustKey)).toBe(false);
   });
 
   test("isolates trusted status between artifacts", () => {
+    const sigRisky = signTrust("@scope/risky", trustKey);
     const config: ProjectConfig = {
       ...baseConfig,
       artifacts: {
         "@scope/safe": { version: "1.0.0", mode: "lazy" },
-        "@scope/risky": { version: "1.0.0", mode: "lazy", trusted: true },
+        "@scope/risky": { version: "1.0.0", mode: "lazy", trusted: sigRisky },
       },
     };
-    expect(isArtifactTrusted("@scope/safe", config)).toBe(false);
-    expect(isArtifactTrusted("@scope/risky", config)).toBe(true);
+    expect(isArtifactTrusted("@scope/safe", config, trustKey)).toBe(false);
+    expect(isArtifactTrusted("@scope/risky", config, trustKey)).toBe(true);
+  });
+
+  test("signature for one artifact does not validate for another", () => {
+    const sigA = signTrust("@scope/a", trustKey);
+    const config: ProjectConfig = {
+      ...baseConfig,
+      artifacts: {
+        "@scope/b": { version: "1.0.0", mode: "lazy", trusted: sigA },
+      },
+    };
+    expect(isArtifactTrusted("@scope/b", config, trustKey)).toBe(false);
   });
 });
