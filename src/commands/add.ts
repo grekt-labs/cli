@@ -1,15 +1,15 @@
 import { Command } from "commander";
 import { getConfig, saveConfig } from "#/config/project/project";
 import { requireInitialized } from "#/shared/guards/guards";
-import { fs, cryptoProvider } from "#/context";
-import { getLockfile, saveLockfile } from "#/context";
+import { fs } from "#/context";
+import { getLockfile, saveLockfile, scanArtifact, hashDirectory } from "#/context";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
-import { parseSource, downloadFromSource } from "#/registry/sources/sources";
+import { parseSource } from "#/registry/sources/sources";
 import { getSourceDisplayName } from "#/registry/registry";
-import { scanArtifact, hashDirectory } from "#/context";
-import { parseName, calculateIntegrity } from "@grekt-labs/cli-engine";
+import { calculateIntegrity } from "@grekt-labs/cli-engine";
 import {
   selectComponents,
+  selectComponentsWithPrecheck,
   isEmptySelection,
   isFullSelection,
   createEmptySelection,
@@ -17,7 +17,7 @@ import {
 } from "#/artifact/selector/selector";
 import { removeUnselectedFiles } from "#/artifact/component-manager/component-manager";
 import { generateArtifactIndex } from "#/artifact/index/index";
-import { assertSafeArtifactId } from "#/artifact/validation/validation";
+import { resolveArtifact } from "#/artifact/resolver/resolver";
 import {
   getPreviousInstallation,
   computeStructureDiff,
@@ -28,7 +28,6 @@ import { success, error, info, log, warning, newline, colors, spinner } from "#/
 import { compareSemver, CATEGORIES, type Category } from "@grekt-labs/cli-engine";
 import { syncToTargets } from "#/sync/helpers/helpers";
 import { promptAndInstallHooks } from "#/sync/hooks";
-import { confirm } from "@inquirer/prompts";
 
 
 export const addCommand = new Command("add")
@@ -51,46 +50,28 @@ export const addCommand = new Command("add")
 
     requireInitialized(projectRoot);
 
-    // Parse the source
+    // Parse source for display and error hints
     const source = parseSource(sourceArg);
     const displayName = getSourceDisplayName(source);
-
-    // For git sources, use temp dir first, then rename after we know the artifact ID
-    const tempDir = `${projectRoot}/${ARTIFACTS_DIR}/.tmp-${cryptoProvider.randomUUID()}`;
 
     const spin = spinner(`Downloading ${displayName}...`);
     spin.start();
 
-    // Download artifact from source
-    fs.mkdir(tempDir, { recursive: true });
-    const downloadResult = await downloadFromSource(source, tempDir, projectRoot);
+    const result = await resolveArtifact(sourceArg, { projectRoot });
 
     spin.stop();
 
-    // Handle deprecation warning for registry sources
-    if (downloadResult.deprecationMessage) {
-      warning(`This version is deprecated: ${downloadResult.deprecationMessage}`);
-      newline();
-    }
-
-    if (!downloadResult.success) {
-      // Clean up temp directory
-      fs.rmdir(tempDir, { recursive: true });
-
-      if (downloadResult.error) {
-        error(`${colors.highlight(displayName)}: ${downloadResult.error}`);
-      } else {
-        error(`Artifact ${colors.highlight(displayName)} not found`);
-      }
+    if (!result.success) {
+      error(`${colors.highlight(displayName)}: ${result.error}`);
 
       if (source.type === "registry") {
-        if (downloadResult.error?.includes("not found")) {
+        if (result.error.includes("not found")) {
           info("Verify the artifact name and version are correct");
           info("For custom registries, check .grekt/config.yaml");
-        } else if (downloadResult.error?.includes("network") || downloadResult.error?.includes("reach")) {
+        } else if (result.error.includes("network") || result.error.includes("reach")) {
           info("Check your internet connection");
           info("For custom registries, verify the URL in .grekt/config.yaml");
-        } else if (downloadResult.error?.includes("denied") || downloadResult.error?.includes("auth")) {
+        } else if (result.error.includes("denied") || result.error.includes("auth")) {
           info("This artifact may be private. Run 'grekt login' first");
         }
       } else if (source.type === "github") {
@@ -105,27 +86,7 @@ export const addCommand = new Command("add")
       process.exit(1);
     }
 
-    // Scan the downloaded artifact
-    const artifactInfo = scanArtifact(tempDir);
-
-    if (!artifactInfo) {
-      fs.rmdir(tempDir, { recursive: true });
-      error("Invalid artifact: missing grekt.yaml or invalid structure");
-      process.exit(1);
-    }
-
-    const resolvedArtifactId = parseName(artifactInfo.manifest.name).artifactId;
-
-    // Validate artifact ID to prevent path traversal
-    try {
-      assertSafeArtifactId(resolvedArtifactId);
-    } catch {
-      fs.rmdir(tempDir, { recursive: true });
-      error("Invalid artifact: manifest contains unsafe characters in author or name");
-      process.exit(1);
-    }
-
-    // Now we know the artifact ID, create final target directory
+    const resolvedArtifactId = result.artifactId;
     const targetDir = `${projectRoot}/${ARTIFACTS_DIR}/${resolvedArtifactId}`;
     const lockfile = getLockfile(projectRoot);
 
@@ -134,13 +95,13 @@ export const addCommand = new Command("add")
       // Local sources always replace (no version comparison)
       if (fs.exists(targetDir)) {
         const existing = lockfile.artifacts[resolvedArtifactId];
-        const newVersion = artifactInfo.manifest.version;
+        const newVersion = result.version;
 
         if (existing && source.type !== "local") {
           try {
             const comparison = compareSemver(newVersion, existing.version);
             if (comparison <= 0) {
-              fs.rmdir(tempDir, { recursive: true });
+              fs.rmdir(result.tempDir, { recursive: true });
               info(`Already installed: ${colors.highlight(resolvedArtifactId)}@${existing.version}`);
               if (comparison < 0) {
                 info(`Current version (${existing.version}) is newer than requested (${newVersion})`);
@@ -165,12 +126,21 @@ export const addCommand = new Command("add")
       }
 
       // Move temp dir to final location
-      fs.rename(tempDir, targetDir);
+      fs.rename(result.tempDir, targetDir);
     } catch (err) {
-      if (fs.exists(tempDir)) {
-        fs.rmdir(tempDir, { recursive: true });
+      if (fs.exists(result.tempDir)) {
+        fs.rmdir(result.tempDir, { recursive: true });
       }
       throw err;
+    }
+
+    // Scan the installed artifact for component information
+    const artifactInfo = scanArtifact(targetDir);
+
+    if (!artifactInfo) {
+      fs.rmdir(targetDir, { recursive: true });
+      error("Invalid artifact: missing grekt.yaml or invalid structure");
+      process.exit(1);
     }
 
     // Read previous installation state (before modifying config)
@@ -260,7 +230,7 @@ export const addCommand = new Command("add")
     }
     saveConfig(config, projectRoot);
 
-    // Calculate checksums for all files
+    // Recalculate checksums after component selection may have removed files
     const fileHashes = hashDirectory(targetDir);
     const integrity = calculateIntegrity(fileHashes);
 
@@ -268,8 +238,8 @@ export const addCommand = new Command("add")
     lockfile.artifacts[resolvedArtifactId] = {
       version: artifactInfo.manifest.version,
       integrity,
-      source: source.raw,
-      resolved: downloadResult.resolved, // Full URL, immutable after write
+      source: result.lockfileEntry.source,
+      resolved: result.lockfileEntry.resolved,
       mode: resolvedMode,
       files: fileHashes,
     };
