@@ -2,16 +2,20 @@ import { logger } from "#/shared/logger/logger";
 import { Command } from "commander";
 import { getConfig, getLocalConfig } from "#/config/project/project";
 import { requireInitialized } from "#/shared/guards/guards";
-import { getLockfile, lockfileExists, fs } from "#/context";
+import { getLockfile, lockfileExists, createEmptyLockfile, saveLockfile, fs, verifyIntegrity, scanArtifact } from "#/context";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
-import { parseSource, downloadFromSource, getSourceToken } from "#/registry/sources/sources";
+import { parseSource, downloadFromSource } from "#/registry/sources/sources";
 import { downloadAndExtractTarball } from "#/registry/download/download";
-import { verifyIntegrity } from "#/context";
 import { generateArtifactIndex } from "#/artifact/index/index";
 import { isSafeArtifactId } from "#/artifact/validation/validation";
 import { syncToTargets } from "#/sync/helpers/helpers";
 import { resolveRegistry } from "#/registry/factory/factory";
-import { parseArtifactId, getGitLabHeaders, getGitHubHeaders, scanArtifact } from "@grekt-labs/cli-engine";
+import { reconcile, extractMode } from "#/artifact/reconcile/reconcile";
+import { resolveArtifact } from "#/artifact/resolver/resolver";
+import { removeUnselectedFiles } from "#/artifact/component-manager/component-manager";
+import type { ComponentSelection } from "#/artifact/selector/selector";
+import { CATEGORIES, parseArtifactId, getGitLabHeaders, getGitHubHeaders } from "@grekt-labs/cli-engine";
+import type { ArtifactEntry, Lockfile } from "@grekt-labs/cli-engine";
 import { success, error, info, warning, log, newline, colors, spinner } from "#/shared/ui/ui";
 
 /**
@@ -41,164 +45,295 @@ function getHeadersForArtifact(artifactId: string, projectRoot: string): Record<
   }
 }
 
+/**
+ * Build a component selection from a config entry's category arrays.
+ * Returns undefined if the entry has no category selections (full install).
+ */
+function getConfigSelection(entry: ArtifactEntry): ComponentSelection | undefined {
+  if (typeof entry === "string") return undefined;
+
+  const hasSelection = CATEGORIES.some((cat) => entry[cat] && entry[cat]!.length > 0);
+  if (!hasSelection) return undefined;
+
+  const selection = {} as ComponentSelection;
+  for (const category of CATEGORIES) {
+    selection[category] = entry[category] ?? [];
+  }
+  return selection;
+}
+
+/**
+ * Install an artifact from its lockfile entry (deterministic, uses resolved URL).
+ * Returns true if installation succeeded.
+ */
+async function installFromLockfile(
+  artifactId: string,
+  entry: Lockfile["artifacts"][string],
+  targetDir: string,
+  projectRoot: string,
+  force: boolean
+): Promise<"installed" | "skipped" | "failed"> {
+  // Check if already installed
+  if (fs.exists(targetDir) && !force) {
+    const integrity = verifyIntegrity(targetDir, entry.files);
+
+    if (integrity.valid) {
+      log(`${colors.dim("skip")} ${artifactId}@${entry.version} (already installed)`);
+      return "skipped";
+    }
+
+    warning(`${artifactId} has integrity issues, reinstalling...`);
+    fs.rmdir(targetDir, { recursive: true });
+  } else if (fs.exists(targetDir) && force) {
+    fs.rmdir(targetDir, { recursive: true });
+  }
+
+  const spin = spinner(`Installing ${artifactId}@${entry.version}...`);
+  spin.start();
+
+  let downloadSuccess = false;
+
+  // Use resolved URL if available (strict mode - no recalculation)
+  if (entry.resolved) {
+    const headers = getHeadersForArtifact(artifactId, projectRoot);
+    const result = await downloadAndExtractTarball(entry.resolved, targetDir, { headers });
+    downloadSuccess = result.success;
+  } else {
+    // Fallback for old lockfiles without resolved
+    const sourceStr = entry.source || artifactId;
+    const source = parseSource(sourceStr);
+    fs.mkdir(targetDir, { recursive: true });
+    const downloadResult = await downloadFromSource(source, targetDir, projectRoot);
+    downloadSuccess = downloadResult.success;
+
+    if (downloadResult.deprecationMessage) {
+      spin.stop();
+      warning(`${artifactId}@${entry.version} is deprecated: ${downloadResult.deprecationMessage}`);
+      spin.start();
+    }
+  }
+
+  if (!downloadSuccess) {
+    spin.stop();
+    fs.rmdir(targetDir, { recursive: true });
+    error(`Failed to download ${artifactId}`);
+    return "failed";
+  }
+
+  // Verify integrity
+  const integrity = verifyIntegrity(targetDir, entry.files);
+
+  if (!integrity.valid) {
+    spin.stop();
+
+    const scanned = scanArtifact(targetDir);
+    const hasValidationErrors = scanned && scanned.invalidFiles.length > 0;
+
+    fs.rmdir(targetDir, { recursive: true });
+    error(`Integrity check failed for ${artifactId}`);
+
+    if (hasValidationErrors) {
+      log(colors.dim("  Validation errors:"));
+      for (const file of scanned.invalidFiles) {
+        const detail = file.details || file.reason;
+        log(`    ${file.path}: ${detail}`);
+      }
+    }
+
+    if (integrity.missingFiles.length > 0) {
+      log(`  ${colors.dim("missing:")} ${integrity.missingFiles.join(", ")}`);
+    }
+    if (integrity.modifiedFiles.length > 0 && !hasValidationErrors) {
+      log(`  ${colors.dim("modified:")} ${integrity.modifiedFiles.map((f) => f.path).join(", ")}`);
+    }
+
+    return "failed";
+  }
+
+  spin.stop();
+  success(`Installed ${artifactId}@${entry.version}`);
+  return "installed";
+}
+
 export const installCommand = new Command("install")
   .alias("i")
-  .description("Install artifacts from lockfile (strict mode)")
+  .description("Install artifacts from config, using lockfile for determinism")
   .option("--force", "Reinstall even if already present")
   .action(async (options: { force?: boolean }) => {
     const projectRoot = process.cwd();
 
     requireInitialized(projectRoot);
 
-    // Check for lockfile
-    if (!lockfileExists(projectRoot)) {
-      const config = getConfig(projectRoot);
-      const hasArtifactsInConfig = Object.keys(config.artifacts).length > 0;
+    const config = getConfig(projectRoot);
+    const configArtifacts = config.artifacts;
 
-      if (hasArtifactsInConfig) {
-        error("Lockfile missing but grekt.yaml has artifacts");
-        info("Run 'grekt add <artifact>' for each artifact to generate lockfile");
-      } else {
-        info("No artifacts to install");
-        info("Run 'grekt add <artifact>' to add artifacts");
-      }
-      process.exit(1);
-    }
-
-    const lockfile = getLockfile(projectRoot);
-    const artifacts = Object.entries(lockfile.artifacts);
-
-    if (artifacts.length === 0) {
-      info("No artifacts in lockfile");
+    if (Object.keys(configArtifacts).length === 0) {
+      info("No artifacts in grekt.yaml");
+      info("Run 'grekt add <artifact>' to add artifacts");
       return;
     }
 
-    log(colors.bold(`Installing ${artifacts.length} artifact(s)...\n`));
+    const lockfile = lockfileExists(projectRoot)
+      ? getLockfile(projectRoot)
+      : createEmptyLockfile();
+
+    const plan = reconcile(configArtifacts, lockfile.artifacts);
+
+    // Log summary
+    const totalActions = plan.toKeep.length + plan.toResolve.length + plan.toPrune.length;
+    log(colors.bold(`Processing ${totalActions} artifact(s)...`));
+
+    if (plan.toResolve.length > 0) {
+      log(colors.dim(`  ${plan.toResolve.length} to resolve`));
+    }
+    if (plan.toKeep.length > 0) {
+      log(colors.dim(`  ${plan.toKeep.length} from lockfile`));
+    }
+    if (plan.toPrune.length > 0) {
+      log(colors.dim(`  ${plan.toPrune.length} to prune`));
+    }
+    newline();
 
     let installed = 0;
     let skipped = 0;
+    let resolved = 0;
+    let pruned = 0;
     let failed = 0;
 
-    for (const [artifactId, entry] of artifacts) {
-      // Validate artifact ID to prevent path traversal from corrupted lockfile
-      if (!isSafeArtifactId(artifactId)) {
-        error(`Skipping unsafe artifact ID: ${artifactId}`);
+    // Phase 1: Prune artifacts removed from config
+    for (const entry of plan.toPrune) {
+      const targetDir = `${projectRoot}/${ARTIFACTS_DIR}/${entry.artifactId}`;
+
+      if (fs.exists(targetDir)) {
+        fs.rmdir(targetDir, { recursive: true });
+      }
+      delete lockfile.artifacts[entry.artifactId];
+      log(`${colors.dim("prune")} ${entry.artifactId}`);
+      pruned++;
+    }
+
+    // Phase 2: Install kept artifacts from lockfile (deterministic)
+    for (const entry of plan.toKeep) {
+      if (!isSafeArtifactId(entry.artifactId)) {
+        error(`Skipping unsafe artifact ID: ${entry.artifactId}`);
         failed++;
         continue;
       }
 
-      const targetDir = `${projectRoot}/${ARTIFACTS_DIR}/${artifactId}`;
+      const targetDir = `${projectRoot}/${ARTIFACTS_DIR}/${entry.artifactId}`;
 
-      // Check if already installed
-      if (fs.exists(targetDir) && !options.force) {
-        // Verify existing installation
-        const integrity = verifyIntegrity(targetDir, entry.files);
-
-        if (integrity.valid) {
-          log(`${colors.dim("skip")} ${artifactId}@${entry.version} (already installed)`);
-          skipped++;
-          continue;
-        } else {
-          // Existing but corrupted, will reinstall
-          warning(`${artifactId} has integrity issues, reinstalling...`);
-          fs.rmdir(targetDir, { recursive: true });
-        }
-      } else if (fs.exists(targetDir) && options.force) {
-        fs.rmdir(targetDir, { recursive: true });
+      // Update mode from config if it differs from lockfile
+      const configEntry = configArtifacts[entry.artifactId];
+      const configMode = extractMode(configEntry!);
+      if (entry.lockfileEntry && entry.lockfileEntry.mode !== configMode) {
+        entry.lockfileEntry.mode = configMode;
+        lockfile.artifacts[entry.artifactId] = entry.lockfileEntry;
       }
 
-      const spin = spinner(`Installing ${artifactId}@${entry.version}...`);
+      const result = await installFromLockfile(
+        entry.artifactId,
+        entry.lockfileEntry!,
+        targetDir,
+        projectRoot,
+        options.force ?? false
+      );
+
+      if (result === "installed") installed++;
+      else if (result === "skipped") skipped++;
+      else failed++;
+    }
+
+    // Phase 3: Resolve new or version-changed artifacts
+    for (const entry of plan.toResolve) {
+      if (!isSafeArtifactId(entry.artifactId)) {
+        error(`Skipping unsafe artifact ID: ${entry.artifactId}`);
+        failed++;
+        continue;
+      }
+
+      const spin = spinner(`Resolving ${entry.artifactId}${entry.configVersion ? `@${entry.configVersion}` : ""}...`);
       spin.start();
 
-      let downloadSuccess = false;
-
-      // Use resolved URL if available (strict mode - no recalculation)
-      if (entry.resolved) {
-        // Get auth headers for the resolved URL based on registry type
-        const headers = getHeadersForArtifact(artifactId, projectRoot);
-        const result = await downloadAndExtractTarball(entry.resolved, targetDir, { headers });
-        downloadSuccess = result.success;
-      } else {
-        // Fallback for old lockfiles without resolved
-        const sourceStr = entry.source || artifactId;
-        const source = parseSource(sourceStr);
-        fs.mkdir(targetDir, { recursive: true });
-        const downloadResult = await downloadFromSource(source, targetDir, projectRoot);
-        downloadSuccess = downloadResult.success;
-
-        // Show deprecation warning if applicable
-        if (downloadResult.deprecationMessage) {
-          spin.stop();
-          warning(`${artifactId}@${entry.version} is deprecated: ${downloadResult.deprecationMessage}`);
-          spin.start();
-        }
-      }
-
-      if (!downloadSuccess) {
-        spin.stop();
-        fs.rmdir(targetDir, { recursive: true });
-        error(`Failed to download ${artifactId}`);
-        failed++;
-        continue;
-      }
-
-      // Verify integrity
-      const integrity = verifyIntegrity(targetDir, entry.files);
-
-      if (!integrity.valid) {
-        spin.stop();
-
-        // Scan for frontmatter errors before deleting
-        const scanned = scanArtifact(targetDir);
-        const hasValidationErrors = scanned && scanned.invalidFiles.length > 0;
-
-        fs.rmdir(targetDir, { recursive: true });
-        error(`Integrity check failed for ${artifactId}`);
-
-        // Show frontmatter validation errors if any
-        if (hasValidationErrors) {
-          log(colors.dim("  Validation errors:"));
-          for (const file of scanned.invalidFiles) {
-            const detail = file.details || file.reason;
-            log(`    ${file.path}: ${detail}`);
-          }
-        }
-
-        if (integrity.missingFiles.length > 0) {
-          log(`  ${colors.dim("missing:")} ${integrity.missingFiles.join(", ")}`);
-        }
-        if (integrity.modifiedFiles.length > 0 && !hasValidationErrors) {
-          log(`  ${colors.dim("modified:")} ${integrity.modifiedFiles.map((f) => f.path).join(", ")}`);
-        }
-
-        failed++;
-        continue;
-      }
+      const result = await resolveArtifact(entry.source, {
+        projectRoot,
+        version: entry.configVersion,
+      });
 
       spin.stop();
-      success(`Installed ${artifactId}@${entry.version}`);
-      installed++;
+
+      if (!result.success) {
+        error(`Failed to resolve ${entry.artifactId}: ${result.error}`);
+        failed++;
+        continue;
+      }
+
+      const targetDir = `${projectRoot}/${ARTIFACTS_DIR}/${result.artifactId}`;
+
+      // Remove old version if it exists
+      if (fs.exists(targetDir)) {
+        fs.rmdir(targetDir, { recursive: true });
+      }
+
+      // Ensure parent directory exists (for scoped artifacts)
+      const parentDir = targetDir.substring(0, targetDir.lastIndexOf("/"));
+      if (!fs.exists(parentDir)) {
+        fs.mkdir(parentDir, { recursive: true });
+      }
+
+      // Move resolved artifact to final location
+      fs.rename(result.tempDir, targetDir);
+
+      // Apply component selection from config (non-interactive)
+      const configEntry = configArtifacts[entry.artifactId];
+      const selection = configEntry ? getConfigSelection(configEntry) : undefined;
+
+      if (selection) {
+        const artifactInfo = scanArtifact(targetDir);
+        if (artifactInfo) {
+          removeUnselectedFiles(targetDir, artifactInfo, selection);
+        }
+      }
+
+      // Set mode from config
+      const configMode = configEntry ? extractMode(configEntry) : "lazy";
+      result.lockfileEntry.mode = configMode;
+
+      // Update lockfile
+      lockfile.artifacts[result.artifactId] = result.lockfileEntry;
+
+      success(`Resolved ${result.artifactId}@${result.version} (${entry.reason})`);
+      resolved++;
     }
+
+    // Save lockfile (even on partial success)
+    saveLockfile(lockfile, projectRoot);
 
     newline();
 
     if (failed > 0) {
-      error(`${failed} artifact(s) failed to install`);
-      info("The registry version may differ from lockfile. Try 'grekt add' to update.");
-      process.exit(1);
+      error(`${failed} artifact(s) failed`);
     }
 
+    if (resolved > 0) {
+      success(`Resolved ${resolved} artifact(s)`);
+    }
     if (installed > 0) {
       success(`Installed ${installed} artifact(s)`);
     }
     if (skipped > 0) {
       info(`Skipped ${skipped} artifact(s) (already installed)`);
     }
+    if (pruned > 0) {
+      info(`Pruned ${pruned} artifact(s)`);
+    }
 
     // Generate artifact index
-    const config = getConfig(projectRoot);
     generateArtifactIndex(projectRoot, config, lockfile);
 
-    // Auto-sync to targets (same as add/upgrade)
+    // Auto-sync to targets
     await syncToTargets(config, lockfile, projectRoot);
+
+    if (failed > 0) {
+      process.exit(1);
+    }
   });
