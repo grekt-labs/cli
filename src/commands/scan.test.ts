@@ -40,6 +40,16 @@ describe("scan", () => {
       expect(source.type).toBe("local");
     });
 
+    test("dotfile directory path is detected as local", () => {
+      const source = parseSource(".claude/skills/api-endpoint/SKILL.md");
+      expect(source.type).toBe("local");
+    });
+
+    test("dotfile nested path is detected as local", () => {
+      const source = parseSource(".grekt/artifacts/some-artifact");
+      expect(source.type).toBe("local");
+    });
+
     test("registry source with version is detected", () => {
       const source = parseSource("@author/artifact@1.0.0");
       expect(source.type).toBe("registry");

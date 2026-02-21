@@ -1,4 +1,4 @@
-import { join } from "path";
+import { join, resolve } from "path";
 import { Command } from "commander";
 import { requireInitialized } from "#/shared/guards/guards";
 import { fs, cryptoProvider, getLockfile } from "#/context";
@@ -215,18 +215,15 @@ async function scanRemoteArtifact(source: ParsedSource, projectRoot: string, jso
 }
 
 async function scanSingleArtifact(artifactPath: string, jsonOutput?: boolean, failOnThreshold?: TrustBadge): Promise<void> {
-  const resolvedPath = join(process.cwd(), artifactPath);
+  const resolvedPath = resolve(artifactPath);
 
   if (!fs.exists(resolvedPath)) {
-    error(`Path does not exist: ${artifactPath}`);
+    error(`Path does not exist: ${resolvedPath}`);
     process.exit(1);
   }
 
   const stat = fs.stat(resolvedPath);
-  if (!stat.isDirectory) {
-    error(`Path is not a directory: ${artifactPath}`);
-    process.exit(1);
-  }
+  const scanPath = stat.isDirectory ? resolvedPath : resolve(resolvedPath, "..");
 
   const label = artifactPath;
 
@@ -235,7 +232,7 @@ async function scanSingleArtifact(artifactPath: string, jsonOutput?: boolean, fa
     spin.start();
 
     try {
-      const report = await scanArtifactSecurity(fs, resolvedPath);
+      const report = await scanArtifactSecurity(fs, scanPath);
       spin.stop();
 
       log(`Scanning ${colors.highlight(label)}...`);
@@ -253,7 +250,7 @@ async function scanSingleArtifact(artifactPath: string, jsonOutput?: boolean, fa
     }
   } else {
     try {
-      const report = await scanArtifactSecurity(fs, resolvedPath);
+      const report = await scanArtifactSecurity(fs, scanPath);
       console.log(JSON.stringify(report, null, 2));
 
       if (failOnThreshold) {
