@@ -1,3 +1,10 @@
+# [6.30.0](https://github.com/grekt-labs/cli/compare/v6.29.0...v6.30.0) (2026-02-21)
+
+
+### Features
+
+* detect sync drift in `grekt check` ([09dde13](https://github.com/grekt-labs/cli/commit/09dde13bed09aac332709e2a5ba73f20547ccaab))
+
 # [6.30.0-beta.1](https://github.com/grekt-labs/cli/compare/v6.29.0...v6.30.0-beta.1) (2026-02-21)
 
 
