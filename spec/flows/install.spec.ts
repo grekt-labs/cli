@@ -128,4 +128,78 @@ describe("grekt install", () => {
     expect(result.exitCode).toBe(1);
     expect(result.stderr).toContain("not initialized");
   });
+
+  describe("local artifacts", () => {
+    function projectWithLocalArtifact(): TestProject {
+      const project = createTestProject({
+        initialized: true,
+        artifacts: { "my-local-artifact": "1.0.0" },
+        lockfile: {
+          version: 1,
+          artifacts: {
+            "my-local-artifact": {
+              version: "1.0.0",
+              integrity: "sha256:abc123",
+              source: "./local/my-artifact",
+              mode: "lazy",
+              files: {
+                "grekt.yaml": "sha256:def456",
+              },
+            },
+          },
+        },
+      });
+      return project;
+    }
+
+    test("skips local artifacts silently in dev mode", async () => {
+      project = projectWithLocalArtifact();
+
+      const result = await runCli(["install"], {
+        cwd: project.root,
+        env: { CI: "" },
+      });
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("skip");
+      expect(result.stdout).toContain("local source");
+    });
+
+    test("fails with --ci flag when local artifacts are present", async () => {
+      project = projectWithLocalArtifact();
+
+      const result = await runCli(["install", "--ci"], {
+        cwd: project.root,
+      });
+
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain("Local artifacts detected in CI environment");
+      expect(result.stdout).toContain("my-local-artifact");
+    });
+
+    test("fails with CI env var when local artifacts are present", async () => {
+      project = projectWithLocalArtifact();
+
+      const result = await runCli(["install"], {
+        cwd: project.root,
+        env: { CI: "true" },
+      });
+
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain("Local artifacts detected in CI environment");
+    });
+
+    test("does not fail in CI when only remote artifacts are present", async () => {
+      project = await projectWithArtifact();
+      clearResolvedUrls(project.root);
+
+      const result = await runCli(["install", "--ci"], {
+        cwd: project.root,
+        env: { GREKT_REGISTRY_URL: registry.url },
+      });
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stderr).not.toContain("Local artifacts detected");
+    });
+  });
 });
