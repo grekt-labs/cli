@@ -24,7 +24,7 @@ describe("grekt init", () => {
     expect(existsSync(configPath)).toBe(true);
 
     const config = parse(readFileSync(configPath, "utf-8"));
-    expect(config.targets).toEqual(["global"]);
+    expect(config.targets).toEqual(["claude"]);
 
     // .grekt directory structure
     expect(existsSync(join(project.root, ".grekt"))).toBe(true);

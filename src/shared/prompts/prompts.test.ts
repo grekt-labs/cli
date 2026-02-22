@@ -31,14 +31,19 @@ vi.mock("#/shared/ui/ui", () => ({
 }));
 
 // Mock inquirer prompts
-const mockCheckbox = vi.fn();
 const mockInput = vi.fn();
 const mockConfirm = vi.fn();
 
 vi.mock("@inquirer/prompts", () => ({
-  checkbox: mockCheckbox,
   input: mockInput,
   confirm: mockConfirm,
+}));
+
+// Mock searchable checkbox
+const mockSearchableCheckbox = vi.fn();
+
+vi.mock("#/shared/prompts/searchable-checkbox", () => ({
+  searchableCheckbox: mockSearchableCheckbox,
 }));
 
 describe("withPromptHandler", () => {
@@ -101,13 +106,13 @@ describe("selectTargetsToAdd", () => {
   ];
 
   it("should show existing targets as disabled", async () => {
-    mockCheckbox.mockResolvedValueOnce(["cursor"]);
+    mockSearchableCheckbox.mockResolvedValueOnce(["cursor"]);
 
     const { selectTargetsToAdd } = await import("./prompts");
 
     await selectTargetsToAdd(pluginChoices, ["claude"], {});
 
-    const callArgs = mockCheckbox.mock.calls[0][0];
+    const callArgs = mockSearchableCheckbox.mock.calls[0][0];
     const claudeChoice = callArgs.choices.find((c: { value: string }) => c.value === "claude");
     const cursorChoice = callArgs.choices.find((c: { value: string }) => c.value === "cursor");
 
@@ -117,7 +122,7 @@ describe("selectTargetsToAdd", () => {
   });
 
   it("should return only newly selected targets", async () => {
-    mockCheckbox.mockResolvedValueOnce(["cursor"]);
+    mockSearchableCheckbox.mockResolvedValueOnce(["cursor"]);
 
     const { selectTargetsToAdd } = await import("./prompts");
 
@@ -128,7 +133,7 @@ describe("selectTargetsToAdd", () => {
   });
 
   it("should show existing custom targets as disabled", async () => {
-    mockCheckbox.mockResolvedValueOnce([]);
+    mockSearchableCheckbox.mockResolvedValueOnce([]);
 
     const { selectTargetsToAdd } = await import("./prompts");
 
@@ -138,7 +143,7 @@ describe("selectTargetsToAdd", () => {
 
     await selectTargetsToAdd(pluginChoices, ["my-ai"], customTargets);
 
-    const callArgs = mockCheckbox.mock.calls[0][0];
+    const callArgs = mockSearchableCheckbox.mock.calls[0][0];
     const customChoice = callArgs.choices.find((c: { value: string }) => c.value === "my-ai");
 
     expect(customChoice.disabled).toBe(true);
@@ -146,7 +151,7 @@ describe("selectTargetsToAdd", () => {
   });
 
   it("should return empty result when no targets selected", async () => {
-    mockCheckbox.mockResolvedValueOnce([]);
+    mockSearchableCheckbox.mockResolvedValueOnce([]);
 
     const { selectTargetsToAdd } = await import("./prompts");
 
@@ -168,20 +173,20 @@ describe("selectTargetsToRemove", () => {
   ];
 
   it("should show only currently configured targets", async () => {
-    mockCheckbox.mockResolvedValueOnce(["claude"]);
+    mockSearchableCheckbox.mockResolvedValueOnce(["claude"]);
 
     const { selectTargetsToRemove } = await import("./prompts");
 
     await selectTargetsToRemove(pluginChoices, ["claude"], {});
 
-    const callArgs = mockCheckbox.mock.calls[0][0];
+    const callArgs = mockSearchableCheckbox.mock.calls[0][0];
 
     expect(callArgs.choices).toHaveLength(1);
     expect(callArgs.choices[0].value).toBe("claude");
   });
 
   it("should return selected targets to remove", async () => {
-    mockCheckbox.mockResolvedValueOnce(["claude", "cursor"]);
+    mockSearchableCheckbox.mockResolvedValueOnce(["claude", "cursor"]);
 
     const { selectTargetsToRemove } = await import("./prompts");
 
@@ -191,7 +196,7 @@ describe("selectTargetsToRemove", () => {
   });
 
   it("should show custom targets with (custom) suffix", async () => {
-    mockCheckbox.mockResolvedValueOnce([]);
+    mockSearchableCheckbox.mockResolvedValueOnce([]);
 
     const { selectTargetsToRemove } = await import("./prompts");
 
@@ -201,7 +206,7 @@ describe("selectTargetsToRemove", () => {
 
     await selectTargetsToRemove(pluginChoices, ["my-ai"], customTargets);
 
-    const callArgs = mockCheckbox.mock.calls[0][0];
+    const callArgs = mockSearchableCheckbox.mock.calls[0][0];
 
     expect(callArgs.choices[0].name).toContain("(custom)");
   });
@@ -212,6 +217,6 @@ describe("selectTargetsToRemove", () => {
     const result = await selectTargetsToRemove(pluginChoices, [], {});
 
     expect(result).toEqual([]);
-    expect(mockCheckbox).not.toHaveBeenCalled();
+    expect(mockSearchableCheckbox).not.toHaveBeenCalled();
   });
 });
