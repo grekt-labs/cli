@@ -16,6 +16,7 @@ import { aiderPlugin } from "#/sync/plugins/aider/aider";
 import { continuePlugin } from "#/sync/plugins/continue/continue";
 import { amazonqPlugin } from "#/sync/plugins/amazonq/amazonq";
 import { openclawPlugin } from "#/sync/plugins/openclaw/openclaw";
+import { kiroPlugin } from "#/sync/plugins/kiro/kiro";
 import { globalPlugin } from "#/sync/plugins/universal/universal";
 import { createFolderPlugin, GREKT_ENTRY_POINT_TEXT } from "#/sync/base/base";
 
@@ -32,6 +33,7 @@ const builtInPlugins: Record<string, SyncPlugin> = {
   aider: aiderPlugin,
   continue: continuePlugin,
   amazonq: amazonqPlugin,
+  kiro: kiroPlugin,
   openclaw: openclawPlugin,
 };
 

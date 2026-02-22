@@ -17,3 +17,6 @@ export const opencodePlugin = createFolderPlugin({
 });
 
 export default opencodePlugin;
+
+// MCP distribution config for OpenCode (opencode.json)
+export { opencodeMcpConfig } from "./opencode.mcp";

@@ -13,3 +13,6 @@ export const amazonqPlugin = createFolderPlugin({
 });
 
 export default amazonqPlugin;
+
+// MCP distribution config for Amazon Q (.amazonq/mcp.json)
+export { amazonqMcpConfig } from "./amazonq.mcp";
