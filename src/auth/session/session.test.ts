@@ -38,7 +38,6 @@ describe("session", () => {
       getSupabaseClient();
       resetClient();
 
-      // Should not throw, proving the client was cleared and recreated
       expect(() => getSupabaseClient()).not.toThrow();
     });
   });
