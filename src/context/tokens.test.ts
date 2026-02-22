@@ -24,7 +24,29 @@ describe("createTokenProvider", () => {
     expect(provider.getRegistryToken("@scope")).toBe("grk_test123");
   });
 
-  test("getRegistryToken returns undefined when env var not set", () => {
+  test("getRegistryToken falls back to session token when env var not set", () => {
+    const getSessionToken = () => "session-access-token";
+    const provider = createTokenProvider("/project", () => undefined, getSessionToken);
+
+    expect(provider.getRegistryToken("@scope")).toBe("session-access-token");
+  });
+
+  test("getRegistryToken prefers GREKT_TOKEN over session token", () => {
+    process.env.GREKT_TOKEN = "grk_env_token";
+    const getSessionToken = () => "session-access-token";
+    const provider = createTokenProvider("/project", () => undefined, getSessionToken);
+
+    expect(provider.getRegistryToken("@scope")).toBe("grk_env_token");
+  });
+
+  test("getRegistryToken returns undefined when no env var and no session", () => {
+    const getSessionToken = () => undefined;
+    const provider = createTokenProvider("/project", () => undefined, getSessionToken);
+
+    expect(provider.getRegistryToken("@scope")).toBeUndefined();
+  });
+
+  test("getRegistryToken returns undefined when no session getter provided", () => {
     const provider = createTokenProvider("/project", () => undefined);
 
     expect(provider.getRegistryToken("@scope")).toBeUndefined();
