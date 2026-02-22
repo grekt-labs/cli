@@ -1,3 +1,16 @@
+# [6.37.0](https://github.com/grekt-labs/cli/compare/v6.36.0...v6.37.0) (2026-02-22)
+
+
+### Bug Fixes
+
+* resolve TypeScript errors in searchable-checkbox prompt ([c175644](https://github.com/grekt-labs/cli/commit/c1756443f10cb23e84e3a4b60f3d289c299f4872))
+
+
+### Features
+
+* add --from flag for local directory sync ([7156dc0](https://github.com/grekt-labs/cli/commit/7156dc063da45299b4f4bf3e6f4964bd29e5c1fc))
+* upgrade Cursor, Copilot and Cline to folder plugins ([91ee402](https://github.com/grekt-labs/cli/commit/91ee40274d7c693c3753478ed8a834647b3fd240))
+
 # [6.36.0](https://github.com/grekt-labs/cli/compare/v6.35.0...v6.36.0) (2026-02-22)
 
 
