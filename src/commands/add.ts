@@ -28,6 +28,7 @@ import { success, error, info, log, warning, newline, colors, spinner } from "#/
 import { compareSemver, CATEGORIES, type Category } from "@grekt-labs/cli-engine";
 import { syncToTargets } from "#/sync/helpers/helpers";
 import { promptAndInstallHooks } from "#/sync/hooks";
+import { promptAndInstallMcps } from "#/sync/mcp";
 
 
 export const addCommand = new Command("add")
@@ -267,6 +268,12 @@ export const addCommand = new Command("add")
     // Install hooks if artifact has them
     if (artifactInfo.hooks.length > 0) {
       await promptAndInstallHooks(projectRoot, resolvedArtifactId, artifactInfo.hooks);
+    }
+
+    // Install MCPs if artifact has them
+    if (artifactInfo.mcps.length > 0) {
+      const allTargets = [...config.targets, ...Object.keys(config.customTargets ?? {})];
+      await promptAndInstallMcps(projectRoot, resolvedArtifactId, artifactInfo.mcps, allTargets);
     }
 
     // Auto-sync to targets

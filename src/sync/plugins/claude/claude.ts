@@ -56,3 +56,6 @@ export const claudePlugin = createFolderPlugin({
 });
 
 export default claudePlugin;
+
+// MCP distribution config for Claude Code (.mcp.json)
+export { claudeMcpConfig } from "./claude.mcp";
