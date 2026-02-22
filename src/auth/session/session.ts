@@ -46,6 +46,7 @@ const inMemoryStorageAdapter = {
  * Create Supabase client with auto-refresh.
  */
 let _client: SupabaseClient | null = null;
+let _sessionRestored: Promise<void> | null = null;
 
 export function getSupabaseClient(): SupabaseClient {
   if (_client) return _client;
@@ -65,13 +66,13 @@ export function getSupabaseClient(): SupabaseClient {
     },
   });
 
-  // Restore session from global config
+  // Restore session from global config (async, awaited in getSession)
   const stored = getGlobalSession();
   if (stored) {
-    _client.auth.setSession({
+    _sessionRestored = _client.auth.setSession({
       access_token: stored.access_token,
       refresh_token: stored.refresh_token,
-    });
+    }).then(() => {});
   }
 
   // Listen for auth changes to persist to global config
@@ -96,6 +97,7 @@ export function getSupabaseClient(): SupabaseClient {
  */
 export function resetClient(): void {
   _client = null;
+  _sessionRestored = null;
 }
 
 /**
@@ -103,6 +105,9 @@ export function resetClient(): void {
  */
 export async function getSession(): Promise<Session | null> {
   const client = getSupabaseClient();
+  if (_sessionRestored) {
+    await _sessionRestored;
+  }
   const { data: { session } } = await client.auth.getSession();
   return session;
 }
