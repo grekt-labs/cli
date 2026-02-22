@@ -69,6 +69,10 @@ export async function resolveArtifact(
     const fileHashes = hashDirectory(tempDir);
     const integrity = calculateIntegrity(fileHashes);
 
+    // Local sources should not store resolved paths in the lockfile.
+    // Absolute paths are machine-specific and break portability (CI/CD, other devs).
+    const resolved = source.type === "local" ? undefined : downloadResult.resolved;
+
     return {
       success: true,
       artifactId: resolvedArtifactId,
@@ -77,7 +81,7 @@ export async function resolveArtifact(
         version: artifactInfo.manifest.version,
         integrity,
         source: source.raw,
-        resolved: downloadResult.resolved,
+        resolved,
         mode: "lazy",
         files: fileHashes,
       },
