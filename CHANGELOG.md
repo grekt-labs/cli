@@ -1,3 +1,10 @@
+## [6.33.1](https://github.com/grekt-labs/cli/compare/v6.33.0...v6.33.1) (2026-02-22)
+
+
+### Bug Fixes
+
+* prevent local artifacts from breaking CI/CD installs ([8c920dd](https://github.com/grekt-labs/cli/commit/8c920dde14a38bbc9ce2399deb62ef8edeb948b9))
+
 # [6.33.0](https://github.com/grekt-labs/cli/compare/v6.32.0...v6.33.0) (2026-02-21)
 
 
