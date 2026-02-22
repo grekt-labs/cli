@@ -13,6 +13,7 @@ import {
   GREKT_DIR,
 } from "#/config/paths/paths";
 import { ensureDir } from "#/shared/filesystem/filesystem";
+import { warning } from "#/shared/ui/ui";
 
 // Local config file path (inside .grekt/ directory)
 const LOCAL_CONFIG_FILE = "config.yaml";
@@ -92,10 +93,17 @@ export function getLocalConfig(projectRoot: string = process.cwd()): LocalConfig
     return null;
   }
   const content = fs.readFile(filepath);
+
+  // Empty config file — warn and treat as fresh config
+  if (!content.trim()) {
+    warning(`Empty .grekt/config.yaml found at ${filepath}. Using default configuration.`);
+    return {};
+  }
+
   const result = safeParseYaml(content, LocalConfigSchema, filepath);
   if (!result.success) {
-    const details = result.error.details?.join("\n  ") ?? "";
-    throw new Error(`${result.error.message}${details ? `\n  ${details}` : ""}`);
+    warning(`Malformed .grekt/config.yaml found at ${filepath}. Please review or regenerate it.`);
+    return {};
   }
   return result.data;
 }
