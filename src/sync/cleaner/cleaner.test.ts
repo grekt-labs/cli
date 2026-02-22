@@ -29,7 +29,7 @@ describe("cleaner", () => {
       const paths = getTargetPaths("cursor");
 
       expect(paths).toEqual({
-        targetDir: "",
+        targetDir: ".cursor",
         entryPoints: [".cursorrules"],
       });
     });
