@@ -1,3 +1,10 @@
+# [6.34.0-beta.1](https://github.com/grekt-labs/cli/compare/v6.33.2...v6.34.0-beta.1) (2026-02-22)
+
+
+### Features
+
+* cross-platform compatibility (tar npm + path hygiene) ([54b3304](https://github.com/grekt-labs/cli/commit/54b3304020d758e76f4690ae5b2b9525d92af7b1))
+
 ## [6.33.2](https://github.com/grekt-labs/cli/compare/v6.33.1...v6.33.2) (2026-02-22)
 
 
