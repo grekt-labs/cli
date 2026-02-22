@@ -1,3 +1,10 @@
+# [6.34.0-beta.3](https://github.com/grekt-labs/cli/compare/v6.34.0-beta.2...v6.34.0-beta.3) (2026-02-22)
+
+
+### Bug Fixes
+
+* use session token as fallback in TokenProvider for registry auth ([0e903b2](https://github.com/grekt-labs/cli/commit/0e903b2a043ea60890c6d1ae8d6ae40e4ba77dc9))
+
 # [6.34.0-beta.2](https://github.com/grekt-labs/cli/compare/v6.34.0-beta.1...v6.34.0-beta.2) (2026-02-22)
 
 
