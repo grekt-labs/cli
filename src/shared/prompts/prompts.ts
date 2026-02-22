@@ -1,8 +1,9 @@
 import { ExitPromptError, Separator } from "@inquirer/core";
-import { input, confirm, checkbox } from "@inquirer/prompts";
+import { input, confirm } from "@inquirer/prompts";
 import { newline, info, log, colors } from "#/shared/ui/ui";
 import { CATEGORIES, type CustomTarget, type ComponentPaths, type Category } from "@grekt-labs/cli-engine";
-import { GLOBAL_PLUGIN_ID, GLOBAL_COVERS } from "#/sync/manager/manager";
+import { GLOBAL_PLUGIN_ID } from "#/sync/manager/manager";
+import { searchableCheckbox } from "#/shared/prompts/searchable-checkbox";
 
 export interface PromptCustomTargetResult {
   id: string;
@@ -99,37 +100,7 @@ export async function promptCustomTarget(
 
 const OTHER_TARGET_VALUE = "__other__";
 
-function printGlobalCoversBanner(): void {
-  const toolList = GLOBAL_COVERS.join(", ") + ", ...";
-  newline();
-  log(colors.dim("┌ ") + colors.bold("Global covers:"));
-  log(colors.dim("│ ") + toolList);
-  log(colors.dim("└"));
-}
-
 type PluginChoice = { name: string; value: string };
-
-/**
- * Split plugin choices into global and tool-specific groups.
- * Global plugin always appears first, separated from tool-specific targets.
- */
-function splitByGroup(pluginChoices: PluginChoice[]): {
-  globalChoices: PluginChoice[];
-  toolChoices: PluginChoice[];
-} {
-  const globalChoices: PluginChoice[] = [];
-  const toolChoices: PluginChoice[] = [];
-
-  for (const choice of pluginChoices) {
-    if (choice.value === GLOBAL_PLUGIN_ID) {
-      globalChoices.push(choice);
-    } else {
-      toolChoices.push(choice);
-    }
-  }
-
-  return { globalChoices, toolChoices };
-}
 
 /**
  * Interactive prompt to select sync targets.
@@ -147,19 +118,17 @@ export async function selectTargets(
   } = options;
 
   const currentTargetSet = new Set(currentTargets);
-  const { globalChoices, toolChoices } = splitByGroup(pluginChoices);
 
-  const mapChoice = (choice: PluginChoice, index: number) => ({
-    ...choice,
-    checked: currentTargetSet.has(choice.value) ||
-      (currentTargetSet.size === 0 && index === defaultCheckedIndex),
-  });
+  // Filter out the global fallback — users should pick specific tools
+  const visibleChoices = pluginChoices.filter((c) => c.value !== GLOBAL_PLUGIN_ID);
 
   const choices = [
-    ...globalChoices.map(mapChoice),
-    new Separator("── Tool-specific ──"),
-    ...toolChoices.map((c, i) => mapChoice(c, i + globalChoices.length)),
-    new Separator("── Other ──"),
+    ...visibleChoices.map((choice, index) => ({
+      ...choice,
+      checked: currentTargetSet.has(choice.value) ||
+        (currentTargetSet.size === 0 && index === defaultCheckedIndex),
+    })),
+    new Separator("──────────"),
     {
       name: "Other (custom)",
       value: OTHER_TARGET_VALUE,
@@ -167,13 +136,10 @@ export async function selectTargets(
     },
   ];
 
-  if (globalChoices.length > 0) {
-    printGlobalCoversBanner();
-  }
-
-  const selected = await checkbox<string>({
+  const selected = await searchableCheckbox<string>({
     message: "Select AI tools to sync with:",
     choices,
+    pageSize: 15,
   });
 
   const customTargets: Record<string, CustomTarget> = { ...currentCustomTargets };
@@ -212,11 +178,12 @@ export async function selectTargetsToAdd(
   const currentTargetSet = new Set(currentTargets);
   const builtInIds = pluginChoices.map((p) => p.value);
 
+  // Filter out the global fallback
+  const visibleChoices = pluginChoices.filter((c) => c.value !== GLOBAL_PLUGIN_ID);
+
   const existingCustomTargetIds = Object.keys(currentCustomTargets).filter(
     (id) => currentTargets.includes(id)
   );
-
-  const { globalChoices, toolChoices } = splitByGroup(pluginChoices);
 
   const mapChoice = (choice: PluginChoice) => {
     const isAlreadyAdded = currentTargetSet.has(choice.value);
@@ -228,9 +195,7 @@ export async function selectTargetsToAdd(
   };
 
   const choices = [
-    ...globalChoices.map(mapChoice),
-    new Separator("── Tool-specific ──"),
-    ...toolChoices.map(mapChoice),
+    ...visibleChoices.map(mapChoice),
     ...existingCustomTargetIds
       .filter((id) => currentCustomTargets[id] !== undefined)
       .map((id) => {
@@ -238,10 +203,10 @@ export async function selectTargetsToAdd(
         return {
           name: `${customTarget.name} (already added)`,
           value: id,
-          disabled: true,
+          disabled: true as const,
         };
       }),
-    new Separator("── Other ──"),
+    new Separator("──────────"),
     {
       name: "Other (custom)",
       value: OTHER_TARGET_VALUE,
@@ -254,13 +219,10 @@ export async function selectTargetsToAdd(
     return { newTargets: [], newCustomTargets: {} };
   }
 
-  if (globalChoices.length > 0) {
-    printGlobalCoversBanner();
-  }
-
-  const selected = await checkbox<string>({
+  const selected = await searchableCheckbox<string>({
     message: "Select AI tools to add:",
     choices,
+    pageSize: 15,
   });
 
   const newCustomTargets: Record<string, CustomTarget> = {};
@@ -315,7 +277,7 @@ export async function selectTargetsToRemove(
     };
   });
 
-  const selected = await checkbox<string>({
+  const selected = await searchableCheckbox<string>({
     message: "Select targets to remove:",
     choices,
   });

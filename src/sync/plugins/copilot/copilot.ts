@@ -8,3 +8,6 @@ export const copilotPlugin = createRulesOnlyPlugin({
 });
 
 export default copilotPlugin;
+
+// MCP distribution config for VS Code / Copilot (.vscode/mcp.json)
+export { copilotMcpConfig } from "./copilot.mcp";

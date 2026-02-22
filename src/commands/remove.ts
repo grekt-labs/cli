@@ -15,6 +15,7 @@ import { success, error, info, log, newline, colors } from "#/shared/ui/ui";
 import { withPromptHandler } from "#/shared/prompts/prompts";
 import { getPlugin } from "#/sync/manager/manager";
 import { uninstallHooks } from "#/sync/hooks";
+import { uninstallMcps } from "#/sync/mcp";
 import { getSafeFilename } from "@grekt-labs/cli-engine";
 
 // Only MD categories are synced to target folders
@@ -93,6 +94,7 @@ export const removeCommand = new Command("remove")
     }
 
     const removed: string[] = [];
+    const allTargets = [...config.targets, ...Object.keys(config.customTargets ?? {})];
 
     // Uninstall hooks from target tool settings before removing artifact
     const hookFiles = artifactInfo?.hooks ?? [];
@@ -101,6 +103,12 @@ export const removeCommand = new Command("remove")
       if (hooksRemoved > 0) {
         removed.push(`${hooksRemoved} hook target(s) cleaned`);
       }
+    }
+
+    // Uninstall MCPs from target tool config files before removing artifact
+    const mcpsRemoved = uninstallMcps(projectRoot, artifactId, allTargets);
+    if (mcpsRemoved > 0) {
+      removed.push(`${mcpsRemoved} MCP server(s) cleaned`);
     }
 
     // Remove from .grekt/artifacts/
@@ -117,7 +125,6 @@ export const removeCommand = new Command("remove")
     }
 
     // Remove synced files from all configured targets
-    const allTargets = [...config.targets, ...Object.keys(config.customTargets ?? {})];
 
     for (const target of allTargets) {
       const plugin = getPlugin(target, config.customTargets);

@@ -16,33 +16,56 @@ import { aiderPlugin } from "#/sync/plugins/aider/aider";
 import { continuePlugin } from "#/sync/plugins/continue/continue";
 import { amazonqPlugin } from "#/sync/plugins/amazonq/amazonq";
 import { openclawPlugin } from "#/sync/plugins/openclaw/openclaw";
+import { kiroPlugin } from "#/sync/plugins/kiro/kiro";
+import { codexPlugin } from "#/sync/plugins/codex/codex";
+import { geminiPlugin } from "#/sync/plugins/gemini/gemini";
+import { julesPlugin } from "#/sync/plugins/jules/jules";
+import { zedPlugin } from "#/sync/plugins/zed/zed";
+import { goosePlugin } from "#/sync/plugins/goose/goose";
+import { devinPlugin } from "#/sync/plugins/devin/devin";
+import { roocodePlugin } from "#/sync/plugins/roocode/roocode";
+import { kilocodePlugin } from "#/sync/plugins/kilocode/kilocode";
+import { ampPlugin } from "#/sync/plugins/amp/amp";
+import { warpPlugin } from "#/sync/plugins/warp/warp";
 import { globalPlugin } from "#/sync/plugins/universal/universal";
 import { createFolderPlugin, GREKT_ENTRY_POINT_TEXT } from "#/sync/base/base";
 
 export type SyncPaths = Record<Category, string>;
 
+/**
+ * Tools with their own dedicated plugin (full or thin).
+ * Ordered: full plugins first, then thin wrappers over global.
+ */
 const builtInPlugins: Record<string, SyncPlugin> = {
-  global: globalPlugin,
+  // Full plugins (own target directory structure)
   claude: claudePlugin,
+  kiro: kiroPlugin,
   cursor: cursorPlugin,
+  copilot: copilotPlugin,
   opencode: opencodePlugin,
   windsurf: windsurfPlugin,
   cline: clinePlugin,
-  copilot: copilotPlugin,
   aider: aiderPlugin,
   continue: continuePlugin,
   amazonq: amazonqPlugin,
   openclaw: openclawPlugin,
+  // Thin plugins (reuse global .agents/ sync, own MCP where supported)
+  codex: codexPlugin,
+  gemini: geminiPlugin,
+  jules: julesPlugin,
+  zed: zedPlugin,
+  goose: goosePlugin,
+  devin: devinPlugin,
+  roocode: roocodePlugin,
+  kilocode: kilocodePlugin,
+  amp: ampPlugin,
+  warp: warpPlugin,
+  // Fallback for unlisted tools
+  global: globalPlugin,
 };
 
-/** The global plugin ID uses the agentskills.io standard (.agents/) */
+/** The global plugin ID — fallback for tools not individually listed */
 export const GLOBAL_PLUGIN_ID = "global";
-
-/** AI tools covered by the global plugin (agentskills.io standard) */
-export const GLOBAL_COVERS = [
-  "Codex", "Gemini CLI", "Jules", "Zed", "Goose",
-  "Devin", "RooCode", "Kilo Code", "Amp", "Warp",
-] as const;
 
 // Registry for all loaded plugins
 const plugins: Map<string, SyncPlugin> = new Map(Object.entries(builtInPlugins));

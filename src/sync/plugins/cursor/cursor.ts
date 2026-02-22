@@ -8,3 +8,6 @@ export const cursorPlugin = createRulesOnlyPlugin({
 });
 
 export default cursorPlugin;
+
+// MCP distribution config for Cursor (.cursor/mcp.json)
+export { cursorMcpConfig } from "./cursor.mcp";
