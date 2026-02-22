@@ -1,3 +1,10 @@
+# [6.34.0-beta.2](https://github.com/grekt-labs/cli/compare/v6.34.0-beta.1...v6.34.0-beta.2) (2026-02-22)
+
+
+### Bug Fixes
+
+* await session restore before reading auth state ([8d0cb7f](https://github.com/grekt-labs/cli/commit/8d0cb7f4a26c11a6b7d6515fdade9becc55ddff2))
+
 # [6.34.0-beta.1](https://github.com/grekt-labs/cli/compare/v6.33.2...v6.34.0-beta.1) (2026-02-22)
 
 
