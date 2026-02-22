@@ -1,3 +1,10 @@
+# [6.35.0-beta.2](https://github.com/grekt-labs/cli/compare/v6.35.0-beta.1...v6.35.0-beta.2) (2026-02-22)
+
+
+### Features
+
+* add MCP distribution system, thin plugins, and searchable selector ([2dbe4fa](https://github.com/grekt-labs/cli/commit/2dbe4fa8ee8e9b092d09badf510ea0377f5099eb))
+
 # [6.35.0-beta.1](https://github.com/grekt-labs/cli/compare/v6.34.0...v6.35.0-beta.1) (2026-02-22)
 
 
