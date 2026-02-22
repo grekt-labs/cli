@@ -126,3 +126,11 @@ export async function isAuthenticated(): Promise<boolean> {
 export function clearSession(): void {
   clearGlobalSession();
 }
+
+/**
+ * Test-only: inject a custom session restore promise.
+ * Allows tests to simulate slow setSession without mocking modules.
+ */
+export function _setSessionRestorePromise(promise: Promise<void> | null): void {
+  _sessionRestored = promise;
+}
