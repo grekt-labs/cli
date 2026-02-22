@@ -1,3 +1,16 @@
+# [6.34.0](https://github.com/grekt-labs/cli/compare/v6.33.2...v6.34.0) (2026-02-22)
+
+
+### Bug Fixes
+
+* await session restore before reading auth state ([6fdba98](https://github.com/grekt-labs/cli/commit/6fdba981bda9d7a4e50561944772b622768b0576))
+* use session token as fallback in TokenProvider for registry auth ([f166c2a](https://github.com/grekt-labs/cli/commit/f166c2a73f5af93ed4b21e31561bedd3e91f7e9e))
+
+
+### Features
+
+* cross-platform compatibility (tar npm + path hygiene) ([ca3ed90](https://github.com/grekt-labs/cli/commit/ca3ed900b271d550501ea5370cfa6984b7c343f6))
+
 # [6.34.0-beta.3](https://github.com/grekt-labs/cli/compare/v6.34.0-beta.2...v6.34.0-beta.3) (2026-02-22)
 
 
