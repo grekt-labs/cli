@@ -1,3 +1,10 @@
+# [6.36.0](https://github.com/grekt-labs/cli/compare/v6.35.0...v6.36.0) (2026-02-22)
+
+
+### Features
+
+* add MCP support for Codex and Zed, implement TOML config format ([fe9cfce](https://github.com/grekt-labs/cli/commit/fe9cfce1362f44a9f3b4303dcb4f8e52ce2a2c6a))
+
 # [6.35.0](https://github.com/grekt-labs/cli/compare/v6.34.0...v6.35.0) (2026-02-22)
 
 
