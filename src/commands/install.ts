@@ -155,11 +155,19 @@ async function installFromLockfile(
   return "installed";
 }
 
+/**
+ * Check if an artifact source is a local path.
+ */
+function isLocalSource(source: string): boolean {
+  return parseSource(source).type === "local";
+}
+
 export const installCommand = new Command("install")
   .alias("i")
   .description("Install artifacts from config, using lockfile for determinism")
   .option("--force", "Reinstall even if already present")
-  .action(async (options: { force?: boolean }) => {
+  .option("--ci", "Fail on local artifacts (also auto-detected via CI env var)")
+  .action(async (options: { force?: boolean; ci?: boolean }) => {
     const projectRoot = process.cwd();
 
     requireInitialized(projectRoot);
@@ -194,6 +202,9 @@ export const installCommand = new Command("install")
     }
     newline();
 
+    const isCI = options.ci || !!process.env.CI;
+    const localArtifacts: string[] = [];
+
     let installed = 0;
     let skipped = 0;
     let resolved = 0;
@@ -217,6 +228,14 @@ export const installCommand = new Command("install")
       if (!isSafeArtifactId(entry.artifactId)) {
         error(`Skipping unsafe artifact ID: ${entry.artifactId}`);
         failed++;
+        continue;
+      }
+
+      // Skip local artifacts — they cannot be installed from lockfile
+      if (isLocalSource(entry.source)) {
+        localArtifacts.push(entry.artifactId);
+        log(`${colors.dim("skip")} ${entry.artifactId} (local source)`);
+        skipped++;
         continue;
       }
 
@@ -248,6 +267,14 @@ export const installCommand = new Command("install")
       if (!isSafeArtifactId(entry.artifactId)) {
         error(`Skipping unsafe artifact ID: ${entry.artifactId}`);
         failed++;
+        continue;
+      }
+
+      // Skip local artifacts — they cannot be resolved during install
+      if (isLocalSource(entry.source)) {
+        localArtifacts.push(entry.artifactId);
+        log(`${colors.dim("skip")} ${entry.artifactId} (local source)`);
+        skipped++;
         continue;
       }
 
@@ -335,6 +362,19 @@ export const installCommand = new Command("install")
     if (hasChanges) {
       generateArtifactIndex(projectRoot, config, lockfile);
       await syncToTargets(config, lockfile, projectRoot);
+    }
+
+    // In CI mode, local artifacts are a hard error
+    if (isCI && localArtifacts.length > 0) {
+      newline();
+      error("Local artifacts detected in CI environment:");
+      for (const id of localArtifacts) {
+        log(`  ${colors.highlight(id)}`);
+      }
+      newline();
+      error("Local artifacts use filesystem paths that only exist on the author's machine.");
+      info("Replace them with registry, GitHub, or GitLab sources before pushing.");
+      process.exit(1);
     }
 
     if (failed > 0) {
