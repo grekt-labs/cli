@@ -17,8 +17,10 @@ import { amazonqMcpConfig } from "#/sync/plugins/amazonq/amazonq.mcp";
 import { opencodeMcpConfig } from "#/sync/plugins/opencode/opencode.mcp";
 import { kiroMcpConfig } from "#/sync/plugins/kiro/kiro.mcp";
 
-// Thin plugins with MCP support
+// agentskills.io plugins with MCP support
+import { codexMcpConfig } from "#/sync/plugins/codex/codex.mcp";
 import { geminiMcpConfig } from "#/sync/plugins/gemini/gemini.mcp";
+import { zedMcpConfig } from "#/sync/plugins/zed/zed.mcp";
 import { roocodeMcpConfig } from "#/sync/plugins/roocode/roocode.mcp";
 import { kilocodeMcpConfig } from "#/sync/plugins/kilocode/kilocode.mcp";
 import { ampMcpConfig } from "#/sync/plugins/amp/amp.mcp";
@@ -30,7 +32,9 @@ const MCP_CONFIGS: Record<string, McpPluginConfig> = {
   amazonq: amazonqMcpConfig,
   opencode: opencodeMcpConfig,
   kiro: kiroMcpConfig,
+  codex: codexMcpConfig,
   gemini: geminiMcpConfig,
+  zed: zedMcpConfig,
   roocode: roocodeMcpConfig,
   kilocode: kilocodeMcpConfig,
   amp: ampMcpConfig,

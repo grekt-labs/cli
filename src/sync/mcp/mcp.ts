@@ -14,6 +14,7 @@ import { dirname, join, relative } from "path";
 import { fs } from "#/context";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
 import { getMcpConfig, getMcpTargetIds } from "./mcp.config";
+import * as TOML from "smol-toml";
 import type { ScannedFile } from "@grekt-labs/cli-engine";
 import type { McpContent, McpPluginConfig, InstallMcpsResult, McpSummaryEntry } from "./mcp.types";
 
@@ -111,35 +112,74 @@ function deleteNestedValue(obj: Record<string, unknown>, key: string): void {
   }
 }
 
+type ConfigFormat = "json" | "toml";
+
+interface ReadConfigOptions {
+  projectRoot: string;
+  filePath: string;
+  format?: ConfigFormat;
+}
+
+interface WriteConfigOptions {
+  projectRoot: string;
+  filePath: string;
+  data: Record<string, unknown>;
+  format?: ConfigFormat;
+}
+
 /**
- * Read a JSON config file, returning empty object if it doesn't exist or is invalid.
+ * Detect config file format from extension or explicit override.
  */
-function readConfigFile(projectRoot: string, configFile: string): Record<string, unknown> {
-  const fullPath = join(projectRoot, configFile);
+function resolveFormat(filePath: string, explicit?: ConfigFormat): ConfigFormat {
+  if (explicit) return explicit;
+  return filePath.endsWith(".toml") ? "toml" : "json";
+}
+
+/**
+ * Read a config file, returning empty object if it doesn't exist or is invalid.
+ * Supports JSON and TOML formats.
+ */
+function readConfigFile(options: ReadConfigOptions): Record<string, unknown> {
+  const fullPath = join(options.projectRoot, options.filePath);
 
   if (!fs.exists(fullPath)) {
     return {};
   }
 
   try {
-    return JSON.parse(fs.readFile(fullPath));
+    const raw = fs.readFile(fullPath);
+    const format = resolveFormat(options.filePath, options.format);
+
+    if (format === "toml") {
+      return TOML.parse(raw) as Record<string, unknown>;
+    }
+
+    return JSON.parse(raw);
   } catch {
     return {};
   }
 }
 
 /**
- * Write a JSON config file, creating parent directories if needed.
+ * Write a config file, creating parent directories if needed.
+ * Supports JSON and TOML formats.
  */
-function writeConfigFile(projectRoot: string, configFile: string, data: Record<string, unknown>): void {
-  const fullPath = join(projectRoot, configFile);
+function writeConfigFile(options: WriteConfigOptions): void {
+  const fullPath = join(options.projectRoot, options.filePath);
   const dir = dirname(fullPath);
 
   if (!fs.exists(dir)) {
     fs.mkdir(dir, { recursive: true });
   }
 
-  fs.writeFile(fullPath, JSON.stringify(data, null, 2) + "\n");
+  const format = resolveFormat(options.filePath, options.format);
+
+  if (format === "toml") {
+    fs.writeFile(fullPath, TOML.stringify(options.data as TOML.TomlPrimitive) + "\n");
+    return;
+  }
+
+  fs.writeFile(fullPath, JSON.stringify(options.data, null, 2) + "\n");
 }
 
 /**
@@ -215,10 +255,7 @@ export function installMcps(
   }
 
   for (const [targetId, mcpConfig] of targetConfigs) {
-    // Only JSON format supported in Phase 1
-    if (mcpConfig.format && mcpConfig.format !== "json") continue;
-
-    const configData = readConfigFile(projectRoot, mcpConfig.configFile);
+    const configData = readConfigFile({ projectRoot, filePath: mcpConfig.configFile, format: mcpConfig.format });
     const servers = (getNestedValue(configData, mcpConfig.serverKey) ?? {}) as Record<string, unknown>;
 
     // Remove old entries from this artifact (prevents duplication on re-install/upgrade)
@@ -237,7 +274,7 @@ export function installMcps(
     }
 
     setNestedValue(configData, mcpConfig.serverKey, servers);
-    writeConfigFile(projectRoot, mcpConfig.configFile, configData);
+    writeConfigFile({ projectRoot, filePath: mcpConfig.configFile, data: configData, format: mcpConfig.format });
     result.targets.push(targetId);
     result.installed += mcpFiles.length;
   }
@@ -258,9 +295,7 @@ export function uninstallMcps(
   const targetConfigs = collectTargetConfigs(activeTargets);
 
   for (const [_targetId, mcpConfig] of targetConfigs) {
-    if (mcpConfig.format && mcpConfig.format !== "json") continue;
-
-    const configData = readConfigFile(projectRoot, mcpConfig.configFile);
+    const configData = readConfigFile({ projectRoot, filePath: mcpConfig.configFile, format: mcpConfig.format });
     const servers = getNestedValue(configData, mcpConfig.serverKey) as Record<string, unknown> | undefined;
 
     if (!servers) continue;
@@ -281,7 +316,7 @@ export function uninstallMcps(
         deleteNestedValue(configData, mcpConfig.serverKey);
       }
 
-      writeConfigFile(projectRoot, mcpConfig.configFile, configData);
+      writeConfigFile({ projectRoot, filePath: mcpConfig.configFile, data: configData, format: mcpConfig.format });
     }
   }
 
