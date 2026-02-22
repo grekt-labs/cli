@@ -1,4 +1,4 @@
-import { basename } from "path";
+import { basename, join } from "path";
 import { createFolderPlugin, generateDefaultBlockContent } from "#/sync/base/base";
 import { ensureDir } from "#/shared/filesystem/filesystem";
 import { toSafeName, resolveComponentFilename, getSkillRouterTemplate } from "@grekt-labs/cli-engine";
@@ -6,8 +6,8 @@ import { fs } from "#/context";
 import { copySiblingFiles } from "#/sync/helpers/siblings";
 
 const TARGET_DIR = ".claude";
-const ENTRY_POINTS = [`${TARGET_DIR}/CLAUDE.md`, "CLAUDE.md"];
-const SKILL_ROUTER_PATH = `${TARGET_DIR}/skills/grekt/SKILL.md`;
+const ENTRY_POINTS = [join(TARGET_DIR, "CLAUDE.md"), "CLAUDE.md"];
+const SKILL_ROUTER_PATH = join(TARGET_DIR, "skills", "grekt", "SKILL.md");
 
 const SKILL_ROUTER_FRONTMATTER = `---
 name: grekt
@@ -48,7 +48,7 @@ export const claudePlugin = createFolderPlugin({
     copySiblingFiles(sourceDir, targetDir, sourcePath);
   },
   setup: (projectRoot) => {
-    const skillRouterFile = `${projectRoot}/${SKILL_ROUTER_PATH}`;
+    const skillRouterFile = join(projectRoot, SKILL_ROUTER_PATH);
 
     ensureDir(skillRouterFile);
     fs.writeFile(skillRouterFile, buildSkillRouterContent());

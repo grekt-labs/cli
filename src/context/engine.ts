@@ -2,6 +2,7 @@
  * CLI wrappers for cli-engine functions.
  * These inject the real FileSystem so callers don't have to.
  */
+import { join } from "path";
 import { fs } from "./filesystem";
 import {
   getLockfile as _getLockfile,
@@ -18,7 +19,7 @@ import { LOCKFILE } from "#/constants";
 
 // Lockfile operations
 export function getLockfile(projectRoot: string = process.cwd()): Lockfile {
-  const lockfilePath = `${projectRoot}/${LOCKFILE}`;
+  const lockfilePath = join(projectRoot, LOCKFILE);
   const result = _getLockfile(fs, lockfilePath);
   if (!result.success) {
     const details = result.error.details?.join("\n  ") ?? "";
@@ -28,12 +29,12 @@ export function getLockfile(projectRoot: string = process.cwd()): Lockfile {
 }
 
 export function saveLockfile(data: Lockfile, projectRoot: string = process.cwd()): void {
-  const lockfilePath = `${projectRoot}/${LOCKFILE}`;
+  const lockfilePath = join(projectRoot, LOCKFILE);
   _saveLockfile(fs, lockfilePath, data);
 }
 
 export function lockfileExists(projectRoot: string = process.cwd()): boolean {
-  const lockfilePath = `${projectRoot}/${LOCKFILE}`;
+  const lockfilePath = join(projectRoot, LOCKFILE);
   return _lockfileExists(fs, lockfilePath);
 }
 

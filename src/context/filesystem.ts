@@ -16,6 +16,7 @@ import {
   writeSync,
   closeSync,
 } from "fs";
+import { isAbsolute } from "path";
 import type { FileSystem } from "@grekt-labs/cli-engine";
 
 /**
@@ -71,7 +72,7 @@ export function createFileSystem(): ExtendedFileSystem {
     copyFile: (src: string, dest: string) => copyFileSync(src, dest),
     symlink: (target: string, path: string) => {
       // Both paths must be absolute to prevent ambiguous resolution
-      if (!target.startsWith("/") || !path.startsWith("/")) {
+      if (!isAbsolute(target) || !isAbsolute(path)) {
         throw new Error("Symlink requires absolute paths for both target and link path");
       }
       symlinkSync(target, path);

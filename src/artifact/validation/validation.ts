@@ -1,4 +1,4 @@
-import { join, resolve } from "path";
+import { join, resolve, sep } from "path";
 import { parse } from "yaml";
 import { isInitialized } from "#/config/project/project";
 import { fs } from "#/context";
@@ -23,7 +23,7 @@ export function resolveAndAssertWithinBase(basePath: string, untrustedPath: stri
   const resolvedTarget = resolve(basePath, untrustedPath);
 
   // The resolved path must start with the base directory + separator (or be the base itself)
-  if (resolvedTarget !== resolvedBase && !resolvedTarget.startsWith(resolvedBase + "/")) {
+  if (resolvedTarget !== resolvedBase && !resolvedTarget.startsWith(resolvedBase + sep)) {
     throw new Error(
       `Path traversal detected: "${untrustedPath}" resolves outside base directory`
     );

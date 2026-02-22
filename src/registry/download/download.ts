@@ -1,6 +1,6 @@
 import { tmpdir } from "os";
 import { join } from "path";
-import { fs, shell, http, cryptoProvider } from "#/context";
+import { fs, tarOps, http, cryptoProvider } from "#/context";
 import {
   validateDownloadUrl,
   DEFAULT_DOWNLOAD_TIMEOUT_MS,
@@ -80,11 +80,12 @@ export async function downloadAndExtractTarball(
     fs.mkdir(targetDir, { recursive: true });
 
     // Extract tarball
-    const tarArgs = ["-xzf", tempTarball, "-C", targetDir];
-    if (stripComponents > 0) {
-      tarArgs.push(`--strip-components=${stripComponents}`);
-    }
-    shell.execFile("tar", tarArgs);
+    tarOps.extract({
+      tarballPath: tempTarball,
+      targetDir,
+      gzip: true,
+      stripComponents: stripComponents > 0 ? stripComponents : undefined,
+    });
 
     return { success: true };
   } catch (err) {

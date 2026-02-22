@@ -128,7 +128,8 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
   }
 
   function updateContextEntryPoint(projectRoot: string, lockfile: Lockfile, result: SyncResult): void {
-    if (!entryPoints || entryPoints.length === 0 || !generateRulesContent) return;
+    const primaryEntryPoint = entryPoints?.[0];
+    if (!primaryEntryPoint || !generateRulesContent) return;
 
     const managedBlock = generateRulesContent(lockfile);
 
@@ -136,9 +137,7 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
     const existing = findExistingEntryPoint(projectRoot, entryPoints);
 
     if (!existing) {
-      // None exist — create at first entry point
-      const primaryEntryPoint = entryPoints[0];
-      const filepath = `${projectRoot}/${primaryEntryPoint}`;
+      const filepath = join(projectRoot, primaryEntryPoint);
       ensureDir(filepath);
       fs.writeFile(filepath, managedBlock + "\n");
       result.created.push(primaryEntryPoint);
@@ -357,10 +356,11 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
         }
       }
 
-      if (entryPoints && entryPoints.length > 0) {
+      const previewPrimaryEntry = entryPoints?.[0];
+      if (previewPrimaryEntry) {
         const existing = findExistingEntryPoint(projectRoot, entryPoints);
         if (!existing) {
-          preview.willCreate.push(entryPoints[0]);
+          preview.willCreate.push(previewPrimaryEntry);
         } else {
           preview.willUpdate.push(basename(existing.resolvedPath));
         }
@@ -376,11 +376,16 @@ export function createFolderPlugin(config: FolderPluginConfig): SyncPlugin {
  */
 export function createRulesOnlyPlugin(config: RulesOnlyPluginConfig): SyncPlugin {
   const { id, name, entryPoints, generateRulesContent } = config;
+  const primaryEntryPoint = entryPoints[0];
+
+  if (!primaryEntryPoint) {
+    throw new Error(`Plugin "${id}" requires at least one entry point`);
+  }
 
   return {
     id,
     name,
-    targetFile: entryPoints[0],
+    targetFile: primaryEntryPoint,
 
     targetExists(projectRoot: string): boolean {
       return findExistingEntryPoint(projectRoot, entryPoints) !== null;
@@ -419,13 +424,13 @@ export function createRulesOnlyPlugin(config: RulesOnlyPluginConfig): SyncPlugin
 
       if (!existing) {
         if (!options.createTarget) {
-          result.skipped.push(formatSkipped(entryPoints[0], "file-not-found"));
+          result.skipped.push(formatSkipped(primaryEntryPoint, "file-not-found"));
           return result;
         }
-        const primaryPath = `${projectRoot}/${entryPoints[0]}`;
+        const primaryPath = join(projectRoot, primaryEntryPoint);
         ensureDir(primaryPath);
         fs.writeFile(primaryPath, managedBlock);
-        result.created.push(entryPoints[0]);
+        result.created.push(primaryEntryPoint);
         return result;
       }
 
@@ -447,7 +452,7 @@ export function createRulesOnlyPlugin(config: RulesOnlyPluginConfig): SyncPlugin
 
       if (!existing) {
         return {
-          willCreate: [entryPoints[0]],
+          willCreate: [primaryEntryPoint],
           willUpdate: [],
           willSkip: [],
         };
