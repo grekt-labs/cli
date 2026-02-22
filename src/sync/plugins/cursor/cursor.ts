@@ -1,10 +1,21 @@
-import { createRulesOnlyPlugin, generateDefaultBlockContent } from "#/sync/base/base";
+import { createFolderPlugin, generateDefaultBlockContent } from "#/sync/base/base";
+import { copySiblingFiles } from "#/sync/helpers/siblings";
+import { writeSkillRouter } from "#/sync/helpers/skillRouter";
 
-export const cursorPlugin = createRulesOnlyPlugin({
+const TARGET_DIR = ".cursor";
+
+export const cursorPlugin = createFolderPlugin({
   id: "cursor",
   name: "Cursor",
+  targetDir: TARGET_DIR,
   entryPoints: [".cursorrules"],
   generateRulesContent: generateDefaultBlockContent,
+  afterFileSync: ({ sourcePath, sourceDir, targetDir }) => {
+    copySiblingFiles(sourceDir, targetDir, sourcePath);
+  },
+  setup: (projectRoot) => {
+    writeSkillRouter(projectRoot, TARGET_DIR);
+  },
 });
 
 export default cursorPlugin;
