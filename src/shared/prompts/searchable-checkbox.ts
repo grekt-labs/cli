@@ -19,6 +19,7 @@ import {
   isBackspaceKey,
   Separator,
 } from "@inquirer/core";
+import type { Prompt } from "@inquirer/type";
 import { colors } from "#/shared/ui/ui";
 
 export interface SearchableChoice<Value> {
@@ -40,7 +41,7 @@ function isSelectableItem<Value>(item: Item<Value> | Separator): item is Item<Va
   return !Separator.isSeparator(item) && !item.disabled;
 }
 
-export const searchableCheckbox = createPrompt(
+export const searchableCheckbox: <Value>(config: SearchableCheckboxConfig<Value>, context?: Parameters<Prompt<Value[], SearchableCheckboxConfig<Value>>>[1]) => ReturnType<Prompt<Value[], SearchableCheckboxConfig<Value>>> = createPrompt(
   <Value>(config: SearchableCheckboxConfig<Value>, done: (value: Value[]) => void) => {
     const { pageSize = 15 } = config;
 
@@ -81,10 +82,12 @@ export const searchableCheckbox = createPrompt(
         let next = activeIndex - 1;
         if (next < 0) next = filteredItems.length - 1;
         const start = next;
-        while (!isSelectableItem(filteredItems[next])) {
+        let item = filteredItems[next];
+        while (item && !isSelectableItem(item)) {
           next--;
           if (next < 0) next = filteredItems.length - 1;
           if (next === start) break;
+          item = filteredItems[next];
         }
         setActiveIndex(next);
         return;
@@ -94,10 +97,12 @@ export const searchableCheckbox = createPrompt(
         let next = activeIndex + 1;
         if (next >= filteredItems.length) next = 0;
         const start = next;
-        while (!isSelectableItem(filteredItems[next])) {
+        let item = filteredItems[next];
+        while (item && !isSelectableItem(item)) {
           next++;
           if (next >= filteredItems.length) next = 0;
           if (next === start) break;
+          item = filteredItems[next];
         }
         setActiveIndex(next);
         return;
@@ -128,7 +133,7 @@ export const searchableCheckbox = createPrompt(
       }
 
       // Printable character — append to search
-      if (key.name !== "tab" && !key.ctrl && !key.meta && rl.line) {
+      if (key.name !== "tab" && !key.ctrl && !(key as Record<string, unknown>).meta && rl.line) {
         setSearchTerm(rl.line);
         setActiveIndex(0);
       }
