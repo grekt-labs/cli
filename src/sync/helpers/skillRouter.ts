@@ -1,8 +1,9 @@
+import { join } from "path";
 import { getSkillRouterTemplate } from "@grekt-labs/cli-engine";
 import { ensureDir } from "#/shared/filesystem/filesystem";
 import { fs } from "#/context";
 
-const SKILL_ROUTER_FILENAME = "skills/grekt/SKILL.md";
+const SKILL_ROUTER_FILENAME = join("skills", "grekt", "SKILL.md");
 
 const STANDARD_FRONTMATTER = `---
 name: grekt
@@ -22,7 +23,7 @@ function buildStandardSkillRouterContent(): string {
  * Called on every sync to keep it up to date with the CLI version.
  */
 export function writeSkillRouter(projectRoot: string, targetDir: string): void {
-  const skillRouterFile = `${projectRoot}/${targetDir}/${SKILL_ROUTER_FILENAME}`;
+  const skillRouterFile = join(projectRoot, targetDir, SKILL_ROUTER_FILENAME);
 
   ensureDir(skillRouterFile);
   fs.writeFile(skillRouterFile, buildStandardSkillRouterContent());

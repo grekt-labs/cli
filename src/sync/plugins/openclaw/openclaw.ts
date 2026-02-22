@@ -1,4 +1,4 @@
-import { basename } from "path";
+import { basename, join } from "path";
 import { createFolderPlugin } from "#/sync/base/base";
 import { toSafeName, scanArtifact, GREKT_SECTION_HEADER, type Lockfile, type Category } from "@grekt-labs/cli-engine";
 import { copySiblingFiles } from "#/sync/helpers/siblings";
@@ -71,7 +71,7 @@ function generateOpenClawBlockContent(lockfile: Lockfile): string {
   const projectRoot = process.cwd();
 
   for (const artifactId of Object.keys(lockfile.artifacts)) {
-    const artifactDir = `${projectRoot}/${ARTIFACTS_DIR}/${artifactId}`;
+    const artifactDir = join(projectRoot, ARTIFACTS_DIR, artifactId);
     const artifactInfo = scanArtifact(fs, artifactDir);
     if (!artifactInfo) continue;
 

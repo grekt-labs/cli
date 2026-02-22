@@ -1,4 +1,4 @@
-import { join, resolve } from "path";
+import { join, resolve, sep } from "path";
 import { fs } from "#/context";
 import type { CustomTarget } from "@grekt-labs/cli-engine";
 import type { TargetPaths } from "#/sync/sync.types";
@@ -23,7 +23,7 @@ function isSafeToDelete(projectRoot: string, relativePath: string): boolean {
     return false;
   }
 
-  if (!absolutePath.startsWith(normalizedProjectRoot + "/")) {
+  if (!absolutePath.startsWith(normalizedProjectRoot + sep)) {
     return false;
   }
 
@@ -83,7 +83,7 @@ export function cleanTargetPaths(
   for (const entryPoint of entryPoints) {
     if (!entryPoint || !isSafeToDelete(projectRoot, entryPoint)) continue;
 
-    const isInsideTargetDir = targetDir && entryPoint.startsWith(targetDir + "/");
+    const isInsideTargetDir = targetDir && entryPoint.startsWith(targetDir + sep);
     if (isInsideTargetDir) continue;
 
     const fullPath = join(projectRoot, entryPoint);

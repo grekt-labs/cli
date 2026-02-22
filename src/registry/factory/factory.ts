@@ -13,7 +13,7 @@ import {
   resolveRegistry as _resolveRegistry,
   createRegistryClient as _createRegistryClient,
 } from "@grekt-labs/cli-engine";
-import { fs, http, shell, createTokenProvider } from "#/context";
+import { fs, http, shell, tarOps, createTokenProvider } from "#/context";
 import { getToken } from "#/config/project/project";
 
 /**
@@ -44,5 +44,5 @@ export function resolveRegistry(
  * Create a registry client for the resolved registry (with dependencies injected)
  */
 export function createRegistryClient(registry: ResolvedRegistry): RegistryClient {
-  return _createRegistryClient(registry, http, fs, shell);
+  return _createRegistryClient(registry, http, fs, shell, tarOps);
 }
