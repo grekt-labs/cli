@@ -70,6 +70,7 @@ jobs:
         id: release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HUSKY: 0
         run: |
           OUTPUT=$(npx semantic-release 2>&1) || true
           echo "$OUTPUT"
