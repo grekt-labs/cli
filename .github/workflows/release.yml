@@ -138,6 +138,10 @@ jobs:
   publish:
     needs: [semantic-release, build]
     runs-on: ubuntu-latest
+    outputs:
+      sha256-arm64: ${{ steps.checksums.outputs.sha256-arm64 }}
+      sha256-x64: ${{ steps.checksums.outputs.sha256-x64 }}
+      sha256-linux: ${{ steps.checksums.outputs.sha256-linux }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -147,6 +151,13 @@ jobs:
         with:
           path: artifacts
           merge-multiple: true
+
+      - name: Extract checksums
+        id: checksums
+        run: |
+          echo "sha256-arm64=$(awk '{print $1}' artifacts/grekt-macos-arm64.tar.gz.sha256)" >> $GITHUB_OUTPUT
+          echo "sha256-x64=$(awk '{print $1}' artifacts/grekt-macos-x64.tar.gz.sha256)" >> $GITHUB_OUTPUT
+          echo "sha256-linux=$(awk '{print $1}' artifacts/grekt-linux-x64.tar.gz.sha256)" >> $GITHUB_OUTPUT
 
       - name: Copy install script to artifacts
         run: cp scripts/install.sh artifacts/install.sh
@@ -232,4 +243,10 @@ jobs:
           token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
           repository: grekt-labs/homebrew-grekt
           event-type: update-formula
-          client-payload: '{"version": "${{ needs.semantic-release.outputs.version }}"}'
+          client-payload: >-
+            {
+              "version": "${{ needs.semantic-release.outputs.version }}",
+              "sha256_arm64": "${{ needs.publish.outputs.sha256-arm64 }}",
+              "sha256_x64": "${{ needs.publish.outputs.sha256-x64 }}",
+              "sha256_linux": "${{ needs.publish.outputs.sha256-linux }}"
+            }
