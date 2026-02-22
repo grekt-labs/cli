@@ -117,9 +117,9 @@ describe("manager", () => {
   });
 
   describe("getDefaultTarget", () => {
-    test("returns global as the first registered plugin", () => {
+    test("returns claude as the first registered plugin", () => {
       const target = getDefaultTarget();
-      expect(target).toBe("global");
+      expect(target).toBe("claude");
     });
   });
 

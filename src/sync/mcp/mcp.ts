@@ -18,6 +18,7 @@ import type { ScannedFile } from "@grekt-labs/cli-engine";
 import type { McpContent, McpPluginConfig, InstallMcpsResult, McpSummaryEntry } from "./mcp.types";
 
 const SERVER_NAME_SEPARATOR = "--";
+const KEY_SEPARATOR = ".";
 
 /**
  * Build a unique server name for an MCP entry.
@@ -33,6 +34,81 @@ function buildServerName(artifactId: string, mcpName: string): string {
  */
 function isOwnedByArtifact(serverName: string, artifactId: string): boolean {
   return serverName.startsWith(`grekt${SERVER_NAME_SEPARATOR}${artifactId}${SERVER_NAME_SEPARATOR}`);
+}
+
+/**
+ * Get a nested value from an object using a dotted key (e.g. "amp.mcpServers").
+ */
+function getNestedValue(obj: Record<string, unknown>, key: string): unknown {
+  if (!key.includes(KEY_SEPARATOR)) return obj[key];
+
+  const parts = key.split(KEY_SEPARATOR);
+  let current: unknown = obj;
+  for (const part of parts) {
+    if (current === null || current === undefined || typeof current !== "object") return undefined;
+    current = (current as Record<string, unknown>)[part];
+  }
+  return current;
+}
+
+/**
+ * Set a nested value on an object using a dotted key (e.g. "amp.mcpServers").
+ * Creates intermediate objects as needed.
+ */
+function setNestedValue(obj: Record<string, unknown>, key: string, value: unknown): void {
+  if (!key.includes(KEY_SEPARATOR)) {
+    obj[key] = value;
+    return;
+  }
+
+  const parts = key.split(KEY_SEPARATOR);
+  const lastPart = parts.pop();
+  if (!lastPart) return;
+
+  let current: Record<string, unknown> = obj;
+  for (const part of parts) {
+    if (!current[part] || typeof current[part] !== "object") {
+      current[part] = {};
+    }
+    current = current[part] as Record<string, unknown>;
+  }
+  current[lastPart] = value;
+}
+
+/**
+ * Delete a nested key from an object using a dotted key.
+ * Cleans up empty parent objects.
+ */
+function deleteNestedValue(obj: Record<string, unknown>, key: string): void {
+  if (!key.includes(KEY_SEPARATOR)) {
+    delete obj[key];
+    return;
+  }
+
+  const parts = key.split(KEY_SEPARATOR);
+  const lastPart = parts.pop();
+  if (!lastPart) return;
+
+  const parents: Array<{ obj: Record<string, unknown>; key: string }> = [];
+  let current: Record<string, unknown> = obj;
+
+  for (const part of parts) {
+    if (!current[part] || typeof current[part] !== "object") return;
+    parents.push({ obj: current, key: part });
+    current = current[part] as Record<string, unknown>;
+  }
+
+  delete current[lastPart];
+
+  // Clean up empty parent objects
+  for (let i = parents.length - 1; i >= 0; i--) {
+    const parent = parents[i];
+    if (!parent) continue;
+    const child = parent.obj[parent.key];
+    if (typeof child === "object" && child !== null && Object.keys(child).length === 0) {
+      delete parent.obj[parent.key];
+    }
+  }
 }
 
 /**
@@ -143,7 +219,7 @@ export function installMcps(
     if (mcpConfig.format && mcpConfig.format !== "json") continue;
 
     const configData = readConfigFile(projectRoot, mcpConfig.configFile);
-    const servers = (configData[mcpConfig.serverKey] ?? {}) as Record<string, unknown>;
+    const servers = (getNestedValue(configData, mcpConfig.serverKey) ?? {}) as Record<string, unknown>;
 
     // Remove old entries from this artifact (prevents duplication on re-install/upgrade)
     for (const serverName of Object.keys(servers)) {
@@ -160,7 +236,7 @@ export function installMcps(
       servers[serverName] = mcpConfig.transform(serverName, content, executablePath);
     }
 
-    configData[mcpConfig.serverKey] = servers;
+    setNestedValue(configData, mcpConfig.serverKey, servers);
     writeConfigFile(projectRoot, mcpConfig.configFile, configData);
     result.targets.push(targetId);
     result.installed += mcpFiles.length;
@@ -185,7 +261,7 @@ export function uninstallMcps(
     if (mcpConfig.format && mcpConfig.format !== "json") continue;
 
     const configData = readConfigFile(projectRoot, mcpConfig.configFile);
-    const servers = configData[mcpConfig.serverKey] as Record<string, unknown> | undefined;
+    const servers = getNestedValue(configData, mcpConfig.serverKey) as Record<string, unknown> | undefined;
 
     if (!servers) continue;
 
@@ -200,9 +276,9 @@ export function uninstallMcps(
 
     if (changed) {
       if (Object.keys(servers).length > 0) {
-        configData[mcpConfig.serverKey] = servers;
+        setNestedValue(configData, mcpConfig.serverKey, servers);
       } else {
-        delete configData[mcpConfig.serverKey];
+        deleteNestedValue(configData, mcpConfig.serverKey);
       }
 
       writeConfigFile(projectRoot, mcpConfig.configFile, configData);
