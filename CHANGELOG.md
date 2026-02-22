@@ -1,3 +1,10 @@
+## [6.33.2](https://github.com/grekt-labs/cli/compare/v6.33.1...v6.33.2) (2026-02-22)
+
+
+### Bug Fixes
+
+* handle empty or malformed local config gracefully ([2647685](https://github.com/grekt-labs/cli/commit/264768535a5ca7e148ac24627e2e2bf8bc4097b8))
+
 ## [6.33.1](https://github.com/grekt-labs/cli/compare/v6.33.0...v6.33.1) (2026-02-22)
 
 
