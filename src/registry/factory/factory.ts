@@ -15,6 +15,7 @@ import {
 } from "@grekt-labs/cli-engine";
 import { fs, http, shell, tarOps, createTokenProvider } from "#/context";
 import { getToken } from "#/config/project/project";
+import { getGlobalSession } from "#/config/user/user";
 
 /**
  * Resolve a scope to a registry configuration (with dependencies injected).
@@ -28,7 +29,8 @@ export function resolveRegistry(
   localConfig: LocalConfig | null,
   projectRoot: string = process.cwd()
 ): ResolvedRegistry {
-  const tokens = createTokenProvider(projectRoot, getToken);
+  const getSessionToken = () => getGlobalSession()?.access_token;
+  const tokens = createTokenProvider(projectRoot, getToken, getSessionToken);
   const resolved = _resolveRegistry(scope, localConfig, tokens);
 
   if (resolved.type === "default" && process.env.GREKT_REGISTRY_URL) {
