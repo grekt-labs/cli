@@ -14,7 +14,7 @@ import {
 } from "@grekt-labs/cli-engine";
 import { resolveRegistry, createRegistryClient } from "#/registry/factory/factory";
 import { copyDirectoryRecursive } from "#/sync/helpers/siblings";
-import { fs, http, shell } from "#/context";
+import { fs, http, tarOps } from "#/context";
 
 // Re-export parseSource and ParsedSource for backwards compatibility
 export { parseSource };
@@ -63,7 +63,7 @@ async function downloadFromGitHub(
   const url = buildGitHubTarballUrl(owner!, repo!, ref);
   const headers = getGitHubHeaders(token);
 
-  const result = await downloadAndExtractTarball(http, fs, shell, url, targetDir, { headers });
+  const result = await downloadAndExtractTarball(http, fs, tarOps, url, targetDir, { headers });
 
   if (result.success) {
     return { success: true, version: ref };
@@ -83,7 +83,7 @@ async function downloadFromGitLab(
   const url = buildGitLabArchiveUrl(host, source.identifier, ref);
   const headers = getGitLabHeaders(token);
 
-  const result = await downloadAndExtractTarball(http, fs, shell, url, targetDir, { headers });
+  const result = await downloadAndExtractTarball(http, fs, tarOps, url, targetDir, { headers });
 
   if (result.success) {
     return { success: true, version: ref };

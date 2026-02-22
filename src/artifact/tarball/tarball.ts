@@ -1,7 +1,7 @@
 import { tmpdir } from "os";
-import { basename, dirname, join } from "path";
+import { basename, dirname, join, sep } from "path";
 import { parse, stringify } from "yaml";
-import { fs, shell } from "#/context";
+import { fs, tarOps } from "#/context";
 import type { Components } from "@grekt-labs/cli-engine";
 
 const TARBALL_DIR = ".grekt/tmp";
@@ -62,7 +62,7 @@ export function createTarball(options: CreateTarballOptions): TarballResult {
       fs.mkdir(tempDir, { recursive: true });
       fs.copy(artifactPath, tempArtifactPath, {
         recursive: true,
-        filter: (src) => !src.includes("/.grekt/"),
+        filter: (src) => !src.includes(`${sep}.grekt${sep}`) && !src.endsWith(`${sep}.grekt`),
       });
       injectComponentsIntoManifest(tempArtifactPath, components);
 
@@ -72,7 +72,13 @@ export function createTarball(options: CreateTarballOptions): TarballResult {
     const artifactDir = basename(sourcePath);
     const parentDir = dirname(sourcePath);
 
-    shell.execFile("tar", ["-czf", outputPath, "--exclude=.grekt", "-C", parentDir, artifactDir]);
+    tarOps.create({
+      outputPath,
+      sourceDir: parentDir,
+      entries: [artifactDir],
+      gzip: true,
+      exclude: [".grekt"],
+    });
 
     const stats = fs.stat(outputPath);
     const sizeBytes = stats?.size ?? 0;

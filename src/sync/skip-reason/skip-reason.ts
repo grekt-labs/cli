@@ -45,9 +45,11 @@ export function parseSkipped(entry: string): SkippedEntry | null {
   const match = entry.match(/^(.+) \(([^)]+)\)$/);
   if (!match) return null;
 
-  const [, path, label] = match;
-  const reason = LABEL_TO_REASON[label];
+  const path = match[1];
+  const label = match[2];
+  if (!path || !label) return null;
 
+  const reason = LABEL_TO_REASON[label];
   if (!reason) return null;
 
   return { path, reason };

@@ -1,8 +1,8 @@
 import { logger } from "#/shared/logger/logger";
 import type { ArtifactMetadata } from "@grekt-labs/cli-engine";
-import { sortVersionsDesc, getHighestVersion, validateTarballContents } from "@grekt-labs/cli-engine";
+import { sortVersionsDesc, getHighestVersion, validateTarballContents, generateSecureTempPath } from "@grekt-labs/cli-engine";
 import { getSupabaseClient, getSession, getSupabaseUrl } from "#/auth/session/session";
-import { fs, shell, http, cryptoProvider } from "#/context";
+import { fs, http, tarOps } from "#/context";
 import type { RegistryErrorResponse } from "./api-client.types";
 import type { DeprecateOptions, PublishRequest } from "#/registry/registry.types";
 import { RegistryError } from "./registry-error";
@@ -230,19 +230,19 @@ export class RegistryClient {
       }
 
       const buffer = await response.arrayBuffer();
-      const tempTarball = `/tmp/grekt-${cryptoProvider.randomUUID()}.tar.gz`;
+      const tempTarball = generateSecureTempPath("api-client");
       fs.writeFileBinary(tempTarball, Buffer.from(buffer));
 
       // Validate tarball contents BEFORE extraction (prevents path traversal)
       // stripComponents=1 matches the extraction below
-      const validation = validateTarballContents(shell, tempTarball, targetDir, 1);
+      const validation = validateTarballContents(tarOps, tempTarball, targetDir, 1);
       if (!validation.safe) {
         fs.unlink(tempTarball);
         return { success: false, error: "Security: tarball failed validation" };
       }
 
       fs.mkdir(targetDir, { recursive: true });
-      shell.execFile("tar", ["-xzf", tempTarball, "-C", targetDir, "--strip-components=1"]);
+      tarOps.extract({ tarballPath: tempTarball, targetDir, gzip: true, stripComponents: 1 });
       fs.unlink(tempTarball);
 
       return {
