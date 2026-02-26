@@ -483,12 +483,14 @@ grk-description: A test skill
     });
     createLockfile();
     createGrektDir();
-    createSyncedFiles(".claude");
+
+    // Claude uses resolveTargetPath (folder-based skills), opencode uses getSafeFilename
+    createClaudeSyncedFiles();
     createSyncedFiles(".opencode");
 
     const claudeAgent = join(testDir, ".claude/agents/scope-test-artifact_agent.md");
     const opencodeAgent = join(testDir, ".opencode/agents/scope-test-artifact_agent.md");
-    const claudeSkill = join(testDir, ".claude/skills/scope-test-artifact_skill.md");
+    const claudeSkillFile = join(testDir, ".claude/skills/scope-test-artifact-skill/SKILL.md");
     const opencodeSkill = join(testDir, ".opencode/skills/scope-test-artifact_skill.md");
 
     expect(existsSync(claudeAgent)).toBe(true);
@@ -499,7 +501,7 @@ grk-description: A test skill
 
     expect(existsSync(claudeAgent)).toBe(false);
     expect(existsSync(opencodeAgent)).toBe(false);
-    expect(existsSync(claudeSkill)).toBe(false);
+    expect(existsSync(claudeSkillFile)).toBe(false);
     expect(existsSync(opencodeSkill)).toBe(false);
   });
 
