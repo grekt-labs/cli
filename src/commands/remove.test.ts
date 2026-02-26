@@ -379,4 +379,151 @@ grk-description: A test skill
 
     expect(existsSync(artifactDir)).toBe(false);
   });
+
+  // --- Tests for config-based component path extraction (broken/missing artifact dirs) ---
+
+  function createConfigWithCategories(
+    targets: string[] = [],
+    categories: Record<string, string[]> = {},
+    customTargets: Record<string, unknown> = {},
+  ) {
+    const config = {
+      targets,
+      artifacts: {
+        [TEST_ARTIFACT_ID]: {
+          version: "1.0.0",
+          mode: "core",
+          ...categories,
+        },
+      },
+      customTargets,
+    };
+    writeFileSync(join(testDir, "grekt.yaml"), stringify(config));
+  }
+
+  test("removes synced files using config category data when scanArtifact would fail", async () => {
+    // Artifact dir exists but has a broken grekt.yaml (scanArtifact returns null)
+    mkdirSync(artifactDir, { recursive: true });
+    writeFileSync(join(artifactDir, "grekt.yaml"), "{{invalid yaml content!!");
+
+    createConfigWithCategories(["claude"], {
+      agents: ["agent.md"],
+      skills: ["skill.md"],
+    });
+    createLockfile();
+    createGrektDir();
+    createClaudeSyncedFiles();
+
+    const agentPath = join(testDir, ".claude/agents/scope-test-artifact_agent.md");
+    const skillPath = join(testDir, ".claude/skills/scope-test-artifact-skill/SKILL.md");
+
+    expect(existsSync(agentPath)).toBe(true);
+    expect(existsSync(skillPath)).toBe(true);
+
+    const { removeCommand } = await import("./remove");
+    await removeCommand.parseAsync(["node", "remove", TEST_ARTIFACT_ID, "-f"]);
+
+    expect(existsSync(agentPath)).toBe(false);
+    expect(existsSync(skillPath)).toBe(false);
+  });
+
+  test("removes synced files when artifact directory is completely missing", async () => {
+    // No artifact dir at all — scanArtifact would definitely fail
+    expect(existsSync(artifactDir)).toBe(false);
+
+    createConfigWithCategories(["claude"], {
+      agents: ["agent.md"],
+      skills: ["skill.md"],
+    });
+    createLockfile();
+    createGrektDir();
+    createClaudeSyncedFiles();
+
+    const agentPath = join(testDir, ".claude/agents/scope-test-artifact_agent.md");
+    const skillPath = join(testDir, ".claude/skills/scope-test-artifact-skill/SKILL.md");
+
+    expect(existsSync(agentPath)).toBe(true);
+    expect(existsSync(skillPath)).toBe(true);
+
+    const { removeCommand } = await import("./remove");
+    await removeCommand.parseAsync(["node", "remove", TEST_ARTIFACT_ID, "-f"]);
+
+    expect(existsSync(agentPath)).toBe(false);
+    expect(existsSync(skillPath)).toBe(false);
+  });
+
+  test("handles config entry as simple string (lazy mode) gracefully", async () => {
+    // Simple string entry = lazy mode, no per-category data
+    const config = {
+      targets: ["claude"],
+      artifacts: {
+        [TEST_ARTIFACT_ID]: "1.0.0",
+      },
+    };
+    writeFileSync(join(testDir, "grekt.yaml"), stringify(config));
+    createLockfile();
+    createGrektDir();
+
+    // No artifact dir, no synced files — should not error
+    const { removeCommand } = await import("./remove");
+    await removeCommand.parseAsync(["node", "remove", TEST_ARTIFACT_ID, "-f"]);
+
+    const configAfter = parse(readFileSync(join(testDir, "grekt.yaml"), "utf-8"));
+    expect(configAfter.artifacts[TEST_ARTIFACT_ID]).toBeUndefined();
+  });
+
+  test("removes synced files from multiple targets with broken artifact dir", async () => {
+    // Artifact dir exists but broken
+    mkdirSync(artifactDir, { recursive: true });
+    writeFileSync(join(artifactDir, "grekt.yaml"), "not: valid: artifact: manifest");
+
+    createConfigWithCategories(["claude", "opencode"], {
+      agents: ["agent.md"],
+      skills: ["skill.md"],
+    });
+    createLockfile();
+    createGrektDir();
+    createSyncedFiles(".claude");
+    createSyncedFiles(".opencode");
+
+    const claudeAgent = join(testDir, ".claude/agents/scope-test-artifact_agent.md");
+    const opencodeAgent = join(testDir, ".opencode/agents/scope-test-artifact_agent.md");
+    const claudeSkill = join(testDir, ".claude/skills/scope-test-artifact_skill.md");
+    const opencodeSkill = join(testDir, ".opencode/skills/scope-test-artifact_skill.md");
+
+    expect(existsSync(claudeAgent)).toBe(true);
+    expect(existsSync(opencodeAgent)).toBe(true);
+
+    const { removeCommand } = await import("./remove");
+    await removeCommand.parseAsync(["node", "remove", TEST_ARTIFACT_ID, "-f"]);
+
+    expect(existsSync(claudeAgent)).toBe(false);
+    expect(existsSync(opencodeAgent)).toBe(false);
+    expect(existsSync(claudeSkill)).toBe(false);
+    expect(existsSync(opencodeSkill)).toBe(false);
+  });
+
+  test("cleans up nested skill folders using config data when artifact dir is missing", async () => {
+    // No artifact dir at all
+    expect(existsSync(artifactDir)).toBe(false);
+
+    createConfigWithCategories(["claude"], {
+      skills: ["skill.md"],
+    });
+    createLockfile();
+    createGrektDir();
+
+    // Create Claude's folder-based skill structure
+    const skillFolder = join(testDir, ".claude/skills/scope-test-artifact-skill");
+    mkdirSync(skillFolder, { recursive: true });
+    writeFileSync(join(skillFolder, "SKILL.md"), "# Synced Skill");
+
+    expect(existsSync(join(skillFolder, "SKILL.md"))).toBe(true);
+
+    const { removeCommand } = await import("./remove");
+    await removeCommand.parseAsync(["node", "remove", TEST_ARTIFACT_ID, "-f"]);
+
+    expect(existsSync(join(skillFolder, "SKILL.md"))).toBe(false);
+    expect(existsSync(skillFolder)).toBe(false);
+  });
 });

@@ -58,12 +58,25 @@ export const removeCommand = new Command("remove")
 
     const lockfileEntry = lockfile.artifacts[artifactId];
     const artifactDir = `${projectRoot}/${ARTIFACTS_DIR}/${artifactId}`;
+    const configEntry = config.artifacts[artifactId];
 
-    // Get component paths by scanning the artifact directory
+    // Scan artifact directory (may fail if dir is missing/corrupt)
     const artifactInfo = scanArtifact(artifactDir);
+
+    // Build component paths: prefer config entry's per-category arrays (survives broken artifact dirs),
+    // fall back to scanning the artifact directory
     const componentPaths: Record<Category, string[]> = {} as Record<Category, string[]>;
+    const hasConfigCategories = typeof configEntry === "object" &&
+      CATEGORIES.some((cat) => Array.isArray(configEntry[cat]) && configEntry[cat].length > 0);
+
     for (const category of CATEGORIES) {
-      componentPaths[category] = artifactInfo?.[category]?.map((f) => f.path) ?? [];
+      if (hasConfigCategories) {
+        const entry = configEntry as Record<string, unknown>;
+        const values = entry[category];
+        componentPaths[category] = Array.isArray(values) ? values as string[] : [];
+      } else {
+        componentPaths[category] = artifactInfo?.[category]?.map((f) => f.path) ?? [];
+      }
     }
 
     // Show what will be removed
