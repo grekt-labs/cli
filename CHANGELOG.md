@@ -1,3 +1,10 @@
+# [6.38.0](https://github.com/grekt-labs/cli/compare/v6.37.0...v6.38.0) (2026-02-28)
+
+
+### Features
+
+* rename package from @grekt/cli to grekt ([7b53735](https://github.com/grekt-labs/cli/commit/7b53735608dee66b8cbc7cdb1683286e7093e108))
+
 # [6.37.0](https://github.com/grekt-labs/cli/compare/v6.36.0...v6.37.0) (2026-02-22)
 
 
