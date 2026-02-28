@@ -237,7 +237,7 @@ jobs:
         run: npm publish --access public
 
   update-homebrew:
-    needs: [semantic-release, publish]
+    needs: [semantic-release, publish, npm-publish]
     if: needs.semantic-release.outputs.is-prerelease != 'true'
     runs-on: ubuntu-latest
     steps:
