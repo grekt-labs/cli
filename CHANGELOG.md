@@ -1,3 +1,10 @@
+## [6.38.1](https://github.com/grekt-labs/cli/compare/v6.38.0...v6.38.1) (2026-02-28)
+
+
+### Bug Fixes
+
+* use non-blocking spawn for browser open during OAuth login ([4f126ff](https://github.com/grekt-labs/cli/commit/4f126ffa81d2451369049d9566f1013abafa588b))
+
 # [6.38.0](https://github.com/grekt-labs/cli/compare/v6.37.0...v6.38.0) (2026-02-28)
 
 
