@@ -107,7 +107,7 @@ function printNotice(currentVersion: string, latestVersion: string): void {
   console.log();
   console.log(`  ${colors.dim("curl -fsSL https://cli.grekt.com/install.sh | sh")}`);
   console.log(`  ${colors.dim("brew upgrade grekt")}`);
-  console.log(`  ${colors.dim("npm install -g @grekt/cli")}`);
+  console.log(`  ${colors.dim("npm install -g grekt")}`);
   console.log(`  ${line}`);
   console.log();
 }
