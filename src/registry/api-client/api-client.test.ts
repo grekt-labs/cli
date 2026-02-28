@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, afterEach, vi } from "bun:test";
+import { describe, test, expect, beforeEach, afterEach, vi, mock } from "bun:test";
 import { RegistryError } from "./registry-error";
 
 let mockSupabase: any;
@@ -11,6 +11,31 @@ vi.mock("#/auth/session/session", () => ({
   getSupabaseClient: () => mockSupabase,
   getSession: () => mockSession,
   getSupabaseUrl: () => mockSupabaseUrl,
+}));
+
+// Mocks for download() dependencies
+const mockHttpFetch = mock();
+const mockFsWriteFileBinary = mock();
+const mockFsUnlink = mock();
+const mockFsMkdir = mock();
+const mockTarExtract = mock();
+const mockTarList = mock(() => [{ path: "grekt.yaml", type: "file" }]);
+
+mock.module("#/context", () => ({
+  fs: {
+    exists: () => true,
+    readFile: () => "",
+    writeFileBinary: mockFsWriteFileBinary,
+    unlink: mockFsUnlink,
+    mkdir: mockFsMkdir,
+  },
+  http: {
+    fetch: mockHttpFetch,
+  },
+  tarOps: {
+    extract: mockTarExtract,
+    list: mockTarList,
+  },
 }));
 
 function createQuery(table: string, handlers: Record<string, any>) {
@@ -157,10 +182,10 @@ describe("api-client", () => {
 
   test("publish calls edge function with bearer token", async () => {
     mockSession = { access_token: "token" };
-    globalThis.fetch = vi.fn(async () => ({
+    mockHttpFetch.mockResolvedValue({
       ok: true,
       json: async () => ({ uploadUrl: "https://upload.test", expiresAt: "2024-01-01T00:05:00Z" }),
-    })) as unknown as typeof fetch;
+    });
 
     const { RegistryClient } = await import("./api-client");
     const client = new RegistryClient();
@@ -173,7 +198,7 @@ describe("api-client", () => {
     });
 
     expect(result.uploadUrl).toBe("https://upload.test");
-    expect(globalThis.fetch).toHaveBeenCalledWith(
+    expect(mockHttpFetch).toHaveBeenCalledWith(
       "https://supabase.test/functions/v1/publish",
       expect.objectContaining({
         method: "POST",
@@ -195,17 +220,17 @@ describe("api-client", () => {
 
   test("deprecate calls edge function with bearer token", async () => {
     mockSession = { access_token: "token" };
-    globalThis.fetch = vi.fn(async () => ({
+    mockHttpFetch.mockResolvedValue({
       ok: true,
       json: async () => ({ success: true }),
-    })) as unknown as typeof fetch;
+    });
 
     const { RegistryClient } = await import("./api-client");
     const client = new RegistryClient();
 
     await client.deprecate("@org/tool", { version: "1.0.0", message: "Use v2" });
 
-    expect(globalThis.fetch).toHaveBeenCalledWith(
+    expect(mockHttpFetch).toHaveBeenCalledWith(
       "https://supabase.test/functions/v1/deprecate",
       expect.objectContaining({
         method: "POST",
@@ -218,11 +243,11 @@ describe("api-client", () => {
 
   test("deprecate throws RegistryError on error response", async () => {
     mockSession = { access_token: "token" };
-    globalThis.fetch = vi.fn(async () => ({
+    mockHttpFetch.mockResolvedValue({
       ok: false,
       status: 403,
       json: async () => ({ error: "You don't have permission", code: "SCOPE_NOT_OWNED" }),
-    })) as unknown as typeof fetch;
+    });
 
     const { RegistryClient } = await import("./api-client");
     const client = new RegistryClient();
@@ -248,17 +273,17 @@ describe("api-client", () => {
 
   test("undeprecate calls edge function with bearer token", async () => {
     mockSession = { access_token: "token" };
-    globalThis.fetch = vi.fn(async () => ({
+    mockHttpFetch.mockResolvedValue({
       ok: true,
       json: async () => ({ success: true }),
-    })) as unknown as typeof fetch;
+    });
 
     const { RegistryClient } = await import("./api-client");
     const client = new RegistryClient();
 
     await client.undeprecate("@org/tool", "1.0.0");
 
-    expect(globalThis.fetch).toHaveBeenCalledWith(
+    expect(mockHttpFetch).toHaveBeenCalledWith(
       "https://supabase.test/functions/v1/undeprecate",
       expect.objectContaining({
         method: "POST",
@@ -271,7 +296,7 @@ describe("api-client", () => {
 
   test("publish throws RegistryError with code and details on error response", async () => {
     mockSession = { access_token: "token" };
-    globalThis.fetch = vi.fn(async () => ({
+    mockHttpFetch.mockResolvedValue({
       ok: false,
       status: 400,
       json: async () => ({
@@ -279,7 +304,7 @@ describe("api-client", () => {
         code: "INSERT_FAILED",
         details: "duplicate key on artifact_id",
       }),
-    })) as unknown as typeof fetch;
+    });
 
     const { RegistryClient } = await import("./api-client");
     const client = new RegistryClient();
@@ -297,11 +322,11 @@ describe("api-client", () => {
 
   test("publish throws RegistryError with UNKNOWN code when JSON has no code field", async () => {
     mockSession = { access_token: "token" };
-    globalThis.fetch = vi.fn(async () => ({
+    mockHttpFetch.mockResolvedValue({
       ok: false,
       status: 500,
       json: async () => ({ message: "something broke" }),
-    })) as unknown as typeof fetch;
+    });
 
     const { RegistryClient } = await import("./api-client");
     const client = new RegistryClient();
@@ -318,11 +343,11 @@ describe("api-client", () => {
 
   test("undeprecate throws RegistryError with UNKNOWN code when JSON parsing fails", async () => {
     mockSession = { access_token: "token" };
-    globalThis.fetch = vi.fn(async () => ({
+    mockHttpFetch.mockResolvedValue({
       ok: false,
       status: 502,
       json: async () => { throw new Error("not json"); },
-    })) as unknown as typeof fetch;
+    });
 
     const { RegistryClient } = await import("./api-client");
     const client = new RegistryClient();
@@ -335,5 +360,233 @@ describe("api-client", () => {
       expect((err as RegistryError).code).toBe("UNKNOWN");
       expect((err as RegistryError).message).toBe("Request failed with status 502");
     }
+  });
+
+  describe("download", () => {
+    beforeEach(() => {
+      mockHttpFetch.mockClear();
+      mockFsWriteFileBinary.mockClear();
+      mockFsUnlink.mockClear();
+      mockFsMkdir.mockClear();
+      mockTarExtract.mockClear();
+      mockTarList.mockClear();
+    });
+
+    test("returns 404 ARTIFACT_NOT_FOUND error", async () => {
+      mockSession = { access_token: "token" };
+      mockHttpFetch.mockResolvedValue({
+        ok: false,
+        status: 404,
+        json: async () => ({ code: "ARTIFACT_NOT_FOUND", error: "Not found" }),
+      });
+
+      const { RegistryClient } = await import("./api-client");
+      const client = new RegistryClient();
+
+      const result = await client.download("@org/missing", { version: "1.0.0", targetDir: "/tmp/target" });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Artifact not found in registry");
+    });
+
+    test("returns 404 VERSION_NOT_FOUND error", async () => {
+      mockSession = { access_token: "token" };
+      mockHttpFetch.mockResolvedValue({
+        ok: false,
+        status: 404,
+        json: async () => ({ code: "VERSION_NOT_FOUND", error: "No version" }),
+      });
+
+      const { RegistryClient } = await import("./api-client");
+      const client = new RegistryClient();
+
+      const result = await client.download("@org/tool", { version: "9.9.9", targetDir: "/tmp/target" });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain("Version 9.9.9 not found");
+    });
+
+    test("returns 404 FILE_NOT_FOUND error", async () => {
+      mockSession = { access_token: "token" };
+      mockHttpFetch.mockResolvedValue({
+        ok: false,
+        status: 404,
+        json: async () => ({ code: "FILE_NOT_FOUND", error: "No file" }),
+      });
+
+      const { RegistryClient } = await import("./api-client");
+      const client = new RegistryClient();
+
+      const result = await client.download("@org/tool", { version: "1.0.0", targetDir: "/tmp/target" });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Artifact file not found in storage");
+    });
+
+    test("returns access denied for 401", async () => {
+      mockSession = { access_token: "token" };
+      mockHttpFetch.mockResolvedValue({
+        ok: false,
+        status: 401,
+        json: async () => ({ error: "Unauthorized" }),
+      });
+
+      const { RegistryClient } = await import("./api-client");
+      const client = new RegistryClient();
+
+      const result = await client.download("@org/private", { version: "1.0.0", targetDir: "/tmp/target" });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain("Access denied");
+    });
+
+    test("returns access denied for 403", async () => {
+      mockSession = { access_token: "token" };
+      mockHttpFetch.mockResolvedValue({
+        ok: false,
+        status: 403,
+        json: async () => ({ error: "Forbidden" }),
+      });
+
+      const { RegistryClient } = await import("./api-client");
+      const client = new RegistryClient();
+
+      const result = await client.download("@org/private", { version: "1.0.0", targetDir: "/tmp/target" });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain("Access denied");
+    });
+
+    test("returns generic error for non-404 non-auth failures", async () => {
+      mockSession = { access_token: "token" };
+      mockHttpFetch.mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: async () => ({ error: "Server error" }),
+      });
+
+      const { RegistryClient } = await import("./api-client");
+      const client = new RegistryClient();
+
+      const result = await client.download("@org/tool", { version: "1.0.0", targetDir: "/tmp/target" });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Server error");
+    });
+
+    test("returns network error for ECONNREFUSED", async () => {
+      mockSession = { access_token: "token" };
+      mockHttpFetch.mockRejectedValue(new Error("ECONNREFUSED"));
+
+      const { RegistryClient } = await import("./api-client");
+      const client = new RegistryClient();
+
+      const result = await client.download("@org/tool", { version: "1.0.0", targetDir: "/tmp/target" });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain("network error");
+    });
+
+    test("returns network error for ENOTFOUND", async () => {
+      mockSession = { access_token: "token" };
+      mockHttpFetch.mockRejectedValue(new Error("ENOTFOUND"));
+
+      const { RegistryClient } = await import("./api-client");
+      const client = new RegistryClient();
+
+      const result = await client.download("@org/tool", { version: "1.0.0", targetDir: "/tmp/target" });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain("network error");
+    });
+
+    test("returns error when tarball download fails", async () => {
+      mockSession = { access_token: "token" };
+
+      // First call: signed URL success
+      // Second call: tarball download fails
+      let callCount = 0;
+      mockHttpFetch.mockImplementation(async () => {
+        callCount++;
+        if (callCount === 1) {
+          return {
+            ok: true,
+            json: async () => ({ url: "https://storage.test/tarball.tar.gz", deprecated: null }),
+          };
+        }
+        return { ok: false, status: 500 };
+      });
+
+      const { RegistryClient } = await import("./api-client");
+      const client = new RegistryClient();
+
+      const result = await client.download("@org/tool", { version: "1.0.0", targetDir: "/tmp/target" });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain("Download failed");
+    });
+
+    test("returns error when 404 json parsing fails", async () => {
+      mockSession = { access_token: "token" };
+      mockHttpFetch.mockResolvedValue({
+        ok: false,
+        status: 404,
+        json: async () => { throw new Error("not json"); },
+      });
+
+      const { RegistryClient } = await import("./api-client");
+      const client = new RegistryClient();
+
+      const result = await client.download("@org/tool", { version: "1.0.0", targetDir: "/tmp/target" });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Not found");
+    });
+  });
+
+  describe("confirmPublish", () => {
+    test("throws when not authenticated", async () => {
+      mockSession = null;
+
+      const { RegistryClient } = await import("./api-client");
+      const client = new RegistryClient();
+
+      await expect(
+        client.confirmPublish({ artifactId: "@org/tool", version: "1.0.0" })
+      ).rejects.toThrow("Not authenticated");
+    });
+
+    test("throws RegistryError on error response", async () => {
+      mockSession = { access_token: "token" };
+      mockHttpFetch.mockResolvedValue({
+        ok: false,
+        status: 400,
+        json: async () => ({ error: "Version not found", code: "NOT_FOUND" }),
+      });
+
+      const { RegistryClient } = await import("./api-client");
+      const client = new RegistryClient();
+
+      try {
+        await client.confirmPublish({ artifactId: "@org/tool", version: "1.0.0" });
+        expect.unreachable("Should have thrown");
+      } catch (err) {
+        expect(err).toBeInstanceOf(RegistryError);
+        expect((err as RegistryError).code).toBe("NOT_FOUND");
+      }
+    });
+  });
+
+  describe("getLatestVersion", () => {
+    test("returns null when artifact not found", async () => {
+      mockSupabase = createSupabaseMock({});
+
+      const { RegistryClient } = await import("./api-client");
+      const client = new RegistryClient();
+
+      const result = await client.getLatestVersion("@org/nonexistent");
+
+      expect(result).toBeNull();
+    });
   });
 });

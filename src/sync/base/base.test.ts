@@ -1,7 +1,7 @@
 import { describe, test, expect, beforeEach, afterEach } from "bun:test";
 import { existsSync, mkdirSync, rmSync, writeFileSync, readFileSync, lstatSync } from "fs";
 import { join } from "path";
-import { createFolderPlugin, createRulesOnlyPlugin } from "./base";
+import { createFolderPlugin, createRulesOnlyPlugin, findEntryPointPath } from "./base";
 import { GREKT_SECTION_HEADER, resolveComponentFilename, toSafeName, type Lockfile, type ProjectConfig } from "@grekt-labs/cli-engine";
 
 const ARTIFACTS_DIR = ".grekt/artifacts";
@@ -601,6 +601,58 @@ grk-description: Integrity checks
         expect(preview.willUpdate).toContain("ALT.md");
         expect(preview.willCreate).not.toContain("PRIMARY.md");
       });
+    });
+  });
+
+  describe("findEntryPointPath", () => {
+    test("returns canonical path when directory does not exist", () => {
+      const result = findEntryPointPath(testDir, "nonexistent/RULES.md");
+
+      expect(result).toBe(`${testDir}/nonexistent/RULES.md`);
+    });
+
+    test("returns canonical path when file does not exist in directory", () => {
+      mkdirSync(join(testDir, ".test"), { recursive: true });
+
+      const result = findEntryPointPath(testDir, ".test/MISSING.md");
+
+      expect(result).toBe(`${testDir}/.test/MISSING.md`);
+    });
+
+    test("returns exact path when file exists with matching case", () => {
+      mkdirSync(join(testDir, ".test"), { recursive: true });
+      writeFileSync(join(testDir, ".test/RULES.md"), "content");
+
+      const result = findEntryPointPath(testDir, ".test/RULES.md");
+
+      expect(result).toBe(`${testDir}/.test/RULES.md`);
+    });
+
+    test("finds case-variant file in directory", () => {
+      mkdirSync(join(testDir, ".test"), { recursive: true });
+      writeFileSync(join(testDir, ".test/rules.md"), "content");
+
+      const result = findEntryPointPath(testDir, ".test/RULES.md");
+
+      expect(result).toBe(`${testDir}/.test/rules.md`);
+    });
+
+    test("finds uppercase variant when looking for lowercase", () => {
+      mkdirSync(join(testDir, ".test"), { recursive: true });
+      writeFileSync(join(testDir, ".test/CLAUDE.md"), "content");
+
+      const result = findEntryPointPath(testDir, ".test/claude.md");
+
+      expect(result).toBe(`${testDir}/.test/CLAUDE.md`);
+    });
+
+    test("handles root-level entry point", () => {
+      writeFileSync(join(testDir, "RULES.md"), "content");
+
+      const result = findEntryPointPath(testDir, "RULES.md");
+
+      // dirname("RULES.md") is "." so path includes /./
+      expect(result).toBe(`${testDir}/./RULES.md`);
     });
   });
 });
