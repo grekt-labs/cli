@@ -1,7 +1,7 @@
 import { getSupabaseClient, getSupabaseUrl } from "#/auth/session/session";
 import { saveGlobalSession } from "#/config/user/user";
-import { shell } from "#/context";
 import type { StoredSession } from "@grekt-labs/cli-engine";
+import { spawn } from "child_process";
 import { randomUUID } from "crypto";
 
 const LOGIN_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
@@ -12,24 +12,35 @@ export type OAuthProvider = "github" | "google";
 /**
  * Open a URL in the default browser.
  * Supports macOS, Windows, and Linux.
- * Uses execFile with array args to prevent URL injection.
+ * Uses spawn with detached + unref so the browser process does not block the CLI.
+ * Arguments are passed as an array to prevent URL injection.
  */
 export function openBrowser(url: string): boolean {
   const platform = process.platform;
 
   try {
+    let command: string;
+    let args: string[];
+
     if (platform === "darwin") {
-      shell.execFile("open", [url]);
+      command = "open";
+      args = [url];
     } else if (platform === "win32") {
-      // Use rundll32 to avoid cmd shell interpretation of special chars like &
-      // This directly invokes the URL protocol handler without shell parsing
-      shell.execFile("rundll32", ["url.dll,FileProtocolHandler", url]);
+      command = "rundll32";
+      args = ["url.dll,FileProtocolHandler", url];
     } else {
-      shell.execFile("xdg-open", [url]);
+      command = "xdg-open";
+      args = [url];
     }
+
+    const child = spawn(command, args, {
+      detached: true,
+      stdio: "ignore",
+    });
+    child.unref();
+
     return true;
   } catch {
-    // If browser fails to open, user will need to copy the URL manually
     return false;
   }
 }
