@@ -17,10 +17,10 @@ describe("paths", () => {
   });
 
   test("config file uses yaml extension", () => {
-    expect(GREKT_YAML).toEndWith(".yaml");
+    expect(GREKT_YAML.endsWith(".yaml")).toBe(true);
   });
 
   test("lockfile uses lock extension", () => {
-    expect(LOCKFILE).toEndWith(".lock");
+    expect(LOCKFILE.endsWith(".lock")).toBe(true);
   });
 });

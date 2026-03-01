@@ -1,5 +1,6 @@
 import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
 import { spyOnConsole } from "#/test-utils";
+import { logger } from "./logger";
 
 describe("logger", () => {
   let originalLogLevel: string | undefined;
@@ -19,16 +20,9 @@ describe("logger", () => {
     stderrSpy.mockRestore();
   });
 
-  function freshLogger() {
-    // Re-import to pick up env changes (logger reads env at call time)
-    delete require.cache[require.resolve("./logger")];
-    return require("./logger").logger;
-  }
-
   describe("debug level", () => {
     test("logs debug messages when level is debug", () => {
       process.env.GREKT_LOG_LEVEL = "debug";
-      const logger = freshLogger();
 
       logger.debug("test message");
 
@@ -39,7 +33,6 @@ describe("logger", () => {
 
     test("logs verbose messages when level is debug", () => {
       process.env.GREKT_LOG_LEVEL = "debug";
-      const logger = freshLogger();
 
       logger.verbose("verbose msg");
 
@@ -51,7 +44,6 @@ describe("logger", () => {
   describe("verbose level", () => {
     test("does not log debug messages when level is verbose", () => {
       process.env.GREKT_LOG_LEVEL = "verbose";
-      const logger = freshLogger();
 
       logger.debug("should not appear");
 
@@ -60,7 +52,6 @@ describe("logger", () => {
 
     test("logs verbose messages when level is verbose", () => {
       process.env.GREKT_LOG_LEVEL = "verbose";
-      const logger = freshLogger();
 
       logger.verbose("should appear");
 
@@ -72,7 +63,6 @@ describe("logger", () => {
   describe("info level (default)", () => {
     test("does not log debug messages at default level", () => {
       delete process.env.GREKT_LOG_LEVEL;
-      const logger = freshLogger();
 
       logger.debug("nope");
 
@@ -81,7 +71,6 @@ describe("logger", () => {
 
     test("does not log verbose messages at default level", () => {
       delete process.env.GREKT_LOG_LEVEL;
-      const logger = freshLogger();
 
       logger.verbose("nope");
 
@@ -92,7 +81,6 @@ describe("logger", () => {
   describe("invalid level", () => {
     test("falls back to info for unknown level", () => {
       process.env.GREKT_LOG_LEVEL = "banana";
-      const logger = freshLogger();
 
       logger.debug("nope");
       logger.verbose("nope");
@@ -104,7 +92,6 @@ describe("logger", () => {
   describe("formatting", () => {
     test("formats Error objects by message", () => {
       process.env.GREKT_LOG_LEVEL = "debug";
-      const logger = freshLogger();
 
       logger.debug("failed:", new Error("connection refused"));
 
@@ -114,7 +101,6 @@ describe("logger", () => {
 
     test("formats objects as JSON", () => {
       process.env.GREKT_LOG_LEVEL = "debug";
-      const logger = freshLogger();
 
       logger.debug("data:", { key: "value" });
 
@@ -124,7 +110,6 @@ describe("logger", () => {
 
     test("joins multiple args with spaces", () => {
       process.env.GREKT_LOG_LEVEL = "debug";
-      const logger = freshLogger();
 
       logger.debug("a", "b", "c");
 
@@ -134,7 +119,6 @@ describe("logger", () => {
 
     test("includes timestamp in output", () => {
       process.env.GREKT_LOG_LEVEL = "debug";
-      const logger = freshLogger();
 
       logger.debug("test");
 
