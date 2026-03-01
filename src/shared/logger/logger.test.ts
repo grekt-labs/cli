@@ -1,4 +1,5 @@
 import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
+import { spyOnConsole } from "#/test-utils";
 
 describe("logger", () => {
   let originalLogLevel: string | undefined;
@@ -6,7 +7,7 @@ describe("logger", () => {
 
   beforeEach(() => {
     originalLogLevel = process.env.GREKT_LOG_LEVEL;
-    stderrSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    stderrSpy = spyOnConsole("error");
   });
 
   afterEach(() => {

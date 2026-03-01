@@ -6,11 +6,11 @@ import {
   assertSafeArtifactId,
 } from "./validation";
 
-// --- Mocks for validateArtifact dependencies ---
-
-const mockIsInitialized = vi.fn(() => true);
-const mockFsExists = vi.fn(() => true);
-const mockFsReadFile = vi.fn(() => "");
+const { mockIsInitialized, mockFsExists, mockFsReadFile } = vi.hoisted(() => ({
+  mockIsInitialized: vi.fn(() => true),
+  mockFsExists: vi.fn(() => true),
+  mockFsReadFile: vi.fn(() => ""),
+}));
 
 vi.mock("#/config/project/project", () => ({
   isInitialized: mockIsInitialized,
@@ -22,6 +22,9 @@ vi.mock("#/context", () => ({
     readFile: mockFsReadFile,
   },
 }));
+
+const mockProjectConfig = { isInitialized: mockIsInitialized };
+const mockContextFs = { exists: mockFsExists, readFile: mockFsReadFile };
 
 import { validateArtifact } from "./validation";
 
@@ -147,17 +150,17 @@ describe("validation", () => {
     ].join("\n");
 
     beforeEach(() => {
-      mockIsInitialized.mockClear();
-      mockFsExists.mockClear();
-      mockFsReadFile.mockClear();
+      mockProjectConfig.isInitialized.mockClear();
+      mockContextFs.exists.mockClear();
+      mockContextFs.readFile.mockClear();
 
-      mockIsInitialized.mockReturnValue(true);
-      mockFsExists.mockReturnValue(true);
-      mockFsReadFile.mockReturnValue(VALID_MANIFEST_YAML);
+      mockProjectConfig.isInitialized.mockReturnValue(true);
+      mockContextFs.exists.mockReturnValue(true);
+      mockContextFs.readFile.mockReturnValue(VALID_MANIFEST_YAML);
     });
 
     test("returns not-initialized error when project is not initialized", () => {
-      mockIsInitialized.mockReturnValue(false);
+      mockProjectConfig.isInitialized.mockReturnValue(false);
 
       const result = validateArtifact(ARTIFACT_PATH, PROJECT_ROOT);
 
@@ -168,7 +171,7 @@ describe("validation", () => {
     });
 
     test("returns not-found error when artifact path does not exist", () => {
-      mockFsExists.mockImplementation((path: string) => {
+      mockContextFs.exists.mockImplementation((path: string) => {
         if (path === ARTIFACT_PATH) return false;
         return true;
       });
@@ -182,7 +185,7 @@ describe("validation", () => {
     });
 
     test("returns no-manifest error when grekt.yaml is missing", () => {
-      mockFsExists.mockImplementation((path: string) => {
+      mockContextFs.exists.mockImplementation((path: string) => {
         if (path.endsWith("grekt.yaml")) return false;
         return true;
       });
@@ -196,7 +199,7 @@ describe("validation", () => {
     });
 
     test("returns invalid-manifest error for malformed manifest", () => {
-      mockFsReadFile.mockReturnValue("name: 123\n");
+      mockContextFs.readFile.mockReturnValue("name: 123\n");
 
       const result = validateArtifact(ARTIFACT_PATH, PROJECT_ROOT);
 
@@ -214,7 +217,7 @@ describe("validation", () => {
         'version: "not-a-version"',
         'description: "Test"',
       ].join("\n");
-      mockFsReadFile.mockReturnValue(badVersionYaml);
+      mockContextFs.readFile.mockReturnValue(badVersionYaml);
 
       const result = validateArtifact(ARTIFACT_PATH, PROJECT_ROOT);
 
@@ -231,7 +234,7 @@ describe("validation", () => {
         'version: "v1.0.0"',
         'description: "Test"',
       ].join("\n");
-      mockFsReadFile.mockReturnValue(vPrefixYaml);
+      mockContextFs.readFile.mockReturnValue(vPrefixYaml);
 
       const result = validateArtifact(ARTIFACT_PATH, PROJECT_ROOT);
 
@@ -240,7 +243,7 @@ describe("validation", () => {
     });
 
     test("returns keywords error when too few keywords required", () => {
-      mockFsReadFile.mockReturnValue(VALID_MANIFEST_YAML);
+      mockContextFs.readFile.mockReturnValue(VALID_MANIFEST_YAML);
 
       const result = validateArtifact(ARTIFACT_PATH, PROJECT_ROOT, {
         requireKeywords: { min: 3, max: 5 },
@@ -266,7 +269,7 @@ describe("validation", () => {
         "  - five",
         "  - six",
       ].join("\n");
-      mockFsReadFile.mockReturnValue(manyKeywordsYaml);
+      mockContextFs.readFile.mockReturnValue(manyKeywordsYaml);
 
       const result = validateArtifact(ARTIFACT_PATH, PROJECT_ROOT, {
         requireKeywords: { min: 3, max: 5 },

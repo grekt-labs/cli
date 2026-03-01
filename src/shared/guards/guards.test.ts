@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, rmSync, writeFileSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 import { requireInitialized } from "./guards";
+import { spyOnProcessExitThrowing, spyOnConsole } from "#/test-utils";
 
 describe("guards", () => {
   const testDir = join(tmpdir(), ".grekt-test-guards");
@@ -15,11 +16,8 @@ describe("guards", () => {
     }
     mkdirSync(testDir, { recursive: true });
 
-    processExitSpy = vi.spyOn(process, "exit").mockImplementation(() => {
-      throw new Error("process.exit called");
-    });
-    // Suppress UI output during tests
-    consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    processExitSpy = spyOnProcessExitThrowing();
+    consoleErrorSpy = spyOnConsole("error");
   });
 
   afterEach(() => {
