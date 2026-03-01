@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "bun:test";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { ExitPromptError } from "@inquirer/core";
 
 // Mock ui module - must include all exports to avoid breaking ui.test.ts

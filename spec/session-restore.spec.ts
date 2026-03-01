@@ -5,7 +5,7 @@
  * bun test's vi.mock in api-client.test.ts replaces getSession globally,
  * making it impossible to test the real implementation in the same run.
  */
-import { describe, test, expect, beforeEach, afterEach } from "bun:test";
+import { describe, test, expect, beforeEach, afterEach } from "vitest";
 import {
   resetClient,
   getSupabaseClient,

@@ -11,7 +11,7 @@
  *       → resolveRegistry(scope, config, tokens)
  *         → registry.token (used by DefaultRegistryClient for Authorization header)
  */
-import { describe, test, expect, beforeEach, afterEach } from "bun:test";
+import { describe, test, expect, beforeEach, afterEach } from "vitest";
 import { createTokenProvider } from "#/context/tokens";
 import { resolveRegistry } from "@grekt-labs/cli-engine";
 

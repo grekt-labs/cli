@@ -1,4 +1,4 @@
-import { describe, test, expect } from "bun:test";
+import { describe, test, expect } from "vitest";
 import { openclawPlugin } from "./openclaw";
 import type { ProjectConfig } from "@grekt-labs/cli-engine";
 

@@ -1,4 +1,4 @@
-import { afterAll, beforeAll } from "bun:test";
+import { afterAll, beforeAll } from "vitest";
 import { registerArtifact, startRegistryServer } from "./helpers/registry-server";
 import { cleanTarballCache } from "./helpers/fixtures";
 

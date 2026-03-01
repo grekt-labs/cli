@@ -1,4 +1,4 @@
-import { describe, test, expect } from "bun:test";
+import { describe, test, expect } from "vitest";
 import { createCategoryRecord } from "@grekt-labs/cli-engine";
 import type { ArtifactInfo } from "#/context";
 import { createEmptySelection, type ComponentSelection } from "#/artifact/selector/selector";

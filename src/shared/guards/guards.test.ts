@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, afterEach, spyOn } from "bun:test";
+import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
@@ -6,8 +6,8 @@ import { requireInitialized } from "./guards";
 
 describe("guards", () => {
   const testDir = join(tmpdir(), ".grekt-test-guards");
-  let processExitSpy: ReturnType<typeof spyOn>;
-  let consoleErrorSpy: ReturnType<typeof spyOn>;
+  let processExitSpy: ReturnType<typeof vi.spyOn>;
+  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     if (existsSync(testDir)) {
@@ -15,11 +15,11 @@ describe("guards", () => {
     }
     mkdirSync(testDir, { recursive: true });
 
-    processExitSpy = spyOn(process, "exit").mockImplementation(() => {
+    processExitSpy = vi.spyOn(process, "exit").mockImplementation(() => {
       throw new Error("process.exit called");
     });
     // Suppress UI output during tests
-    consoleErrorSpy = spyOn(console, "error").mockImplementation(() => {});
+    consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
   });
 
   afterEach(() => {

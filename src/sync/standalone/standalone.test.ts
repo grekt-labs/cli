@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, afterEach, mock } from "bun:test";
+import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
 import { existsSync, mkdirSync, rmSync, writeFileSync, readFileSync } from "fs";
 import { join } from "path";
 import { scanDirectory, syncFromDirectory } from "./standalone";
@@ -6,7 +6,7 @@ import { GREKT_SECTION_HEADER } from "@grekt-labs/cli-engine";
 
 // Suppress console output during tests
 beforeEach(() => {
-  console.log = mock(() => {});
+  console.log = vi.fn(() => {});
 });
 
 const VALID_SKILL = `---

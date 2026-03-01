@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, afterEach, mock } from "bun:test";
+import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
 import { existsSync, mkdirSync, rmSync, writeFileSync, readFileSync } from "fs";
 import { join } from "path";
 import { parse, stringify } from "yaml";
@@ -7,7 +7,7 @@ const ARTIFACTS_DIR = ".grekt/artifacts";
 const TEST_ARTIFACT_ID = "@scope/test-artifact";
 
 // Mock all @inquirer/prompts exports used across the codebase
-mock.module("@inquirer/prompts", () => ({
+vi.mock("@inquirer/prompts", () => ({
   confirm: () => Promise.resolve(true),
   checkbox: () => Promise.resolve([]),
   input: () => Promise.resolve(""),

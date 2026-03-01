@@ -1,4 +1,4 @@
-import { describe, test, expect } from "bun:test";
+import { describe, test, expect } from "vitest";
 import { ensureLongForm } from "./trust";
 import type { ArtifactEntry } from "@grekt-labs/cli-engine";
 import { generateTrustKey, signTrust, TRUST_SIGNATURE_PREFIX } from "@grekt-labs/cli-engine";

@@ -1,12 +1,10 @@
-import { describe, test, expect, mock, beforeEach } from "bun:test";
+import { describe, test, expect, vi, beforeEach } from "vitest";
 
-const unrefMock = mock(() => {});
-const spawnMock = mock(() => ({ unref: unrefMock }));
+const unrefMock = vi.fn(() => {});
+const spawnMock = vi.fn(() => ({ unref: unrefMock }));
 
-const originalChildProcess = await import("child_process");
-
-mock.module("child_process", () => ({
-  ...originalChildProcess,
+vi.mock("child_process", async (importOriginal) => ({
+  ...(await importOriginal()),
   spawn: spawnMock,
 }));
 
