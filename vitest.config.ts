@@ -5,5 +5,6 @@ export default defineConfig({
   plugins: [tsconfigPaths()],
   test: {
     globals: false,
+    exclude: ["spec/**", "node_modules/**"],
   },
 });

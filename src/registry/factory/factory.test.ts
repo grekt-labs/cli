@@ -12,8 +12,8 @@ describe("factory", () => {
 
       const client = createRegistryClient(registry);
 
-      expect(client.download).toBeFunction();
-      expect(client.publish).toBeFunction();
+      expect(typeof client.download).toBe("function");
+      expect(typeof client.publish).toBe("function");
     });
 
     test("returns gitlab client with download capability", () => {
@@ -25,7 +25,7 @@ describe("factory", () => {
 
       const client = createRegistryClient(registry);
 
-      expect(client.download).toBeFunction();
+      expect(typeof client.download).toBe("function");
     });
 
     test("throws for gitlab without project", () => {
