@@ -1,4 +1,4 @@
-import { describe, test, expect, afterEach, beforeAll, afterAll } from "bun:test";
+import { describe, test, expect, afterEach, beforeAll, afterAll } from "vitest";
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 import { parse } from "yaml";

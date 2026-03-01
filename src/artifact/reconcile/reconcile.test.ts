@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { reconcile, extractVersion, extractMode } from "./reconcile";
 import type { ProjectConfig, Lockfile, LockfileEntry } from "@grekt-labs/cli-engine";
 

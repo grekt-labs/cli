@@ -1,4 +1,4 @@
-import { describe, test, expect, afterEach, beforeAll, afterAll } from "bun:test";
+import { describe, test, expect, afterEach, beforeAll, afterAll } from "vitest";
 import { runCli } from "../helpers/cli";
 import { createTestProject, type TestProject } from "../helpers/project";
 import { registerArtifact, startRegistryServer } from "../helpers/registry-server";

@@ -1,4 +1,4 @@
-import { describe, test, expect, vi, afterEach } from "bun:test";
+import { describe, test, expect, vi, afterEach } from "vitest";
 import {
   buildGitHubTarballUrl,
   buildGitLabArchiveUrl,

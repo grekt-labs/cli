@@ -1,4 +1,4 @@
-import { describe, test, expect, mock } from "bun:test";
+import { describe, test, expect, vi } from "vitest";
 import { createHttpClient } from "./http";
 
 const originalFetch = globalThis.fetch;
@@ -7,7 +7,7 @@ describe("createHttpClient", () => {
   test("applies default timeout signal when caller provides none", async () => {
     let capturedSignal: AbortSignal | null | undefined = null;
 
-    globalThis.fetch = mock(async (url: string | URL | Request, init?: RequestInit) => {
+    globalThis.fetch = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
       capturedSignal = init?.signal;
       return new Response("ok");
     }) as typeof fetch;
@@ -27,7 +27,7 @@ describe("createHttpClient", () => {
     const callerController = new AbortController();
     let capturedSignal: AbortSignal | null | undefined = null;
 
-    globalThis.fetch = mock(async (url: string | URL | Request, init?: RequestInit) => {
+    globalThis.fetch = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
       capturedSignal = init?.signal;
       return new Response("ok");
     }) as typeof fetch;
@@ -46,7 +46,7 @@ describe("createHttpClient", () => {
     let capturedUrl: string | URL | Request = "";
     let capturedInit: RequestInit | undefined;
 
-    globalThis.fetch = mock(async (url: string | URL | Request, init?: RequestInit) => {
+    globalThis.fetch = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
       capturedUrl = url;
       capturedInit = init;
       return new Response("ok");

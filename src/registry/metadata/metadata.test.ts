@@ -1,4 +1,4 @@
-import { describe, test, expect } from "bun:test";
+import { describe, test, expect } from "vitest";
 import { sortVersionsDesc } from "@grekt-labs/cli-engine";
 import { createMetadata, deprecateVersion, undeprecateVersion, updateMetadataVersion } from "./metadata";
 

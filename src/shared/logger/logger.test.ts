@@ -1,12 +1,12 @@
-import { describe, test, expect, beforeEach, afterEach, spyOn } from "bun:test";
+import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
 
 describe("logger", () => {
   let originalLogLevel: string | undefined;
-  let stderrSpy: ReturnType<typeof spyOn>;
+  let stderrSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     originalLogLevel = process.env.GREKT_LOG_LEVEL;
-    stderrSpy = spyOn(console, "error").mockImplementation(() => {});
+    stderrSpy = vi.spyOn(console, "error").mockImplementation(() => {});
   });
 
   afterEach(() => {

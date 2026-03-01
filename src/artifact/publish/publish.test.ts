@@ -1,14 +1,14 @@
-import { describe, test, expect, mock, beforeEach } from "bun:test";
+import { describe, test, expect, vi, beforeEach } from "vitest";
 
-const mockValidateArtifact = mock();
-const mockCreateTarball = mock();
-const mockRemoveTarball = mock();
+const mockValidateArtifact = vi.fn();
+const mockCreateTarball = vi.fn();
+const mockRemoveTarball = vi.fn();
 
-mock.module("#/artifact/validation/validation", () => ({
+vi.mock("#/artifact/validation/validation", () => ({
   validateArtifact: mockValidateArtifact,
 }));
 
-mock.module("#/artifact/tarball/tarball", () => ({
+vi.mock("#/artifact/tarball/tarball", () => ({
   createTarball: mockCreateTarball,
   removeTarball: mockRemoveTarball,
 }));

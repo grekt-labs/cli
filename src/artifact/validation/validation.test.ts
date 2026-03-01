@@ -1,4 +1,4 @@
-import { describe, test, expect, mock, beforeEach } from "bun:test";
+import { describe, test, expect, vi, beforeEach } from "vitest";
 import {
   resolveAndAssertWithinBase,
   sanitizeArtifactMode,
@@ -8,15 +8,15 @@ import {
 
 // --- Mocks for validateArtifact dependencies ---
 
-const mockIsInitialized = mock(() => true);
-const mockFsExists = mock(() => true);
-const mockFsReadFile = mock(() => "");
+const mockIsInitialized = vi.fn(() => true);
+const mockFsExists = vi.fn(() => true);
+const mockFsReadFile = vi.fn(() => "");
 
-mock.module("#/config/project/project", () => ({
+vi.mock("#/config/project/project", () => ({
   isInitialized: mockIsInitialized,
 }));
 
-mock.module("#/context", () => ({
+vi.mock("#/context", () => ({
   fs: {
     exists: mockFsExists,
     readFile: mockFsReadFile,

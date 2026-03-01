@@ -1,10 +1,10 @@
-import { describe, test, expect, mock, beforeEach } from "bun:test";
+import { describe, test, expect, vi, beforeEach } from "vitest";
 import { runSync, syncToTargets } from "./helpers";
 import type { SyncPlugin, SyncResult, Lockfile, ProjectConfig } from "@grekt-labs/cli-engine";
 
 // Suppress console output during tests
 beforeEach(() => {
-  console.log = mock(() => {});
+  console.log = vi.fn(() => {});
 });
 
 function createMockPlugin(overrides: Partial<SyncPlugin> = {}): SyncPlugin {
@@ -87,7 +87,7 @@ describe("helpers", () => {
     });
 
     test("skips targets when createTarget is false and target does not exist", async () => {
-      const syncFn = mock(async () => ({ created: [], updated: [], skipped: [], syncedFiles: {} }));
+      const syncFn = vi.fn(async () => ({ created: [], updated: [], skipped: [], syncedFiles: {} }));
       const plugin = createMockPlugin({ targetExists: () => false, sync: syncFn });
 
       const result = await runSync({
@@ -104,7 +104,7 @@ describe("helpers", () => {
     });
 
     test("creates target when createTarget is true and target does not exist", async () => {
-      const syncFn = mock(async () => ({ created: ["new.md"], updated: [], skipped: [], syncedFiles: {} }));
+      const syncFn = vi.fn(async () => ({ created: ["new.md"], updated: [], skipped: [], syncedFiles: {} }));
       const plugin = createMockPlugin({ targetExists: () => false, sync: syncFn });
 
       const result = await runSync({
@@ -121,7 +121,7 @@ describe("helpers", () => {
     });
 
     test("passes force option to plugin sync", async () => {
-      const syncFn = mock(async () => ({ created: [], updated: [], skipped: [], syncedFiles: {} }));
+      const syncFn = vi.fn(async () => ({ created: [], updated: [], skipped: [], syncedFiles: {} }));
       const plugin = createMockPlugin({ sync: syncFn });
 
       await runSync({
@@ -222,7 +222,7 @@ describe("helpers", () => {
     });
 
     test("passes createTarget=true to plugin when target does not exist", async () => {
-      const syncFn = mock(async () => ({ created: [], updated: [], skipped: [], syncedFiles: {} }));
+      const syncFn = vi.fn(async () => ({ created: [], updated: [], skipped: [], syncedFiles: {} }));
       const plugin = createMockPlugin({ targetExists: () => false, sync: syncFn });
 
       await runSync({
@@ -239,7 +239,7 @@ describe("helpers", () => {
     });
 
     test("passes createTarget=false to plugin when target already exists", async () => {
-      const syncFn = mock(async () => ({ created: [], updated: [], skipped: [], syncedFiles: {} }));
+      const syncFn = vi.fn(async () => ({ created: [], updated: [], skipped: [], syncedFiles: {} }));
       const plugin = createMockPlugin({ targetExists: () => true, sync: syncFn });
 
       await runSync({
