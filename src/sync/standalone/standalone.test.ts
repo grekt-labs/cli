@@ -3,10 +3,16 @@ import { existsSync, mkdirSync, rmSync, writeFileSync, readFileSync } from "fs";
 import { join } from "path";
 import { scanDirectory, syncFromDirectory } from "./standalone";
 import { GREKT_SECTION_HEADER } from "@grekt-labs/cli-engine";
+import { suppressConsole } from "#/test-utils";
 
-// Suppress console output during tests
+let restoreConsole: () => void;
+
 beforeEach(() => {
-  console.log = vi.fn(() => {});
+  restoreConsole = suppressConsole("log");
+});
+
+afterEach(() => {
+  restoreConsole();
 });
 
 const VALID_SKILL = `---

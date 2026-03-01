@@ -2,18 +2,12 @@ import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
 import { existsSync, mkdirSync, rmSync, writeFileSync, readFileSync } from "fs";
 import { join } from "path";
 import { parse, stringify } from "yaml";
+import { createMockInquirer } from "#/test-utils";
 
 const ARTIFACTS_DIR = ".grekt/artifacts";
 const TEST_ARTIFACT_ID = "@scope/test-artifact";
 
-// Mock all @inquirer/prompts exports used across the codebase
-vi.mock("@inquirer/prompts", () => ({
-  confirm: () => Promise.resolve(true),
-  checkbox: () => Promise.resolve([]),
-  input: () => Promise.resolve(""),
-  password: () => Promise.resolve(""),
-  select: () => Promise.resolve(""),
-}));
+vi.mock("@inquirer/prompts", () => createMockInquirer());
 
 describe("remove", () => {
   const testDir = join(process.cwd(), ".test-remove-command");

@@ -1,10 +1,16 @@
-import { describe, test, expect, vi, beforeEach } from "vitest";
+import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 import { runSync, syncToTargets } from "./helpers";
 import type { SyncPlugin, SyncResult, Lockfile, ProjectConfig } from "@grekt-labs/cli-engine";
+import { suppressConsole } from "#/test-utils";
 
-// Suppress console output during tests
+let restoreConsole: () => void;
+
 beforeEach(() => {
-  console.log = vi.fn(() => {});
+  restoreConsole = suppressConsole("log");
+});
+
+afterEach(() => {
+  restoreConsole();
 });
 
 function createMockPlugin(overrides: Partial<SyncPlugin> = {}): SyncPlugin {

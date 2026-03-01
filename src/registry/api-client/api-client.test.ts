@@ -1,8 +1,14 @@
 import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
 import { RegistryError } from "./registry-error";
+import {
+  createMockSupabase,
+  createFetchLikeResponse,
+  type SupabaseHandlers,
+} from "#/test-utils";
+import type { Session } from "@supabase/supabase-js";
 
-let mockSupabase: any;
-let mockSession: any;
+let mockSupabase: ReturnType<typeof createMockSupabase>;
+let mockSession: Pick<Session, "access_token"> | null;
 let mockSupabaseUrl = "https://supabase.test";
 
 vi.mock("#/auth/session/session", async (importOriginal) => ({
@@ -12,45 +18,12 @@ vi.mock("#/auth/session/session", async (importOriginal) => ({
   getSupabaseUrl: () => mockSupabaseUrl,
 }));
 
-function createQuery(table: string, handlers: Record<string, any>) {
-  const query = {
-    eq: () => query,
-    single: async () => handlers[table]?.single ?? { data: null, error: null },
-    then: (resolve: (value: any) => void, reject: (reason?: unknown) => void) => {
-      Promise.resolve(handlers[table]?.list ?? { data: null, error: null }).then(resolve, reject);
-    },
-  };
-  return query;
-}
-
-function createUpdateQuery(table: string, handlers: Record<string, any>) {
-  const query = {
-    eq: () => query,
-    then: (resolve: (value: any) => void, reject: (reason?: unknown) => void) => {
-      Promise.resolve(handlers[table]?.update ?? { data: null, error: null }).then(resolve, reject);
-    },
-  };
-  return query;
-}
-
-function createSupabaseMock(handlers: Record<string, any>) {
-  return {
-    from: (table: string) => ({
-      select: () => createQuery(table, handlers),
-      update: () => createUpdateQuery(table, handlers),
-    }),
-    auth: {
-      getUser: async () => handlers.auth?.getUser ?? { data: { user: null }, error: null },
-    },
-  };
-}
-
 describe("api-client", () => {
   const originalFetch = globalThis.fetch;
 
   beforeEach(() => {
     mockSession = null;
-    mockSupabase = createSupabaseMock({});
+    mockSupabase = createMockSupabase({});
   });
 
   afterEach(() => {
@@ -59,7 +32,7 @@ describe("api-client", () => {
   });
 
   test("getArtifact returns metadata with latest semver and updatedAt", async () => {
-    mockSupabase = createSupabaseMock({
+    mockSupabase = createMockSupabase({
       artifacts: {
         single: {
           data: {
@@ -93,7 +66,7 @@ describe("api-client", () => {
   });
 
   test("getVersions sorts by semver desc and preserves deprecations", async () => {
-    mockSupabase = createSupabaseMock({
+    mockSupabase = createMockSupabase({
       versions: {
         list: {
           data: [
@@ -116,7 +89,7 @@ describe("api-client", () => {
   });
 
   test("versionExists returns false on error", async () => {
-    mockSupabase = createSupabaseMock({
+    mockSupabase = createMockSupabase({
       versions: {
         single: { data: null, error: new Error("no") },
       },
@@ -131,7 +104,7 @@ describe("api-client", () => {
   });
 
   test("whoami returns email when user exists", async () => {
-    mockSupabase = createSupabaseMock({
+    mockSupabase = createMockSupabase({
       auth: {
         getUser: { data: { user: { email: "user@test.com" } }, error: null },
       },
@@ -156,10 +129,12 @@ describe("api-client", () => {
 
   test("publish calls edge function with bearer token", async () => {
     mockSession = { access_token: "token" };
-    globalThis.fetch = vi.fn(async () => ({
-      ok: true,
-      json: async () => ({ uploadUrl: "https://upload.test", expiresAt: "2024-01-01T00:05:00Z" }),
-    })) as unknown as typeof fetch;
+    globalThis.fetch = vi.fn(async () =>
+      createFetchLikeResponse({
+        ok: true,
+        json: async () => ({ uploadUrl: "https://upload.test", expiresAt: "2024-01-01T00:05:00Z" }),
+      })
+    ) as unknown as typeof fetch;
 
     const { RegistryClient } = await import("./api-client");
     const client = new RegistryClient();
@@ -194,10 +169,12 @@ describe("api-client", () => {
 
   test("deprecate calls edge function with bearer token", async () => {
     mockSession = { access_token: "token" };
-    globalThis.fetch = vi.fn(async () => ({
-      ok: true,
-      json: async () => ({ success: true }),
-    })) as unknown as typeof fetch;
+    globalThis.fetch = vi.fn(async () =>
+      createFetchLikeResponse({
+        ok: true,
+        json: async () => ({ success: true }),
+      })
+    ) as unknown as typeof fetch;
 
     const { RegistryClient } = await import("./api-client");
     const client = new RegistryClient();
@@ -217,11 +194,13 @@ describe("api-client", () => {
 
   test("deprecate throws RegistryError on error response", async () => {
     mockSession = { access_token: "token" };
-    globalThis.fetch = vi.fn(async () => ({
-      ok: false,
-      status: 403,
-      json: async () => ({ error: "You don't have permission", code: "SCOPE_NOT_OWNED" }),
-    })) as unknown as typeof fetch;
+    globalThis.fetch = vi.fn(async () =>
+      createFetchLikeResponse({
+        ok: false,
+        status: 403,
+        json: async () => ({ error: "You don't have permission", code: "SCOPE_NOT_OWNED" }),
+      })
+    ) as unknown as typeof fetch;
 
     const { RegistryClient } = await import("./api-client");
     const client = new RegistryClient();
@@ -247,10 +226,12 @@ describe("api-client", () => {
 
   test("undeprecate calls edge function with bearer token", async () => {
     mockSession = { access_token: "token" };
-    globalThis.fetch = vi.fn(async () => ({
-      ok: true,
-      json: async () => ({ success: true }),
-    })) as unknown as typeof fetch;
+    globalThis.fetch = vi.fn(async () =>
+      createFetchLikeResponse({
+        ok: true,
+        json: async () => ({ success: true }),
+      })
+    ) as unknown as typeof fetch;
 
     const { RegistryClient } = await import("./api-client");
     const client = new RegistryClient();
@@ -270,15 +251,17 @@ describe("api-client", () => {
 
   test("publish throws RegistryError with code and details on error response", async () => {
     mockSession = { access_token: "token" };
-    globalThis.fetch = vi.fn(async () => ({
-      ok: false,
-      status: 400,
-      json: async () => ({
-        error: "Insert failed",
-        code: "INSERT_FAILED",
-        details: "duplicate key on artifact_id",
-      }),
-    })) as unknown as typeof fetch;
+    globalThis.fetch = vi.fn(async () =>
+      createFetchLikeResponse({
+        ok: false,
+        status: 400,
+        json: async () => ({
+          error: "Insert failed",
+          code: "INSERT_FAILED",
+          details: "duplicate key on artifact_id",
+        }),
+      })
+    ) as unknown as typeof fetch;
 
     const { RegistryClient } = await import("./api-client");
     const client = new RegistryClient();
@@ -296,11 +279,13 @@ describe("api-client", () => {
 
   test("publish throws RegistryError with UNKNOWN code when JSON has no code field", async () => {
     mockSession = { access_token: "token" };
-    globalThis.fetch = vi.fn(async () => ({
-      ok: false,
-      status: 500,
-      json: async () => ({ message: "something broke" }),
-    })) as unknown as typeof fetch;
+    globalThis.fetch = vi.fn(async () =>
+      createFetchLikeResponse({
+        ok: false,
+        status: 500,
+        json: async () => ({ message: "something broke" }),
+      })
+    ) as unknown as typeof fetch;
 
     const { RegistryClient } = await import("./api-client");
     const client = new RegistryClient();
@@ -317,11 +302,13 @@ describe("api-client", () => {
 
   test("undeprecate throws RegistryError with UNKNOWN code when JSON parsing fails", async () => {
     mockSession = { access_token: "token" };
-    globalThis.fetch = vi.fn(async () => ({
-      ok: false,
-      status: 502,
-      json: async () => { throw new Error("not json"); },
-    })) as unknown as typeof fetch;
+    globalThis.fetch = vi.fn(async () =>
+      createFetchLikeResponse({
+        ok: false,
+        status: 502,
+        json: async () => { throw new Error("not json"); },
+      })
+    ) as unknown as typeof fetch;
 
     const { RegistryClient } = await import("./api-client");
     const client = new RegistryClient();

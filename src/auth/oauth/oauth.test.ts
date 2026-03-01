@@ -1,11 +1,11 @@
 import { describe, test, expect, vi, beforeEach } from "vitest";
+import { createMockSpawn } from "#/test-utils";
 
-const unrefMock = vi.fn(() => {});
-const spawnMock = vi.fn(() => ({ unref: unrefMock }));
+const mockSpawn = createMockSpawn();
 
 vi.mock("child_process", async (importOriginal) => ({
   ...(await importOriginal()),
-  spawn: spawnMock,
+  spawn: mockSpawn.spawn,
 }));
 
 const { openBrowser } = await import("./oauth");
@@ -13,9 +13,7 @@ const { openBrowser } = await import("./oauth");
 describe("oauth", () => {
   describe("openBrowser", () => {
     beforeEach(() => {
-      spawnMock.mockClear();
-      unrefMock.mockClear();
-      spawnMock.mockImplementation(() => ({ unref: unrefMock }));
+      mockSpawn.reset();
     });
 
     test("returns true when spawn succeeds", () => {
@@ -24,7 +22,7 @@ describe("oauth", () => {
     });
 
     test("returns false when spawn throws", () => {
-      spawnMock.mockImplementation(() => {
+      mockSpawn.spawn.mockImplementation(() => {
         throw new Error("command not found");
       });
       const result = openBrowser("https://example.com");
@@ -34,7 +32,7 @@ describe("oauth", () => {
     test("passes URL as argument to spawn", () => {
       openBrowser("https://example.com/callback?code=abc&state=xyz");
 
-      const lastCall = spawnMock.mock.calls[spawnMock.mock.calls.length - 1];
+      const lastCall = mockSpawn.spawn.mock.calls[mockSpawn.spawn.mock.calls.length - 1];
       const args = lastCall[1] as string[];
       expect(args).toContain("https://example.com/callback?code=abc&state=xyz");
     });
@@ -42,11 +40,11 @@ describe("oauth", () => {
     test("spawns detached process and unrefs it", () => {
       openBrowser("https://example.com");
 
-      const lastCall = spawnMock.mock.calls[spawnMock.mock.calls.length - 1];
+      const lastCall = mockSpawn.spawn.mock.calls[mockSpawn.spawn.mock.calls.length - 1];
       const options = lastCall[2] as { detached: boolean; stdio: string };
       expect(options.detached).toBe(true);
       expect(options.stdio).toBe("ignore");
-      expect(unrefMock).toHaveBeenCalled();
+      expect(mockSpawn.unref).toHaveBeenCalled();
     });
   });
 });

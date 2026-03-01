@@ -6,6 +6,7 @@ import {
   getGitLabHeaders,
 } from "@grekt-labs/cli-engine";
 import { downloadAndExtractTarball } from "./download";
+import { createFetchLikeResponse } from "#/test-utils";
 
 describe("download", () => {
   const originalFetch = globalThis.fetch;
@@ -95,11 +96,9 @@ describe("download", () => {
 
   describe("downloadAndExtractTarball", () => {
     test("returns error when HTTP response is not ok", async () => {
-      globalThis.fetch = vi.fn(async () => ({
-        ok: false,
-        status: 404,
-        statusText: "Not Found",
-      })) as unknown as typeof fetch;
+      globalThis.fetch = vi.fn(async () =>
+        createFetchLikeResponse({ ok: false, status: 404, statusText: "Not Found" })
+      ) as unknown as typeof fetch;
 
       const result = await downloadAndExtractTarball("https://example.com/tar.gz", "/tmp/grekt-test");
 
@@ -108,11 +107,9 @@ describe("download", () => {
     });
 
     test("sets User-Agent header", async () => {
-      globalThis.fetch = vi.fn(async () => ({
-        ok: false,
-        status: 500,
-        statusText: "Server Error",
-      })) as unknown as typeof fetch;
+      globalThis.fetch = vi.fn(async () =>
+        createFetchLikeResponse({ ok: false, status: 500, statusText: "Server Error" })
+      ) as unknown as typeof fetch;
 
       await downloadAndExtractTarball("https://example.com/tar.gz", "/tmp/grekt-test");
 

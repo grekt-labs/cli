@@ -1,50 +1,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { ExitPromptError } from "@inquirer/core";
+import { createMockUI, createMockInquirer, createMockSearchableCheckbox } from "#/test-utils";
 
-// Mock ui module - must include all exports to avoid breaking ui.test.ts
-vi.mock("#/shared/ui/ui", () => ({
-  newline: vi.fn(),
-  info: vi.fn(),
-  log: vi.fn(),
-  success: vi.fn(),
-  error: vi.fn(),
-  warning: vi.fn(),
-  warn: vi.fn(),
-  colors: {
-    success: (s: string) => s,
-    error: (s: string) => s,
-    warning: (s: string) => s,
-    info: (s: string) => s,
-    dim: (s: string) => s,
-    bold: (s: string) => s,
-    highlight: (s: string) => s,
-    brand: (s: string) => s,
-  },
-  symbols: {
-    success: "✓",
-    error: "✗",
-    warning: "⚠",
-    info: "i",
-    arrow: "→",
-    bullet: "•",
-  },
-}));
+vi.mock("#/shared/ui/ui", () => createMockUI());
 
-// Mock inquirer prompts
-const mockInput = vi.fn();
-const mockConfirm = vi.fn();
+const mockInquirer = createMockInquirer();
+vi.mock("@inquirer/prompts", () => mockInquirer);
 
-vi.mock("@inquirer/prompts", () => ({
-  input: mockInput,
-  confirm: mockConfirm,
-}));
-
-// Mock searchable checkbox
-const mockSearchableCheckbox = vi.fn();
-
-vi.mock("#/shared/prompts/searchable-checkbox", () => ({
-  searchableCheckbox: mockSearchableCheckbox,
-}));
+const mockSearchableCheckboxModule = createMockSearchableCheckbox();
+const mockSearchableCheckbox = mockSearchableCheckboxModule.searchableCheckbox;
+vi.mock("#/shared/prompts/searchable-checkbox", () => mockSearchableCheckboxModule);
 
 describe("withPromptHandler", () => {
   const originalExit = process.exit;

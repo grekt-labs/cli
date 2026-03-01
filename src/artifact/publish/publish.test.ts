@@ -1,8 +1,11 @@
 import { describe, test, expect, vi, beforeEach } from "vitest";
+import { createValidatedArtifact, createTarballResult } from "#/test-utils";
 
-const mockValidateArtifact = vi.fn();
-const mockCreateTarball = vi.fn();
-const mockRemoveTarball = vi.fn();
+const { mockValidateArtifact, mockCreateTarball, mockRemoveTarball } = vi.hoisted(() => ({
+  mockValidateArtifact: vi.fn(),
+  mockCreateTarball: vi.fn(),
+  mockRemoveTarball: vi.fn(),
+}));
 
 vi.mock("#/artifact/validation/validation", () => ({
   validateArtifact: mockValidateArtifact,
@@ -16,21 +19,8 @@ vi.mock("#/artifact/tarball/tarball", () => ({
 import { prepareArtifact } from "./publish";
 import type { ValidationError } from "./publish";
 
-const VALID_ARTIFACT = {
-  artifactId: "@scope/test",
-  scope: "scope",
-  fullPath: "/path/to/artifact",
-  manifest: { version: "1.0.0", description: "desc", keywords: ["a", "b", "c"] },
-  scanned: { agents: [], skills: [], commands: [], mcps: [], rules: [], hooks: [] },
-  componentCount: 3,
-};
-
-const VALID_TARBALL = {
-  success: true,
-  path: "/tmp/scope-test-1.0.0.tgz",
-  filename: "scope-test-1.0.0.tgz",
-  sizeBytes: 5000,
-};
+const VALID_ARTIFACT = createValidatedArtifact();
+const VALID_TARBALL = createTarballResult();
 
 describe("prepareArtifact", () => {
   beforeEach(() => {
