@@ -1,3 +1,10 @@
+# [6.40.0-beta.2](https://github.com/grekt-labs/cli/compare/v6.40.0-beta.1...v6.40.0-beta.2) (2026-03-02)
+
+
+### Bug Fixes
+
+* resolve base ref per artifact using artifact-specific tags ([bbdf668](https://github.com/grekt-labs/cli/commit/bbdf668cb7a6bf71cf9c5cd14f7469102c5e1d07))
+
 # [6.40.0-beta.1](https://github.com/grekt-labs/cli/compare/v6.39.0...v6.40.0-beta.1) (2026-03-02)
 
 
