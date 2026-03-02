@@ -1,3 +1,16 @@
+# [6.39.0](https://github.com/grekt-labs/cli/compare/v6.38.1...v6.39.0) (2026-03-02)
+
+
+### Bug Fixes
+
+* migrate remaining bun:test matchers to vitest ([746ad27](https://github.com/grekt-labs/cli/commit/746ad2780985316b9b4459a6905c344dc3444ccc))
+* use vitest via bun run test in pre-push hook ([733d1f8](https://github.com/grekt-labs/cli/commit/733d1f8865af342eb24e2ffdb76a2bdeff6220db))
+
+
+### Features
+
+* centralize typed mock factories for CLI tests ([5eb71a4](https://github.com/grekt-labs/cli/commit/5eb71a46b4a9442ee3442a603d3e511e3b12259a))
+
 ## [6.38.1](https://github.com/grekt-labs/cli/compare/v6.38.0...v6.38.1) (2026-02-28)
 
 
