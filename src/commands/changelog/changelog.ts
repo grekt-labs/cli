@@ -18,7 +18,6 @@ import {
 import {
   detectBaseRef,
   detectArtifactBaseRef,
-  getWidestBaseRef,
   getChangedFiles,
   getCommitsForPath,
 } from "./git";
@@ -70,30 +69,10 @@ export const changelogCommand = new Command("changelog")
     }
 
     const globalBaseRef = detectBaseRef(options.since);
-    const fileBaseRef = globalBaseRef ?? getWidestBaseRef();
-    const changedFiles = getChangedFiles(fileBaseRef);
 
-    if (changedFiles.length === 0) {
-      info("No changed files detected");
-      process.exit(0);
-    }
-
-    const filesByArtifact = mapFilesToArtifacts(
-      changedFiles,
-      workspace.artifacts,
-    );
-
-    if (filesByArtifact.size === 0) {
-      info("No artifact changes detected");
-      process.exit(0);
-    }
-
-    const artifactChangelogs = buildArtifactChangelogs(
-      workspace.artifacts,
-      filesByArtifact,
-      globalBaseRef,
-      options.ci,
-    );
+    const artifactChangelogs = globalBaseRef
+      ? buildFromGlobalRef(workspace.artifacts, globalBaseRef, options.ci)
+      : buildPerArtifact(workspace.artifacts, options.ci);
 
     if (artifactChangelogs.length === 0) {
       info("No artifact changes detected");
@@ -112,50 +91,95 @@ export const changelogCommand = new Command("changelog")
     }
   });
 
-function buildArtifactChangelogs(
+/**
+ * Build changelogs using a single global base ref (feature branch or --since).
+ * Uses git diff to find which artifacts have changed files.
+ */
+function buildFromGlobalRef(
   artifacts: ReadonlyArray<{ relativePath: string; manifest: { name: string } }>,
-  filesByArtifact: Map<string, string[]>,
-  globalBaseRef: string | null,
+  baseRef: string,
   ciMode?: boolean,
 ): ArtifactChangelog[] {
+  const changedFiles = getChangedFiles(baseRef);
+  if (changedFiles.length === 0) return [];
+
+  const filesByArtifact = mapFilesToArtifacts(changedFiles, artifacts);
   const result: ArtifactChangelog[] = [];
 
   for (const artifact of artifacts) {
     const files = filesByArtifact.get(artifact.relativePath);
     if (!files) continue;
 
-    const baseRef = globalBaseRef ?? detectArtifactBaseRef(artifact.manifest.name);
-    const commitLines = getCommitsForPath(baseRef, artifact.relativePath);
-    const commits = commitLines
-      .map(parseConventionalCommit)
-      .filter((commit) => commit !== null);
-
-    const nonConventionalCount = commitLines.length - commits.length;
-
-    if (nonConventionalCount > 0 && ciMode) {
-      warning(
-        `${artifact.manifest.name}: ${nonConventionalCount} non-conventional commit(s) ignored`,
-      );
-    }
-
-    const calculatedBump =
-      commits.length > 0 ? determineBumpType(commits) : "patch";
-
-    if (commits.length === 0 && ciMode) {
-      warning(
-        `${artifact.manifest.name}: no conventional commits found, defaulting to patch`,
-      );
-    }
-
-    result.push({
-      artifact: artifact as ArtifactChangelog["artifact"],
-      commits,
-      calculatedBump,
-      changedFiles: files,
-    });
+    result.push(
+      buildArtifactChangelog(artifact, files, baseRef, ciMode),
+    );
   }
 
   return result;
+}
+
+/**
+ * Build changelogs per artifact on the default branch.
+ * Each artifact resolves its own base ref from its tags.
+ * Artifacts without tags are treated as new (all commits are relevant).
+ */
+function buildPerArtifact(
+  artifacts: ReadonlyArray<{ relativePath: string; manifest: { name: string } }>,
+  ciMode?: boolean,
+): ArtifactChangelog[] {
+  const result: ArtifactChangelog[] = [];
+
+  for (const artifact of artifacts) {
+    const baseRef = detectArtifactBaseRef(artifact.manifest.name);
+    const changedFiles = getChangedFiles(baseRef, artifact.relativePath);
+
+    if (changedFiles.length === 0) continue;
+
+    result.push(
+      buildArtifactChangelog(artifact, changedFiles, baseRef, ciMode),
+    );
+  }
+
+  return result;
+}
+
+/**
+ * Build changelog entry for a single artifact.
+ */
+function buildArtifactChangelog(
+  artifact: { relativePath: string; manifest: { name: string } },
+  changedFiles: string[],
+  baseRef: string,
+  ciMode?: boolean,
+): ArtifactChangelog {
+  const commitLines = getCommitsForPath(baseRef, artifact.relativePath);
+  const commits = commitLines
+    .map(parseConventionalCommit)
+    .filter((commit) => commit !== null);
+
+  const nonConventionalCount = commitLines.length - commits.length;
+
+  if (nonConventionalCount > 0 && ciMode) {
+    warning(
+      `${artifact.manifest.name}: ${nonConventionalCount} non-conventional commit(s) ignored`,
+    );
+  }
+
+  const calculatedBump =
+    commits.length > 0 ? determineBumpType(commits) : "patch";
+
+  if (commits.length === 0 && ciMode) {
+    warning(
+      `${artifact.manifest.name}: no conventional commits found, defaulting to patch`,
+    );
+  }
+
+  return {
+    artifact: artifact as ArtifactChangelog["artifact"],
+    commits,
+    calculatedBump,
+    changedFiles,
+  };
 }
 
 function printSummary(
