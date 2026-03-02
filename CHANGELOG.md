@@ -1,3 +1,16 @@
+# [6.40.0](https://github.com/grekt-labs/cli/compare/v6.39.0...v6.40.0) (2026-03-02)
+
+
+### Bug Fixes
+
+* resolve base ref per artifact using artifact-specific tags ([aa0a3d9](https://github.com/grekt-labs/cli/commit/aa0a3d9e6804a3c8fad5b10e4a0585531daee7d9))
+* resolve per-artifact base ref without global diff on default branch ([82a8685](https://github.com/grekt-labs/cli/commit/82a86851f9b4be5adc8442b40d4ade7b7208e947))
+
+
+### Features
+
+* add changelog command for automated changeset generation ([4f8ab06](https://github.com/grekt-labs/cli/commit/4f8ab06f7d59d1fe9a5ef5492b6141615f54c5d1))
+
 # [6.40.0-beta.3](https://github.com/grekt-labs/cli/compare/v6.40.0-beta.2...v6.40.0-beta.3) (2026-03-02)
 
 
