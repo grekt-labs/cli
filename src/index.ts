@@ -20,6 +20,7 @@ import { versionsCommand } from "#/commands/versions";
 import { outdatedCommand } from "#/commands/outdated";
 import { upgradeCommand } from "#/commands/upgrade";
 import { versionCommand } from "#/commands/version";
+import { changelogCommand } from "#/commands/changelog";
 import { workspaceCommand } from "#/commands/workspace";
 import { worktreeCommand } from "#/commands/worktree";
 import { scanCommand } from "#/commands/scan";
@@ -69,6 +70,7 @@ program.addCommand(upgradeCommand);
 
 // Authoring commands
 program.addCommand(versionCommand);
+program.addCommand(changelogCommand);
 
 // Workspace commands
 program.addCommand(workspaceCommand);

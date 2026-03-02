@@ -2,6 +2,14 @@ import { dirname, join } from "path";
 import { fs } from "#/context";
 
 /**
+ * Normalize path separators to forward slashes.
+ * Useful when comparing paths from different sources (e.g. git vs path.relative on Windows).
+ */
+export function normalizePath(path: string): string {
+  return path.replace(/\\/g, "/");
+}
+
+/**
  * Ensure the parent directory of a filepath exists.
  */
 export function ensureDir(filepath: string): void {

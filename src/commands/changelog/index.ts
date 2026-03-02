@@ -1,0 +1,1 @@
+export { changelogCommand } from "./changelog";
