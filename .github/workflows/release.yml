@@ -30,7 +30,7 @@ jobs:
       - run: bun install
 
       - name: Run tests
-        run: bun test
+        run: bun run test
 
       - name: Validate build
         run: bun build src/index.ts --compile --target=bun-linux-x64 --outfile grekt-test
