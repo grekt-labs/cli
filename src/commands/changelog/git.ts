@@ -100,25 +100,16 @@ export function detectArtifactBaseRef(artifactName: string): string {
 }
 
 /**
- * Get the widest possible base ref for initial file discovery.
- * Uses the oldest artifact tag or the first commit.
- */
-export function getWidestBaseRef(): string {
-  const oldestTag = execOrNull(["rev-list", "--tags", "--reverse"]);
-  const firstTagCommit = oldestTag ? splitLines(oldestTag)[0] : null;
-
-  const firstCommit = getFirstCommit();
-
-  return firstTagCommit ?? firstCommit ?? "HEAD~1";
-}
-
-/**
  * Get files changed between base ref and HEAD.
+ * Optionally scoped to a specific path.
  */
-export function getChangedFiles(baseRef: string): string[] {
+export function getChangedFiles(baseRef: string, path?: string): string[] {
+  const baseArgs = ["diff", "--name-only"];
+  const pathFilter = path ? ["--", path] : [];
+
   const output =
-    execOrNull(["diff", "--name-only", `${baseRef}...HEAD`]) ??
-    execOrNull(["diff", "--name-only", baseRef, "HEAD"]);
+    execOrNull([...baseArgs, `${baseRef}...HEAD`, ...pathFilter]) ??
+    execOrNull([...baseArgs, baseRef, "HEAD", ...pathFilter]);
 
   return splitLines(output);
 }

@@ -18,7 +18,6 @@ vi.mock("#/shared/ui/ui", () => ({
 import {
   detectBaseRef,
   detectArtifactBaseRef,
-  getWidestBaseRef,
   getChangedFiles,
   getCommitsForPath,
 } from "./git";
@@ -157,35 +156,6 @@ describe("detectArtifactBaseRef", () => {
   });
 });
 
-describe("getWidestBaseRef", () => {
-  test("returns oldest tag commit when tags exist", () => {
-    mockGitSequence([
-      "abc123\ndef456\nghi789",            // rev-list --tags --reverse
-      "000000",                            // first commit (not used)
-    ]);
-
-    expect(getWidestBaseRef()).toBe("abc123");
-  });
-
-  test("falls back to first commit when no tags", () => {
-    mockGitSequence([
-      new Error("no tags"),                // rev-list --tags fails
-      "first123",                          // first commit
-    ]);
-
-    expect(getWidestBaseRef()).toBe("first123");
-  });
-
-  test("falls back to HEAD~1 when nothing exists", () => {
-    mockGitSequence([
-      new Error("no tags"),
-      new Error("no commits"),
-    ]);
-
-    expect(getWidestBaseRef()).toBe("HEAD~1");
-  });
-});
-
 describe("getChangedFiles", () => {
   test("returns empty array when no changes", () => {
     mockGitSequence([""]);
@@ -215,6 +185,20 @@ describe("getChangedFiles", () => {
     ]);
 
     expect(getChangedFiles("abc123")).toEqual([]);
+  });
+
+  test("passes path filter when provided", () => {
+    mockGitSequence(["packages/core/src/a.ts\n"]);
+
+    getChangedFiles("abc123", "packages/core");
+
+    expect(mockExecFile).toHaveBeenCalledWith("git", [
+      "diff",
+      "--name-only",
+      "abc123...HEAD",
+      "--",
+      "packages/core",
+    ]);
   });
 });
 
