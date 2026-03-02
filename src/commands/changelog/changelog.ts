@@ -15,7 +15,13 @@ import {
   colors,
   symbols,
 } from "#/shared/ui/ui";
-import { detectBaseRef, getChangedFiles, getCommitsForPath } from "./git";
+import {
+  detectBaseRef,
+  detectArtifactBaseRef,
+  getWidestBaseRef,
+  getChangedFiles,
+  getCommitsForPath,
+} from "./git";
 import {
   parseConventionalCommit,
   determineBumpType,
@@ -63,8 +69,9 @@ export const changelogCommand = new Command("changelog")
       process.exit(1);
     }
 
-    const baseRef = detectBaseRef(options.since);
-    const changedFiles = getChangedFiles(baseRef);
+    const globalBaseRef = detectBaseRef(options.since);
+    const fileBaseRef = globalBaseRef ?? getWidestBaseRef();
+    const changedFiles = getChangedFiles(fileBaseRef);
 
     if (changedFiles.length === 0) {
       info("No changed files detected");
@@ -84,7 +91,7 @@ export const changelogCommand = new Command("changelog")
     const artifactChangelogs = buildArtifactChangelogs(
       workspace.artifacts,
       filesByArtifact,
-      baseRef,
+      globalBaseRef,
       options.ci,
     );
 
@@ -93,12 +100,14 @@ export const changelogCommand = new Command("changelog")
       process.exit(0);
     }
 
+    const displayRef = globalBaseRef ?? "per-artifact tags";
+
     if (options.ci) {
-      printSummary(artifactChangelogs, baseRef);
-      outputResult(artifactChangelogs, baseRef, cwd, options);
+      printSummary(artifactChangelogs, displayRef);
+      outputResult(artifactChangelogs, displayRef, cwd, options);
     } else {
       await withPromptHandler(() =>
-        handleInteractiveMode(artifactChangelogs, baseRef, cwd, options),
+        handleInteractiveMode(artifactChangelogs, displayRef, cwd, options),
       );
     }
   });
@@ -106,7 +115,7 @@ export const changelogCommand = new Command("changelog")
 function buildArtifactChangelogs(
   artifacts: ReadonlyArray<{ relativePath: string; manifest: { name: string } }>,
   filesByArtifact: Map<string, string[]>,
-  baseRef: string,
+  globalBaseRef: string | null,
   ciMode?: boolean,
 ): ArtifactChangelog[] {
   const result: ArtifactChangelog[] = [];
@@ -115,6 +124,7 @@ function buildArtifactChangelogs(
     const files = filesByArtifact.get(artifact.relativePath);
     if (!files) continue;
 
+    const baseRef = globalBaseRef ?? detectArtifactBaseRef(artifact.manifest.name);
     const commitLines = getCommitsForPath(baseRef, artifact.relativePath);
     const commits = commitLines
       .map(parseConventionalCommit)
