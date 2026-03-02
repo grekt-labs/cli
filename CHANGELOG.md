@@ -1,3 +1,10 @@
+# [6.40.0-beta.3](https://github.com/grekt-labs/cli/compare/v6.40.0-beta.2...v6.40.0-beta.3) (2026-03-02)
+
+
+### Bug Fixes
+
+* resolve per-artifact base ref without global diff on default branch ([ddcf969](https://github.com/grekt-labs/cli/commit/ddcf969cb6b24d655b6dccf38e66a599e93d26d9))
+
 # [6.40.0-beta.2](https://github.com/grekt-labs/cli/compare/v6.40.0-beta.1...v6.40.0-beta.2) (2026-03-02)
 
 
