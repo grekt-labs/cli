@@ -14,44 +14,12 @@ function execOrNull(args: string[]): string | null {
   }
 }
 
-/**
- * Detect the base ref to diff against.
- *
- * Priority:
- * 1. Explicit override via --since
- * 2. On feature branch: origin/<default-branch>
- * 3. On default branch: last tag, fallback HEAD~1
- */
-export function detectBaseRef(overrideSince?: string): string {
-  if (overrideSince) {
-    const resolved = execOrNull(["rev-parse", "--verify", overrideSince]);
-    if (!resolved) {
-      throw new Error(`Invalid ref: ${overrideSince}`);
-    }
-    return overrideSince;
-  }
-
-  const currentBranch = execOrNull(["rev-parse", "--abbrev-ref", "HEAD"]);
-  const defaultBranch = detectDefaultBranch();
-
-  const isDefaultBranch =
-    currentBranch === defaultBranch || currentBranch === "HEAD";
-
-  if (isDefaultBranch) {
-    const lastTag = execOrNull(["describe", "--tags", "--abbrev=0"]);
-    if (lastTag) return lastTag;
-
-    warning("No tags found, falling back to HEAD~1");
-    return "HEAD~1";
-  }
-
-  const hasRemote = execOrNull(["remote"]);
-  if (hasRemote) {
-    return `origin/${defaultBranch}`;
-  }
-
-  warning("No remote found, falling back to local refs");
-  return defaultBranch;
+function splitLines(output: string | null): string[] {
+  if (!output) return [];
+  return output
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
 }
 
 function detectDefaultBranch(): string {
@@ -68,12 +36,80 @@ function detectDefaultBranch(): string {
   return "main";
 }
 
-function splitLines(output: string | null): string[] {
-  if (!output) return [];
-  return output
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
+function getFirstCommit(): string | null {
+  return execOrNull(["rev-list", "--max-parents=0", "HEAD"]);
+}
+
+/**
+ * Detect the global base ref to diff against.
+ *
+ * Priority:
+ * 1. Explicit override via --since
+ * 2. On feature branch: origin/<default-branch>
+ * 3. On default branch: resolved per artifact (returns null to signal this)
+ */
+export function detectBaseRef(overrideSince?: string): string | null {
+  if (overrideSince) {
+    const resolved = execOrNull(["rev-parse", "--verify", overrideSince]);
+    if (!resolved) {
+      throw new Error(`Invalid ref: ${overrideSince}`);
+    }
+    return overrideSince;
+  }
+
+  const currentBranch = execOrNull(["rev-parse", "--abbrev-ref", "HEAD"]);
+  const defaultBranch = detectDefaultBranch();
+
+  const isDefaultBranch =
+    currentBranch === defaultBranch || currentBranch === "HEAD";
+
+  if (isDefaultBranch) {
+    return null;
+  }
+
+  const hasRemote = execOrNull(["remote"]);
+  if (hasRemote) {
+    return `origin/${defaultBranch}`;
+  }
+
+  warning("No remote found, falling back to local refs");
+  return defaultBranch;
+}
+
+/**
+ * Detect base ref for a specific artifact on the default branch.
+ * Looks for tags matching the artifact name pattern (e.g. @scope/name@1.0.0).
+ * Falls back to the first commit in the repo.
+ */
+export function detectArtifactBaseRef(artifactName: string): string {
+  const lastTag = execOrNull([
+    "describe",
+    "--tags",
+    "--abbrev=0",
+    "--match",
+    `${artifactName}@*`,
+  ]);
+
+  if (lastTag) return lastTag;
+
+  const firstCommit = getFirstCommit();
+  if (firstCommit) return firstCommit;
+
+  warning(`${artifactName}: no tags found, falling back to HEAD~1`);
+  return "HEAD~1";
+}
+
+/**
+ * Get the widest possible base ref for initial file discovery.
+ * Uses the oldest artifact tag or the first commit.
+ */
+export function getWidestBaseRef(): string {
+  const oldestTag = execOrNull(["rev-list", "--tags", "--reverse"]);
+  const firstTagCommit = oldestTag ? splitLines(oldestTag)[0] : null;
+
+  const firstCommit = getFirstCommit();
+
+  return firstTagCommit ?? firstCommit ?? "HEAD~1";
 }
 
 /**
