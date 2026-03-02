@@ -1,3 +1,10 @@
+# [6.40.0-beta.1](https://github.com/grekt-labs/cli/compare/v6.39.0...v6.40.0-beta.1) (2026-03-02)
+
+
+### Features
+
+* add changelog command for automated changeset generation ([b2dbbf3](https://github.com/grekt-labs/cli/commit/b2dbbf34d1d09a133764dd6cdaa75aa15a2c98c5))
+
 # [6.39.0](https://github.com/grekt-labs/cli/compare/v6.38.1...v6.39.0) (2026-03-02)
 
 
