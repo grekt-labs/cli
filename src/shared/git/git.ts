@@ -48,8 +48,13 @@ export function detectArtifactBaseRef(artifactName: string): string {
 /**
  * Create a git tag for a published artifact.
  * Format: `@scope/name@version` — matches what `detectArtifactBaseRef` looks for.
+ * In CI environments, the tag is also pushed to origin.
  */
 export function createArtifactTag(artifactName: string, version: string): void {
   const tag = `${artifactName}@${version}`;
   exec(["tag", tag]);
+
+  if (process.env.CI) {
+    execOrNull(["push", "origin", tag]);
+  }
 }

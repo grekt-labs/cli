@@ -80,9 +80,40 @@ describe("createArtifactTag", () => {
     ]);
   });
 
+  test("pushes tag to origin in CI", () => {
+    process.env.CI = "true";
+    mockGitSequence(["", ""]);
+
+    createArtifactTag("@scope/core", "1.2.0");
+
+    expect(mockExecFile).toHaveBeenCalledWith("git", [
+      "push",
+      "origin",
+      "@scope/core@1.2.0",
+    ]);
+    delete process.env.CI;
+  });
+
+  test("does not push tag outside CI", () => {
+    delete process.env.CI;
+    mockGitSequence([""]);
+
+    createArtifactTag("@scope/core", "1.2.0");
+
+    expect(mockExecFile).toHaveBeenCalledTimes(1);
+  });
+
   test("throws when git tag fails", () => {
     mockGitSequence([new Error("tag already exists")]);
 
     expect(() => createArtifactTag("@scope/core", "1.2.0")).toThrow();
+  });
+
+  test("does not throw when push fails in CI", () => {
+    process.env.CI = "true";
+    mockGitSequence(["", new Error("no remote")]);
+
+    expect(() => createArtifactTag("@scope/core", "1.2.0")).not.toThrow();
+    delete process.env.CI;
   });
 });
