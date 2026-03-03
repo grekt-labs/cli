@@ -1,3 +1,10 @@
+## [6.42.1](https://github.com/grekt-labs/cli/compare/v6.42.0...v6.42.1) (2026-03-03)
+
+
+### Bug Fixes
+
+* push artifact tags to origin in CI environments ([f5fe48e](https://github.com/grekt-labs/cli/commit/f5fe48e83d92443bee1c6b54f72d4549274bea71))
+
 # [6.42.0](https://github.com/grekt-labs/cli/compare/v6.41.0...v6.42.0) (2026-03-03)
 
 
