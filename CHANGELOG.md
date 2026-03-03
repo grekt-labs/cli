@@ -1,3 +1,10 @@
+# [6.42.0](https://github.com/grekt-labs/cli/compare/v6.41.0...v6.42.0) (2026-03-03)
+
+
+### Features
+
+* auto-create git tags on publish for changelog base ref detection ([40dcacd](https://github.com/grekt-labs/cli/commit/40dcacd05c9c9bbe7844bc9cff9680e597318364))
+
 # [6.41.0](https://github.com/grekt-labs/cli/compare/v6.40.3...v6.41.0) (2026-03-03)
 
 
