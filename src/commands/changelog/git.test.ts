@@ -17,7 +17,6 @@ vi.mock("#/shared/ui/ui", () => ({
 
 import {
   detectBaseRef,
-  detectArtifactBaseRef,
   getChangedFiles,
   getCommitsForPath,
 } from "./git";
@@ -116,43 +115,6 @@ describe("detectBaseRef", () => {
     ]);
 
     expect(detectBaseRef()).toBeNull();
-  });
-});
-
-describe("detectArtifactBaseRef", () => {
-  // Happy path: tag found
-  test("returns matching artifact tag", () => {
-    mockGitSequence(["@scope/core@1.2.0"]);
-
-    expect(detectArtifactBaseRef("@scope/core")).toBe("@scope/core@1.2.0");
-    expect(mockExecFile).toHaveBeenCalledWith("git", [
-      "describe",
-      "--tags",
-      "--abbrev=0",
-      "--match",
-      "@scope/core@*",
-    ]);
-  });
-
-  // No tag, fallback to first commit
-  test("falls back to first commit when no artifact tag", () => {
-    mockGitSequence([
-      new Error("no tag"),                 // describe fails
-      "abc123",                            // rev-list first commit
-    ]);
-
-    expect(detectArtifactBaseRef("@scope/core")).toBe("abc123");
-  });
-
-  // No tag, no first commit (edge case)
-  test("falls back to HEAD~1 when no tags and no first commit", () => {
-    mockGitSequence([
-      new Error("no tag"),                 // describe fails
-      new Error("no commits"),             // rev-list fails
-    ]);
-
-    expect(detectArtifactBaseRef("@scope/core")).toBe("HEAD~1");
-    expect(mockWarning).toHaveBeenCalled();
   });
 });
 

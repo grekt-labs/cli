@@ -15,7 +15,8 @@ import {
 import type { ValidationError } from "#/artifact/publish/publish";
 import type { PublishContext, Publisher } from "#/registry/publishers/publisher.types";
 import { RegistryApiError, CATEGORIES, isWorkspaceRoot, compareSemver } from "@grekt/engine";
-import { success, error, info, log, colors, spinner } from "#/shared/ui/ui";
+import { success, error, warning, info, log, colors, spinner } from "#/shared/ui/ui";
+import { createArtifactTag } from "#/shared/git/git";
 import { logComponentSummary } from "./display";
 import { loadWorkspace } from "#/workspace/workspace";
 import { fs } from "#/context";
@@ -139,6 +140,7 @@ async function handleChangedMode(cwd: string, options: PublishOptions): Promise<
   if (published > 0) {
     success(`Published ${published} artifact(s)`);
   }
+
   if (failed > 0) {
     error(`Failed to publish ${failed} artifact(s)`);
     process.exit(1);
@@ -328,6 +330,13 @@ async function publishSingleArtifact(
     log(`\n  Install with: grekt add ${artifact.artifactId}@${artifact.manifest.version}\n`);
   } else {
     success(`Published ${artifact.artifactId}@${artifact.manifest.version}`);
+  }
+
+  try {
+    createArtifactTag(artifact.artifactId, artifact.manifest.version);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    warning(`Failed to create tag for ${artifact.artifactId}@${artifact.manifest.version}: ${message}`);
   }
 }
 
