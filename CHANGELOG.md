@@ -1,3 +1,10 @@
+## [6.40.3](https://github.com/grekt-labs/cli/compare/v6.40.2...v6.40.3) (2026-03-03)
+
+
+### Bug Fixes
+
+* preserve existing package.json files in --exec mode ([38e9870](https://github.com/grekt-labs/cli/commit/38e98702bdae220a58246007ca5f329f1b534ebe))
+
 ## [6.40.2](https://github.com/grekt-labs/cli/compare/v6.40.1...v6.40.2) (2026-03-03)
 
 
