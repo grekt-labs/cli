@@ -6,7 +6,7 @@
  */
 
 import type { LocalConfig, ResolvedRegistry, RegistryType } from "#/registry/registry.types";
-import { parseArtifactId } from "@grekt-labs/cli-engine";
+import { parseArtifactId } from "@grekt/engine";
 
 import { REGISTRY_HOST } from "#/constants";
 

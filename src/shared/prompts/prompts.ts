@@ -1,7 +1,7 @@
 import { ExitPromptError, Separator } from "@inquirer/core";
 import { input, confirm } from "@inquirer/prompts";
 import { newline, info, log, colors } from "#/shared/ui/ui";
-import { CATEGORIES, type CustomTarget, type ComponentPaths, type Category } from "@grekt-labs/cli-engine";
+import { CATEGORIES, type CustomTarget, type ComponentPaths, type Category } from "@grekt/engine";
 import { GLOBAL_PLUGIN_ID } from "#/sync/manager/manager";
 import { searchableCheckbox } from "#/shared/prompts/searchable-checkbox";
 

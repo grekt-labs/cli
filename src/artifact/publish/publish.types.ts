@@ -1,5 +1,5 @@
 import type { ValidatedArtifact } from "../validation/validation.types";
-import type { Components } from "@grekt-labs/cli-engine";
+import type { Components } from "@grekt/engine";
 
 /**
  * A ValidatedArtifact that has been verified to have a scope (required for publishing).

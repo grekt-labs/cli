@@ -1,4 +1,4 @@
-import type { ProjectConfig, ArtifactEntry, ArtifactMode, Lockfile } from "@grekt-labs/cli-engine";
+import type { ProjectConfig, ArtifactEntry, ArtifactMode, Lockfile } from "@grekt/engine";
 import type { ReconcileResult, ReconcileEntry } from "./reconcile.types";
 
 /**

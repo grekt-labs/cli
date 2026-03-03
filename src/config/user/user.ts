@@ -2,7 +2,7 @@ import { join } from "path";
 import { homedir } from "os";
 import { parse, stringify } from "yaml";
 import { fs } from "#/context";
-import type { StoredSession } from "@grekt-labs/cli-engine";
+import type { StoredSession } from "@grekt/engine";
 import { ensureDir } from "#/shared/filesystem/filesystem";
 
 // Global user config directory

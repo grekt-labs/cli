@@ -6,7 +6,7 @@ import { getLockfile, saveLockfile, scanArtifact, hashDirectory } from "#/contex
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
 import { parseSource } from "#/registry/sources/sources";
 import { getSourceDisplayName } from "#/registry/registry";
-import { calculateIntegrity } from "@grekt-labs/cli-engine";
+import { calculateIntegrity } from "@grekt/engine";
 import {
   selectComponents,
   selectComponentsWithPrecheck,
@@ -25,7 +25,7 @@ import {
 } from "#/artifact/upgrade/upgrade";
 import { promptStructuralChanges } from "#/artifact/upgrade/display";
 import { success, error, info, log, warning, newline, colors, spinner } from "#/shared/ui/ui";
-import { compareSemver, CATEGORIES, type Category } from "@grekt-labs/cli-engine";
+import { compareSemver, CATEGORIES, type Category } from "@grekt/engine";
 import { syncToTargets } from "#/sync/helpers/helpers";
 import { promptAndInstallHooks } from "#/sync/hooks";
 import { promptAndInstallMcps } from "#/sync/mcp";

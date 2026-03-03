@@ -1,6 +1,6 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 import { runSync, syncToTargets } from "./helpers";
-import type { SyncPlugin, SyncResult, Lockfile, ProjectConfig } from "@grekt-labs/cli-engine";
+import type { SyncPlugin, SyncResult, Lockfile, ProjectConfig } from "@grekt/engine";
 import { suppressConsole } from "#/test-utils";
 
 let restoreConsole: () => void;

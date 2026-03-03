@@ -1,4 +1,4 @@
-import type { Category, ScannedFile, InvalidFile } from "@grekt-labs/cli-engine";
+import type { Category, ScannedFile, InvalidFile } from "@grekt/engine";
 
 export interface StandaloneSyncOptions {
   sourceDir: string;

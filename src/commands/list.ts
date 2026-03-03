@@ -10,7 +10,7 @@ import {
   CATEGORIES,
   createRegistryBrowser,
   type BrowsedArtifact,
-} from "@grekt-labs/cli-engine";
+} from "@grekt/engine";
 import { getLocalConfig } from "#/config/project/project";
 import { resolveRegistry } from "#/registry/factory/factory";
 import { error, info, log, colors, newline, spinner, warning } from "#/shared/ui/ui";

@@ -9,7 +9,7 @@
 import { confirm } from "@inquirer/prompts";
 import { success, info, warning, log, newline, colors } from "#/shared/ui/ui";
 import { installHooks, getHookSummary } from "./hooks";
-import type { ScannedFile } from "@grekt-labs/cli-engine";
+import type { ScannedFile } from "@grekt/engine";
 
 /**
  * Show hook summary, ask for confirmation, install hooks, and display results.

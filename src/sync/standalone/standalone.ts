@@ -10,7 +10,7 @@ import {
   type Category,
   type ScannedFile,
   type InvalidFile,
-} from "@grekt-labs/cli-engine";
+} from "@grekt/engine";
 import { fs } from "#/context";
 import { getPlugin, getAvailableTargets } from "#/sync/manager/manager";
 import { findEntryPointPath } from "#/sync/base/base";

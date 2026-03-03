@@ -14,7 +14,7 @@ import {
 } from "#/artifact/publish/publish";
 import type { ValidationError } from "#/artifact/publish/publish";
 import type { PublishContext, Publisher } from "#/registry/publishers/publisher.types";
-import { RegistryApiError, CATEGORIES, isWorkspaceRoot, compareSemver } from "@grekt-labs/cli-engine";
+import { RegistryApiError, CATEGORIES, isWorkspaceRoot, compareSemver } from "@grekt/engine";
 import { success, error, info, log, colors, spinner } from "#/shared/ui/ui";
 import { logComponentSummary } from "./display";
 import { loadWorkspace } from "#/workspace/workspace";

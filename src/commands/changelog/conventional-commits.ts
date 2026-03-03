@@ -1,5 +1,5 @@
-import type { BumpType } from "@grekt-labs/cli-engine";
-import type { WorkspaceArtifact } from "@grekt-labs/cli-engine";
+import type { BumpType } from "@grekt/engine";
+import type { WorkspaceArtifact } from "@grekt/engine";
 import type { ConventionalCommit } from "./changelog.types";
 import { normalizePath } from "#/shared/filesystem/filesystem";
 

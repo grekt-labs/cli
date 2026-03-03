@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { parseArtifactId, type DefaultRegistryOperations } from "@grekt-labs/cli-engine";
+import { parseArtifactId, type DefaultRegistryOperations } from "@grekt/engine";
 import { resolveRegistry, createRegistryClient } from "#/registry/factory/factory";
 import { getLocalConfig } from "#/config/project/project";
 import { isAuthenticated } from "#/auth/session/session";

@@ -1,4 +1,4 @@
-import type { HttpClient } from "@grekt-labs/cli-engine";
+import type { HttpClient } from "@grekt/engine";
 
 const DEFAULT_REQUEST_TIMEOUT_MS = 15_000;
 

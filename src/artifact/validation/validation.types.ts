@@ -1,4 +1,4 @@
-import type { ArtifactManifest, ArtifactInfo } from "@grekt-labs/cli-engine";
+import type { ArtifactManifest, ArtifactInfo } from "@grekt/engine";
 
 export interface ValidatedArtifact {
   manifest: ArtifactManifest;

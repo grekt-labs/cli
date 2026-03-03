@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { reconcile, extractVersion, extractMode } from "./reconcile";
-import type { ProjectConfig, Lockfile, LockfileEntry } from "@grekt-labs/cli-engine";
+import type { ProjectConfig, Lockfile, LockfileEntry } from "@grekt/engine";
 
 function makeLockfileEntry(overrides: Partial<LockfileEntry> = {}): LockfileEntry {
   return {

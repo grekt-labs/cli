@@ -18,7 +18,7 @@ export {
   createEmptyLockfile,
   type Lockfile,
   type LockfileEntry,
-} from "@grekt-labs/cli-engine";
+} from "@grekt/engine";
 
 // Re-export from context (functions with FileSystem injected)
 export {

@@ -1,6 +1,6 @@
 import { verifyIntegrity, getDirectorySize, fs, getLockfile } from "#/context";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
-import { compareHashes, hashContent, type Lockfile, type IntegrityResult } from "@grekt-labs/cli-engine";
+import { compareHashes, hashContent, type Lockfile, type IntegrityResult } from "@grekt/engine";
 import { readlinkSync, lstatSync } from "fs";
 
 type CheckStatus = "ok" | "drift" | "missing";

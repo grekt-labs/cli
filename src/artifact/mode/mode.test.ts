@@ -1,7 +1,7 @@
 import { describe, test, expect } from "vitest";
 import { getArtifactMode, shouldSyncArtifact, shouldUseSymlinks, isArtifactTrusted } from "./mode";
-import type { ProjectConfig, Lockfile } from "@grekt-labs/cli-engine";
-import { generateTrustKey, signTrust } from "@grekt-labs/cli-engine";
+import type { ProjectConfig, Lockfile } from "@grekt/engine";
+import { generateTrustKey, signTrust } from "@grekt/engine";
 
 const baseConfig: ProjectConfig = {
   targets: [],

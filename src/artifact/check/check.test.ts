@@ -3,7 +3,7 @@ import { mkdirSync, rmSync, writeFileSync } from "fs";
 import { join } from "path";
 import { stringify } from "yaml";
 import { runCheck } from "./check";
-import type { Lockfile } from "@grekt-labs/cli-engine";
+import type { Lockfile } from "@grekt/engine";
 
 const LOCKFILE_NAME = "grekt.lock";
 const ARTIFACTS_DIR = ".grekt/artifacts";

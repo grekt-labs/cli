@@ -1,7 +1,7 @@
 import { basename } from "path";
 import matter from "gray-matter";
 import { createFolderPlugin, generateDefaultBlockContent } from "#/sync/base/base";
-import { toSafeName } from "@grekt-labs/cli-engine";
+import { toSafeName } from "@grekt/engine";
 import { copySiblingFiles } from "#/sync/helpers/siblings";
 import { writeSkillRouter } from "#/sync/helpers/skillRouter";
 

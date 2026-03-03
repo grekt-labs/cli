@@ -1,6 +1,6 @@
 import { getSupabaseClient, getSupabaseUrl } from "#/auth/session/session";
 import { saveGlobalSession } from "#/config/user/user";
-import type { StoredSession } from "@grekt-labs/cli-engine";
+import type { StoredSession } from "@grekt/engine";
 import { spawn } from "child_process";
 import { randomUUID } from "crypto";
 

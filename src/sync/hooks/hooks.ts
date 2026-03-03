@@ -14,7 +14,7 @@ import { dirname, join } from "path";
 import { fs } from "#/context";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
 import { getHookTarget, getHookTargetIds } from "./hooks.config";
-import type { ScannedFile } from "@grekt-labs/cli-engine";
+import type { ScannedFile } from "@grekt/engine";
 import type { ParsedHookContent, HookEventDefinition, HookEventsMap } from "./hooks.types";
 
 /**

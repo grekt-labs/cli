@@ -10,7 +10,7 @@ import { ensureGitignore } from "#/shared/gitignore/gitignore";
 import { success, info, warning, newline, log, colors } from "#/shared/ui/ui";
 import { withPromptHandler, selectTargets } from "#/shared/prompts/prompts";
 import { ASCII_LOGO } from "#/constants";
-import type { CustomTarget, ProjectConfig } from "@grekt-labs/cli-engine";
+import type { CustomTarget, ProjectConfig } from "@grekt/engine";
 
 export const initCommand = new Command("init")
   .description("Initialize grekt in the current directory")

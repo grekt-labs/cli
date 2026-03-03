@@ -2,7 +2,7 @@ import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
 import { existsSync, mkdirSync, rmSync, writeFileSync, readFileSync } from "fs";
 import { join } from "path";
 import { scanDirectory, syncFromDirectory } from "./standalone";
-import { GREKT_SECTION_HEADER } from "@grekt-labs/cli-engine";
+import { GREKT_SECTION_HEADER } from "@grekt/engine";
 import { suppressConsole } from "#/test-utils";
 
 let restoreConsole: () => void;

@@ -5,7 +5,7 @@ import {
   CATEGORIES,
   CATEGORY_CONFIG,
   type Category,
-} from "@grekt-labs/cli-engine";
+} from "@grekt/engine";
 import { claudePlugin } from "#/sync/plugins/claude/claude";
 import { cursorPlugin } from "#/sync/plugins/cursor/cursor";
 import { opencodePlugin } from "#/sync/plugins/opencode/opencode";

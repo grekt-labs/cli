@@ -1,5 +1,5 @@
 import { join } from "path";
-import { getSkillRouterTemplate } from "@grekt-labs/cli-engine";
+import { getSkillRouterTemplate } from "@grekt/engine";
 import { ensureDir } from "#/shared/filesystem/filesystem";
 import { fs } from "#/context";
 

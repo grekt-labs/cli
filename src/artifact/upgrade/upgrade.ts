@@ -22,7 +22,7 @@ import {
   type Category,
   type LockfileEntry,
   type ProjectConfig,
-} from "@grekt-labs/cli-engine";
+} from "@grekt/engine";
 import type {
   PreviousInstallation,
   StructureDiff,

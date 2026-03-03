@@ -1,7 +1,7 @@
 import { describe, test, expect } from "vitest";
 import { ensureLongForm } from "./trust";
-import type { ArtifactEntry } from "@grekt-labs/cli-engine";
-import { generateTrustKey, signTrust, TRUST_SIGNATURE_PREFIX } from "@grekt-labs/cli-engine";
+import type { ArtifactEntry } from "@grekt/engine";
+import { generateTrustKey, signTrust, TRUST_SIGNATURE_PREFIX } from "@grekt/engine";
 
 describe("ensureLongForm", () => {
   test("converts string entry to object with version and lazy mode", () => {

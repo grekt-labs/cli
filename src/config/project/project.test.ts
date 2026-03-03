@@ -18,7 +18,7 @@ import {
   setRegistry,
   removeRegistry,
 } from "./project";
-import type { ProjectConfig, LocalConfig } from "@grekt-labs/cli-engine";
+import type { ProjectConfig, LocalConfig } from "@grekt/engine";
 
 describe("project", () => {
   // Use system temp to avoid finding .grekt/config.yaml in parent directories

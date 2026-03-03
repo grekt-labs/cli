@@ -1,4 +1,4 @@
-import type { Lockfile, ProjectConfig, CustomTarget, SyncPlugin } from "@grekt-labs/cli-engine";
+import type { Lockfile, ProjectConfig, CustomTarget, SyncPlugin } from "@grekt/engine";
 import { getPlugin } from "#/sync/manager/manager";
 import { saveLockfile } from "#/context";
 import { success, info, warning, log, colors, symbols, spinner } from "#/shared/ui/ui";

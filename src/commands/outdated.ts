@@ -3,7 +3,7 @@ import { requireInitialized } from "#/shared/guards/guards";
 import { getLockfile } from "#/context";
 import { resolveRegistry, createRegistryClient } from "#/registry/factory/factory";
 import { getLocalConfig } from "#/config/project/project";
-import { compareSemver, parseArtifactId } from "@grekt-labs/cli-engine";
+import { compareSemver, parseArtifactId } from "@grekt/engine";
 import { error, info, log, colors, spinner } from "#/shared/ui/ui";
 
 interface OutdatedEntry {

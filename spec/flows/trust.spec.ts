@@ -4,7 +4,7 @@ import { join } from "path";
 import { parse, stringify } from "yaml";
 import { runCli } from "../helpers/cli";
 import { createTestProject, type TestProject } from "../helpers/project";
-import { generateTrustKey, signTrust, TRUST_SIGNATURE_PREFIX } from "@grekt-labs/cli-engine";
+import { generateTrustKey, signTrust, TRUST_SIGNATURE_PREFIX } from "@grekt/engine";
 
 // ──────────────────────────────────────────────────────────────────
 // grekt trust --generate-key

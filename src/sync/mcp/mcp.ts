@@ -15,7 +15,7 @@ import { fs } from "#/context";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
 import { getMcpConfig, getMcpTargetIds } from "./mcp.config";
 import * as TOML from "smol-toml";
-import type { ScannedFile } from "@grekt-labs/cli-engine";
+import type { ScannedFile } from "@grekt/engine";
 import type { McpContent, McpPluginConfig, InstallMcpsResult, McpSummaryEntry } from "./mcp.types";
 
 const SERVER_NAME_SEPARATOR = "--";

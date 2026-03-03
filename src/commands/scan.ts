@@ -8,7 +8,7 @@ import {
   isBadgeAtOrAbove,
   type SecurityReport,
   type TrustBadge,
-} from "@grekt-labs/cli-engine";
+} from "@grekt/engine";
 import { parseSource, downloadFromSource, type ParsedSource } from "#/registry/sources/sources";
 import { getSourceDisplayName } from "#/registry/registry";
 import { getConfig } from "#/config/project/project";

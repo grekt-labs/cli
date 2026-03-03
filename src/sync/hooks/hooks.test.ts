@@ -2,7 +2,7 @@ import { describe, test, expect, beforeEach, afterEach } from "vitest";
 import { existsSync, mkdirSync, rmSync, writeFileSync, readFileSync } from "fs";
 import { join } from "path";
 import { installHooks, uninstallHooks, getHookSummary } from "./hooks";
-import type { ScannedFile } from "@grekt-labs/cli-engine";
+import type { ScannedFile } from "@grekt/engine";
 
 const TEST_ARTIFACT_ID = "@scope/my-artifact";
 const ARTIFACTS_DIR = ".grekt/artifacts";

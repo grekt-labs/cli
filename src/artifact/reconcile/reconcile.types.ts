@@ -1,4 +1,4 @@
-import type { LockfileEntry } from "@grekt-labs/cli-engine";
+import type { LockfileEntry } from "@grekt/engine";
 
 export type ReconcileAction = "keep" | "resolve" | "prune";
 

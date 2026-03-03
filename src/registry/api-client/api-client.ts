@@ -1,6 +1,6 @@
 import { logger } from "#/shared/logger/logger";
-import type { ArtifactMetadata } from "@grekt-labs/cli-engine";
-import { sortVersionsDesc, getHighestVersion, validateTarballContents, generateSecureTempPath } from "@grekt-labs/cli-engine";
+import type { ArtifactMetadata } from "@grekt/engine";
+import { sortVersionsDesc, getHighestVersion, validateTarballContents, generateSecureTempPath } from "@grekt/engine";
 import { getSupabaseClient, getSession, getSupabaseUrl } from "#/auth/session/session";
 import { fs, http, tarOps } from "#/context";
 import type { RegistryErrorResponse } from "./api-client.types";

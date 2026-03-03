@@ -8,7 +8,7 @@ import {
   createCategoryRecord,
   type Category,
   type ScannedFile,
-} from "@grekt-labs/cli-engine";
+} from "@grekt/engine";
 
 /**
  * Represents the user's selection of artifact components.

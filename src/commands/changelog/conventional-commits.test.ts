@@ -5,7 +5,7 @@ import {
   mapFilesToArtifacts,
 } from "./conventional-commits";
 import type { ConventionalCommit } from "./changelog.types";
-import type { WorkspaceArtifact } from "@grekt-labs/cli-engine";
+import type { WorkspaceArtifact } from "@grekt/engine";
 
 describe("parseConventionalCommit", () => {
   // Error paths first

@@ -11,7 +11,7 @@ import {
   setTokenInteractive,
   unsetToken,
 } from "./config/registry/registry";
-import type { ProjectConfig } from "@grekt-labs/cli-engine";
+import type { ProjectConfig } from "@grekt/engine";
 
 const VALID_KEYS: (keyof ProjectConfig)[] = ["registry"];
 

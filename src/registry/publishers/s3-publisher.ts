@@ -1,6 +1,6 @@
 import { logger } from "#/shared/logger/logger";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-import type { S3Credentials } from "@grekt-labs/cli-engine";
+import type { S3Credentials } from "@grekt/engine";
 import { fs } from "#/context";
 import {
   getArtifactMetadata,

@@ -30,7 +30,7 @@ High severity items are being addressed separately.
 
 ### 5. `parseArtifactId` duplicado con posible divergencia
 - `registry/resolver/resolver.ts:26-50` — implementacion local con ARTIFACT_ID_REGEX
-- `@grekt-labs/cli-engine` — exporta su propia version
+- `@grekt/engine` — exporta su propia version
 - Callers mixtos: algunos usan la local, otros la del engine
 - **Fix:** Eliminar la local, usar solo la del cli-engine
 

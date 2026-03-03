@@ -9,7 +9,7 @@
 import { confirm } from "@inquirer/prompts";
 import { success, info, log, newline, colors } from "#/shared/ui/ui";
 import { installMcps, getMcpSummary } from "./mcp";
-import type { ScannedFile } from "@grekt-labs/cli-engine";
+import type { ScannedFile } from "@grekt/engine";
 
 /**
  * Show MCP summary, ask for confirmation, install MCPs, and display results.

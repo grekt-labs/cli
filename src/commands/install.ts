@@ -14,8 +14,8 @@ import { reconcile, extractMode } from "#/artifact/reconcile/reconcile";
 import { resolveArtifact } from "#/artifact/resolver/resolver";
 import { removeUnselectedFiles } from "#/artifact/component-manager/component-manager";
 import type { ComponentSelection } from "#/artifact/selector/selector";
-import { CATEGORIES, parseArtifactId, getGitLabHeaders, getGitHubHeaders } from "@grekt-labs/cli-engine";
-import type { ArtifactEntry, Lockfile } from "@grekt-labs/cli-engine";
+import { CATEGORIES, parseArtifactId, getGitLabHeaders, getGitHubHeaders } from "@grekt/engine";
+import type { ArtifactEntry, Lockfile } from "@grekt/engine";
 import { success, error, info, warning, log, newline, colors, spinner } from "#/shared/ui/ui";
 
 /**

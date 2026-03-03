@@ -2,7 +2,7 @@ import { describe, test, expect, beforeEach, afterEach } from "vitest";
 import { existsSync, mkdirSync, rmSync } from "fs";
 import { join } from "path";
 import { opencodePlugin } from "./opencode";
-import type { ProjectConfig } from "@grekt-labs/cli-engine";
+import type { ProjectConfig } from "@grekt/engine";
 
 const PLUGIN_ID = "opencode";
 const PLUGIN_NAME = "OpenCode";

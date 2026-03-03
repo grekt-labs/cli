@@ -4,7 +4,7 @@ import {
   buildGitLabArchiveUrl,
   getGitHubHeaders,
   getGitLabHeaders,
-} from "@grekt-labs/cli-engine";
+} from "@grekt/engine";
 import { downloadAndExtractTarball } from "./download";
 import { createFetchLikeResponse } from "#/test-utils";
 

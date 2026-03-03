@@ -4,7 +4,7 @@ import type {
   ValidationResult,
 } from "#/artifact/validation/validation.types";
 import type { TarballResult } from "#/artifact/tarball/tarball";
-import type { ArtifactManifest, ArtifactInfo } from "@grekt-labs/cli-engine";
+import type { ArtifactManifest, ArtifactInfo } from "@grekt/engine";
 
 const DEFAULT_MANIFEST: ArtifactManifest = {
   name: "@scope/test",
