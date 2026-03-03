@@ -122,7 +122,7 @@ fs.exists(path);
 
 // CLI calling engine: passes singleton as argument
 import { fs } from "#/context";
-import { scanArtifact } from "@grekt-labs/cli-engine";
+import { scanArtifact } from "@grekt/engine";
 scanArtifact(fs, artifactDir);
 
 // Engine: always receives interfaces, never imports singletons

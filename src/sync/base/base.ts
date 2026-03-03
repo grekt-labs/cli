@@ -8,9 +8,9 @@ import {
   getCategoriesForFormat,
   scanArtifact,
   hashContent,
-} from "@grekt-labs/cli-engine";
+} from "@grekt/engine";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
-import { getSafeFilename, generateDefaultBlockContent, GREKT_SECTION_HEADER, GREKT_ENTRY_POINT_TEXT } from "@grekt-labs/cli-engine";
+import { getSafeFilename, generateDefaultBlockContent, GREKT_SECTION_HEADER, GREKT_ENTRY_POINT_TEXT } from "@grekt/engine";
 import { resolveAndAssertWithinBase } from "#/artifact/validation/validation";
 import { fs } from "#/context";
 import { ensureDir, cleanEmptyDir } from "#/shared/filesystem/filesystem";
@@ -21,7 +21,7 @@ import { shouldSyncArtifact, shouldUseSymlinks } from "#/artifact/mode/mode";
 const SYNCABLE_CATEGORIES = getCategoriesForFormat("md");
 
 // Re-export for external use
-export { generateDefaultBlockContent, GREKT_ENTRY_POINT_TEXT } from "@grekt-labs/cli-engine";
+export { generateDefaultBlockContent, GREKT_ENTRY_POINT_TEXT } from "@grekt/engine";
 export { ensureDir } from "#/shared/filesystem/filesystem";
 
 /**
@@ -42,8 +42,8 @@ export function findEntryPointPath(projectRoot: string, entryPoint: string): str
 }
 
 // Re-export for backwards compatibility
-export { getSafeFilename } from "@grekt-labs/cli-engine";
-export type { FolderPluginConfig, RulesOnlyPluginConfig, TargetPaths } from "@grekt-labs/cli-engine";
+export { getSafeFilename } from "@grekt/engine";
+export type { FolderPluginConfig, RulesOnlyPluginConfig, TargetPaths } from "@grekt/engine";
 
 
 /**

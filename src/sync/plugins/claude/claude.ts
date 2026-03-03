@@ -1,7 +1,7 @@
 import { basename, join } from "path";
 import { createFolderPlugin, generateDefaultBlockContent } from "#/sync/base/base";
 import { ensureDir } from "#/shared/filesystem/filesystem";
-import { toSafeName, resolveComponentFilename, getSkillRouterTemplate } from "@grekt-labs/cli-engine";
+import { toSafeName, resolveComponentFilename, getSkillRouterTemplate } from "@grekt/engine";
 import { fs } from "#/context";
 import { copySiblingFiles } from "#/sync/helpers/siblings";
 

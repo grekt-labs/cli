@@ -1,7 +1,7 @@
 import { fs, cryptoProvider, scanArtifact, hashDirectory } from "#/context";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
 import { parseSource, downloadFromSource } from "#/registry/sources/sources";
-import { parseName, calculateIntegrity } from "@grekt-labs/cli-engine";
+import { parseName, calculateIntegrity } from "@grekt/engine";
 import { assertSafeArtifactId } from "#/artifact/validation/validation";
 import type { ResolveResult, ResolveOptions } from "./resolver.types";
 

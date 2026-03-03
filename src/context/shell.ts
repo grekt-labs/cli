@@ -1,5 +1,5 @@
 import { execFileSync } from "child_process";
-import type { ShellExecutor } from "@grekt-labs/cli-engine";
+import type { ShellExecutor } from "@grekt/engine";
 
 /**
  * Real ShellExecutor implementation using Node.js child_process.

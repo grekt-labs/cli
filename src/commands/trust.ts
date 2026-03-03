@@ -1,12 +1,12 @@
 import { Command } from "commander";
 import { requireInitialized } from "#/shared/guards/guards";
 import { getConfig, saveConfig } from "#/config/project/project";
-import type { ArtifactEntry } from "@grekt-labs/cli-engine";
+import type { ArtifactEntry } from "@grekt/engine";
 import {
   generateTrustKey,
   isValidTrustKey,
   signTrust,
-} from "@grekt-labs/cli-engine";
+} from "@grekt/engine";
 import { success, error, info, warning, log, newline, colors } from "#/shared/ui/ui";
 
 const TRUST_KEY_ENV = "GREKT_TRUST_KEY";

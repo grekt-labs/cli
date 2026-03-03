@@ -6,7 +6,7 @@ import { confirm } from "@inquirer/prompts";
 import { getConfig, saveConfig } from "#/config/project/project";
 import { requireInitialized } from "#/shared/guards/guards";
 import { getLockfile, saveLockfile } from "#/context";
-import { CATEGORIES, getCategoriesForFormat, type Category } from "@grekt-labs/cli-engine";
+import { CATEGORIES, getCategoriesForFormat, type Category } from "@grekt/engine";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
 import { generateArtifactIndex } from "#/artifact/index/index";
 import { scanArtifact } from "#/context";
@@ -16,7 +16,7 @@ import { withPromptHandler } from "#/shared/prompts/prompts";
 import { getPlugin } from "#/sync/manager/manager";
 import { uninstallHooks } from "#/sync/hooks";
 import { uninstallMcps } from "#/sync/mcp";
-import { getSafeFilename } from "@grekt-labs/cli-engine";
+import { getSafeFilename } from "@grekt/engine";
 
 // Only MD categories are synced to target folders
 const SYNCABLE_CATEGORIES = getCategoriesForFormat("md");

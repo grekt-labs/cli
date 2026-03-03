@@ -3,11 +3,11 @@ import {
   generateTrustKey,
   signTrust,
   verifyTrustSignature,
-} from "@grekt-labs/cli-engine";
+} from "@grekt/engine";
 import { isArtifactTrusted } from "#/artifact/mode/mode";
 import { ensureLongForm } from "#/commands/trust";
 import { evaluateFailOn } from "#/commands/scan";
-import type { ProjectConfig, SecurityReport, TrustBadge } from "@grekt-labs/cli-engine";
+import type { ProjectConfig, SecurityReport, TrustBadge } from "@grekt/engine";
 
 const baseConfig: ProjectConfig = {
   targets: [],

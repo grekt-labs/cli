@@ -1,4 +1,4 @@
-import type { LockfileEntry } from "@grekt-labs/cli-engine";
+import type { LockfileEntry } from "@grekt/engine";
 
 export interface ResolveOptions {
   projectRoot: string;

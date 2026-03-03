@@ -2,7 +2,7 @@ import { join } from "path";
 import { fs } from "#/context";
 import type { ArtifactInfo } from "#/context";
 import type { ComponentSelection } from "#/artifact/selector/selector";
-import { CATEGORIES } from "@grekt-labs/cli-engine";
+import { CATEGORIES } from "@grekt/engine";
 import { cleanEmptyDirs } from "#/shared/filesystem/filesystem";
 
 /**

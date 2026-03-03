@@ -3,7 +3,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync
 import { tmpdir } from "os";
 import { join } from "path";
 import { stringify } from "yaml";
-import type { WorkspaceArtifact } from "@grekt-labs/cli-engine";
+import type { WorkspaceArtifact } from "@grekt/engine";
 
 describe("workspace", () => {
   test("module exports all functions", async () => {

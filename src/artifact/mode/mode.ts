@@ -1,5 +1,5 @@
-import type { ArtifactMode, ProjectConfig, Lockfile } from "@grekt-labs/cli-engine";
-import { verifyTrustSignature } from "@grekt-labs/cli-engine";
+import type { ArtifactMode, ProjectConfig, Lockfile } from "@grekt/engine";
+import { verifyTrustSignature } from "@grekt/engine";
 
 /**
  * Get the sync mode for an artifact.

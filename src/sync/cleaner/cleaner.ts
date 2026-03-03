@@ -1,6 +1,6 @@
 import { join, resolve, sep } from "path";
 import { fs } from "#/context";
-import type { CustomTarget } from "@grekt-labs/cli-engine";
+import type { CustomTarget } from "@grekt/engine";
 import type { TargetPaths } from "#/sync/sync.types";
 import { getPlugin } from "#/sync/manager/manager";
 

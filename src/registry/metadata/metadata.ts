@@ -5,8 +5,8 @@ import {
   HeadObjectCommand,
   ListObjectsV2Command,
 } from "@aws-sdk/client-s3";
-import type { S3Credentials, ArtifactMetadata } from "@grekt-labs/cli-engine";
-import { ArtifactMetadataSchema, sortVersionsDesc } from "@grekt-labs/cli-engine";
+import type { S3Credentials, ArtifactMetadata } from "@grekt/engine";
+import { ArtifactMetadataSchema, sortVersionsDesc } from "@grekt/engine";
 
 function createS3Client(credentials: S3Credentials): S3Client {
   return new S3Client({

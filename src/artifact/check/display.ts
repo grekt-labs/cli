@@ -1,4 +1,4 @@
-import { formatBytes, estimateTokens, type Lockfile } from "@grekt-labs/cli-engine";
+import { formatBytes, estimateTokens, type Lockfile } from "@grekt/engine";
 import { success, warning, log, newline, colors, symbols } from "#/shared/ui/ui";
 import type { CheckSummary, SyncCheckSummary } from "./check";
 

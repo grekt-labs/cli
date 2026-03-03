@@ -5,7 +5,7 @@ import { removeUnselectedFiles } from "./component-manager";
 import { cleanEmptyDirs } from "#/shared/filesystem/filesystem";
 import type { ArtifactInfo } from "#/context";
 import { createEmptySelection, type ComponentSelection } from "#/artifact/selector/selector";
-import { createCategoryRecord } from "@grekt-labs/cli-engine";
+import { createCategoryRecord } from "@grekt/engine";
 
 describe("component-manager", () => {
   const testDir = join(process.cwd(), ".test-component-manager");

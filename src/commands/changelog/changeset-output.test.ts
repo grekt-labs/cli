@@ -1,6 +1,6 @@
 import { describe, test, expect, vi, beforeEach } from "vitest";
 import type { ArtifactChangelog } from "./changelog.types";
-import type { WorkspaceArtifact } from "@grekt-labs/cli-engine";
+import type { WorkspaceArtifact } from "@grekt/engine";
 
 const { mockExists, mockMkdir, mockWriteFile } = vi.hoisted(() => ({
   mockExists: vi.fn(() => true),

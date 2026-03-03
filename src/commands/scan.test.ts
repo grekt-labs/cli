@@ -1,7 +1,7 @@
 import { describe, test, expect } from "vitest";
 import { parseSource } from "#/registry/sources/sources";
 import { formatBadge, severityIcon, truncate, evaluateFailOn } from "./scan";
-import type { SecurityReport, TrustBadge } from "@grekt-labs/cli-engine";
+import type { SecurityReport, TrustBadge } from "@grekt/engine";
 
 describe("scan", () => {
   describe("source detection", () => {

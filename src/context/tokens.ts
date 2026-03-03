@@ -1,4 +1,4 @@
-import type { TokenProvider } from "@grekt-labs/cli-engine";
+import type { TokenProvider } from "@grekt/engine";
 
 type TokenLookup = (name: string, projectRoot: string) => string | undefined;
 type SessionTokenGetter = () => string | undefined;

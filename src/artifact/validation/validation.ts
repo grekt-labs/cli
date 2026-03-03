@@ -2,9 +2,9 @@ import { join, resolve, sep } from "path";
 import { parse } from "yaml";
 import { isInitialized } from "#/config/project/project";
 import { fs } from "#/context";
-import { scanArtifact, ArtifactManifestSchema, isValidSemver, CATEGORIES, parseName } from "@grekt-labs/cli-engine";
-import type { ArtifactMode } from "@grekt-labs/cli-engine";
-import type { InvalidFile } from "@grekt-labs/cli-engine";
+import { scanArtifact, ArtifactManifestSchema, isValidSemver, CATEGORIES, parseName } from "@grekt/engine";
+import type { ArtifactMode } from "@grekt/engine";
+import type { InvalidFile } from "@grekt/engine";
 import type {
   ValidatedArtifact,
   ValidationOptions,

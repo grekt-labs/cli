@@ -11,7 +11,7 @@ import {
   type ProjectConfig,
   type Lockfile,
   type CategoryFilePaths,
-} from "@grekt-labs/cli-engine";
+} from "@grekt/engine";
 import { getArtifactMode } from "#/artifact/mode/mode";
 
 /**

@@ -2,7 +2,7 @@ import { describe, test, expect, beforeEach, afterEach } from "vitest";
 import { existsSync, mkdirSync, writeFileSync, rmSync } from "fs";
 import { join } from "path";
 import { clinePlugin } from "./cline";
-import { type Lockfile, type ProjectConfig } from "@grekt-labs/cli-engine";
+import { type Lockfile, type ProjectConfig } from "@grekt/engine";
 
 const ARTIFACTS_DIR = ".grekt/artifacts";
 const TEST_ARTIFACT_ID = "@scope/artifact";

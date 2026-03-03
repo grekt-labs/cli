@@ -11,7 +11,7 @@ import {
   bumpPrerelease,
   isWorkspaceRoot,
   type BumpType,
-} from "@grekt-labs/cli-engine";
+} from "@grekt/engine";
 import { success, error, info, log, colors, spinner } from "#/shared/ui/ui";
 import {
   loadWorkspace,

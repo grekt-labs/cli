@@ -6,7 +6,7 @@ import {
   isWorkspaceRoot,
   discoverWorkspaceArtifacts,
   type WorkspaceArtifact,
-} from "@grekt-labs/cli-engine";
+} from "@grekt/engine";
 import { fs } from "#/context";
 import { error, info } from "#/shared/ui/ui";
 import { restoreFiles, type FileBackupManifest } from "#/workspace/file-backup/file-backup";

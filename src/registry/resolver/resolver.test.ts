@@ -1,6 +1,6 @@
 import { describe, test, expect, beforeEach, afterEach } from "vitest";
 import { parseArtifactId, resolveRegistry, resolveRegistryForArtifact } from "./resolver";
-import { parseArtifactId as engineParseArtifactId } from "@grekt-labs/cli-engine";
+import { parseArtifactId as engineParseArtifactId } from "@grekt/engine";
 import type { LocalConfig } from "#/registry/registry.types";
 
 describe("resolver", () => {

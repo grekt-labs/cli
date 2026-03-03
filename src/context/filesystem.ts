@@ -17,7 +17,7 @@ import {
   closeSync,
 } from "fs";
 import { isAbsolute } from "path";
-import type { FileSystem } from "@grekt-labs/cli-engine";
+import type { FileSystem } from "@grekt/engine";
 
 /**
  * Copy options for recursive directory copying.

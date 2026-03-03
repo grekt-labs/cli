@@ -1,5 +1,5 @@
 import { describe, test, expect } from "vitest";
-import { ProjectConfigSchema, hasManifestFields } from "@grekt-labs/cli-engine";
+import { ProjectConfigSchema, hasManifestFields } from "@grekt/engine";
 
 describe("version", () => {
   test("command has correct name", async () => {

@@ -8,7 +8,7 @@ import {
   clearGlobalSession,
   getGlobalSessionPath,
 } from "./user";
-import type { StoredSession } from "@grekt-labs/cli-engine";
+import type { StoredSession } from "@grekt/engine";
 
 describe("user config", () => {
   const sessionPath = join(homedir(), ".grekt", "session.yaml");

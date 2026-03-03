@@ -1,5 +1,5 @@
 import type { ComponentSelection } from "#/artifact/selector/selector";
-import type { ProjectConfig, Lockfile, ArtifactMode } from "@grekt-labs/cli-engine";
+import type { ProjectConfig, Lockfile, ArtifactMode } from "@grekt/engine";
 
 export interface UpgradeResult {
   artifactId: string;
@@ -20,7 +20,7 @@ export interface PerformUpgradeParams {
   onStructuralChanges: (
     artifactId: string,
     diff: StructureDiff,
-    artifactInfo: import("@grekt-labs/cli-engine").ArtifactInfo,
+    artifactInfo: import("@grekt/engine").ArtifactInfo,
     previousSelection: ComponentSelection
   ) => Promise<ComponentSelection>;
 }

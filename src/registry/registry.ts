@@ -24,7 +24,7 @@ export {
   buildGitLabArchiveUrl,
   getGitHubHeaders,
   getGitLabHeaders,
-} from "@grekt-labs/cli-engine";
+} from "@grekt/engine";
 
 // CLI-specific exports (with injected dependencies)
 export { resolveRegistry, createRegistryClient } from "./factory/factory";

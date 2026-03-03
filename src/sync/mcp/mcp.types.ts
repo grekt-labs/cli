@@ -7,7 +7,7 @@
  * universal format into tool-specific shape.
  */
 
-import type { ScannedFile } from "@grekt-labs/cli-engine";
+import type { ScannedFile } from "@grekt/engine";
 
 /** Content parsed from an MCP artifact JSON file (after grk-* fields stripped) */
 export interface McpContent {

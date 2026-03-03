@@ -2,7 +2,7 @@ import { describe, test, expect, beforeEach, afterEach } from "vitest";
 import { existsSync, mkdirSync, rmSync, writeFileSync, readFileSync } from "fs";
 import { join } from "path";
 import { claudePlugin } from "./claude";
-import { GREKT_SECTION_HEADER, type ProjectConfig } from "@grekt-labs/cli-engine";
+import { GREKT_SECTION_HEADER, type ProjectConfig } from "@grekt/engine";
 
 const PLUGIN_ID = "claude";
 const PLUGIN_NAME = "Claude";

@@ -2,7 +2,7 @@ import { describe, test, expect, beforeEach, afterEach } from "vitest";
 import { existsSync, mkdirSync, writeFileSync, readFileSync, rmSync } from "fs";
 import { join } from "path";
 import { cursorPlugin } from "./cursor";
-import { GREKT_SECTION_HEADER, type Lockfile, type ProjectConfig } from "@grekt-labs/cli-engine";
+import { GREKT_SECTION_HEADER, type Lockfile, type ProjectConfig } from "@grekt/engine";
 
 const ARTIFACTS_DIR = ".grekt/artifacts";
 const TEST_ARTIFACT_ID = "@scope/artifact";

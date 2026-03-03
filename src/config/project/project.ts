@@ -7,7 +7,7 @@ import {
   safeParseYaml,
   type ProjectConfig,
   type LocalConfig,
-} from "@grekt-labs/cli-engine";
+} from "@grekt/engine";
 import {
   GREKT_YAML,
   GREKT_DIR,

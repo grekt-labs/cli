@@ -11,7 +11,7 @@ import {
   getGitHubHeaders,
   getGitLabHeaders,
   downloadAndExtractTarball,
-} from "@grekt-labs/cli-engine";
+} from "@grekt/engine";
 import { resolveRegistry, createRegistryClient } from "#/registry/factory/factory";
 import { copyDirectoryRecursive } from "#/sync/helpers/siblings";
 import { fs, http, tarOps } from "#/context";

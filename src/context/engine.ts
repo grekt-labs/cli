@@ -14,7 +14,7 @@ import {
   verifyIntegrity as _verifyIntegrity,
   getDirectorySize as _getDirectorySize,
   type Lockfile,
-} from "@grekt-labs/cli-engine";
+} from "@grekt/engine";
 import { LOCKFILE } from "#/constants";
 
 // Lockfile operations
@@ -45,7 +45,7 @@ export function scanArtifact(artifactDir: string) {
   return _scanArtifact(fs, artifactDir);
 }
 
-export type { ArtifactInfo } from "@grekt-labs/cli-engine";
+export type { ArtifactInfo } from "@grekt/engine";
 
 // Integrity operations
 export function hashDirectory(dir: string) {

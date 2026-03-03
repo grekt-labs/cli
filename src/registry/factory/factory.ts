@@ -12,7 +12,7 @@ import {
   type TokenProvider,
   resolveRegistry as _resolveRegistry,
   createRegistryClient as _createRegistryClient,
-} from "@grekt-labs/cli-engine";
+} from "@grekt/engine";
 import { fs, http, shell, tarOps, createTokenProvider } from "#/context";
 import { getToken } from "#/config/project/project";
 import { getGlobalSession } from "#/config/user/user";

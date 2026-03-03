@@ -1,6 +1,6 @@
 import { validateArtifact } from "#/artifact/validation/validation";
 import { createTarball, removeTarball } from "#/artifact/tarball/tarball";
-import { generateComponents } from "@grekt-labs/cli-engine";
+import { generateComponents } from "@grekt/engine";
 import {
   createPublisher,
   getPublisherTypeName,

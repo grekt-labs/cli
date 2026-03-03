@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import { select, confirm } from "@inquirer/prompts";
-import type { BumpType } from "@grekt-labs/cli-engine";
-import { isWorkspaceRoot } from "@grekt-labs/cli-engine";
+import type { BumpType } from "@grekt/engine";
+import { isWorkspaceRoot } from "@grekt/engine";
 import { fs } from "#/context";
 import { loadWorkspace } from "#/workspace/workspace";
 import { withPromptHandler } from "#/shared/prompts/prompts";

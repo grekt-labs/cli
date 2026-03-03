@@ -1,5 +1,5 @@
 import * as tar from "tar";
-import type { TarOperations, TarCreateOptions, TarExtractOptions, TarEntry } from "@grekt-labs/cli-engine";
+import type { TarOperations, TarCreateOptions, TarExtractOptions, TarEntry } from "@grekt/engine";
 
 /**
  * Real TarOperations implementation using the `tar` npm package.

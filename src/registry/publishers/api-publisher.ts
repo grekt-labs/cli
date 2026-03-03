@@ -3,7 +3,7 @@ import { isAuthenticated, isSupabaseConfigured } from "#/auth/session/session";
 import { fs, http } from "#/context";
 import { resolveRegistry, createRegistryClient } from "#/registry/factory/factory";
 import { getLocalConfig } from "#/config/project/project";
-import { RegistryApiError, type DefaultRegistryOperations, type RegistryClient } from "@grekt-labs/cli-engine";
+import { RegistryApiError, type DefaultRegistryOperations, type RegistryClient } from "@grekt/engine";
 import type { Publisher, PublishContext, PublishResult } from "./publisher.types";
 
 /**

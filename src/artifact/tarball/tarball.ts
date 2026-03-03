@@ -2,7 +2,7 @@ import { tmpdir } from "os";
 import { basename, dirname, join, sep } from "path";
 import { parse, stringify } from "yaml";
 import { fs, tarOps } from "#/context";
-import type { Components } from "@grekt-labs/cli-engine";
+import type { Components } from "@grekt/engine";
 
 const TARBALL_DIR = ".grekt/tmp";
 

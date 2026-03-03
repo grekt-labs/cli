@@ -13,7 +13,7 @@
  */
 import { describe, test, expect, beforeEach, afterEach } from "vitest";
 import { createTokenProvider } from "#/context/tokens";
-import { resolveRegistry } from "@grekt-labs/cli-engine";
+import { resolveRegistry } from "@grekt/engine";
 
 describe("publish token resolution chain", () => {
   const originalEnv = { ...process.env };

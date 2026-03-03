@@ -4,7 +4,7 @@ import {
   saveGlobalSession,
   clearGlobalSession,
 } from "#/config/user/user";
-import type { StoredSession } from "@grekt-labs/cli-engine";
+import type { StoredSession } from "@grekt/engine";
 import {
   SUPABASE_PROJECT_URL,
   SUPABASE_ANON_KEY as DEFAULT_ANON_KEY,

@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import { createTarball } from "#/artifact/tarball/tarball";
 import { validateArtifact } from "#/artifact/validation/validation";
-import { generateComponents } from "@grekt-labs/cli-engine";
+import { generateComponents } from "@grekt/engine";
 import { success, error, info, log } from "#/shared/ui/ui";
 import { logComponentSummary } from "./display";
 

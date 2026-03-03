@@ -1,4 +1,4 @@
-import type { ArtifactInfo } from "@grekt-labs/cli-engine";
+import type { ArtifactInfo } from "@grekt/engine";
 import type { ComponentSelection } from "#/artifact/selector/selector";
 import { selectComponentsWithPrecheck } from "#/artifact/selector/selector";
 import { log, newline, colors } from "#/shared/ui/ui";

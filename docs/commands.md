@@ -318,7 +318,7 @@ Without wrappers, you'd have to import `fs` and pass it everywhere:
 ```typescript
 // Without wrappers (verbose)
 import { fs } from "#/context";
-import { getLockfile as _getLockfile } from "@grekt-labs/cli-engine";
+import { getLockfile as _getLockfile } from "@grekt/engine";
 
 const lockfile = _getLockfile(fs, `${projectRoot}/grekt.lock`);
 ```
