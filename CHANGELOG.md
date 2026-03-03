@@ -1,3 +1,11 @@
+## [6.40.1](https://github.com/grekt-labs/cli/compare/v6.40.0...v6.40.1) (2026-03-03)
+
+
+### Bug Fixes
+
+* add missing workspace exports to barrel index ([4395185](https://github.com/grekt-labs/cli/commit/4395185b52b14bd912165e6615c9a4280fcb1995))
+* generate pnpm-workspace.yaml for external tool workspace discovery in exec mode ([e2e5c84](https://github.com/grekt-labs/cli/commit/e2e5c844b19b30e61dc7e1d0abe0ff7e88def028))
+
 # [6.40.0](https://github.com/grekt-labs/cli/compare/v6.39.0...v6.40.0) (2026-03-02)
 
 
