@@ -109,6 +109,28 @@ describe("cleanWorkspaceFile", () => {
 
     expect(() => cleanWorkspaceFile(tempDir)).not.toThrow();
   });
+
+  test("restores files from manifest instead of deleting", async () => {
+    const { cleanWorkspaceFile } = await import("./workspace");
+    const { backupFiles } = await import("./file-backup/file-backup");
+
+    const workspacePath = join(tempDir, "pnpm-workspace.yaml");
+    const packageJsonPath = join(tempDir, "package.json");
+
+    writeFileSync(workspacePath, "original-workspace-content");
+    writeFileSync(packageJsonPath, '{"name": "user-project"}');
+
+    const manifest = backupFiles([workspacePath, packageJsonPath]);
+
+    // Simulate overwrite by generateWorkspaceFile
+    writeFileSync(workspacePath, "packages:\n  - packages/*\n");
+    writeFileSync(packageJsonPath, '{"name": "workspace-root", "private": true}');
+
+    cleanWorkspaceFile(tempDir, manifest);
+
+    expect(readFileSync(workspacePath, "utf-8")).toBe("original-workspace-content");
+    expect(readFileSync(packageJsonPath, "utf-8")).toBe('{"name": "user-project"}');
+  });
 });
 
 describe("generatePackageJsonFiles", () => {
@@ -260,5 +282,37 @@ describe("cleanPackageJsonFiles", () => {
     cleanPackageJsonFiles([artifact]);
 
     expect(existsSync(join(artifactPath, "package.json"))).toBe(false);
+  });
+
+  test("restores package.json from manifest instead of deleting", async () => {
+    const { cleanPackageJsonFiles } = await import("./workspace");
+    const { backupFiles } = await import("./file-backup/file-backup");
+
+    const artifactPath = join(tempDir, "packages/alpha");
+    mkdirSync(artifactPath, { recursive: true });
+
+    const packageJsonPath = join(artifactPath, "package.json");
+    const originalContent = '{"name": "alpha", "version": "1.0.0", "scripts": {"build": "tsc"}}';
+    writeFileSync(packageJsonPath, originalContent);
+
+    const manifest = backupFiles([packageJsonPath]);
+
+    // Simulate overwrite by generatePackageJsonFiles
+    writeFileSync(packageJsonPath, '{"name": "@test/alpha", "version": "1.0.0", "private": true}');
+
+    const artifact: WorkspaceArtifact = {
+      path: artifactPath,
+      relativePath: "packages/alpha",
+      manifest: {
+        name: "@test/alpha",
+        version: "1.0.0",
+        description: "test",
+        components: { skills: [], agents: [], commands: [] },
+      },
+    };
+
+    cleanPackageJsonFiles([artifact], manifest);
+
+    expect(readFileSync(packageJsonPath, "utf-8")).toBe(originalContent);
   });
 });

@@ -9,6 +9,7 @@ import {
 } from "@grekt-labs/cli-engine";
 import { fs } from "#/context";
 import { error, info } from "#/shared/ui/ui";
+import { restoreFiles, type FileBackupManifest } from "#/workspace/file-backup/file-backup";
 
 const WORKSPACE_CONFIG_FILE = "grekt-workspace.yaml";
 const ARTIFACT_MANIFEST_FILE = "grekt.yaml";
@@ -78,16 +79,18 @@ export function generateWorkspaceFile(root: string, artifacts: WorkspaceArtifact
 
 /**
  * Remove temporary pnpm-workspace.yaml and root package.json.
+ * If a backup manifest is provided, restores original files instead of deleting.
  */
-export function cleanWorkspaceFile(root: string): void {
+export function cleanWorkspaceFile(root: string, manifest?: FileBackupManifest): void {
   const workspacePath = join(root, "pnpm-workspace.yaml");
   const rootPackageJsonPath = join(root, "package.json");
 
-  if (fs.exists(workspacePath)) {
-    fs.unlink(workspacePath);
-  }
-  if (fs.exists(rootPackageJsonPath)) {
-    fs.unlink(rootPackageJsonPath);
+  for (const filePath of [workspacePath, rootPackageJsonPath]) {
+    if (manifest?.has(filePath)) {
+      restoreFiles(new Map([[filePath, manifest.get(filePath)!]]));
+    } else if (fs.exists(filePath)) {
+      fs.unlink(filePath);
+    }
   }
 }
 
@@ -135,11 +138,15 @@ export function syncVersionsToManifest(artifacts: WorkspaceArtifact[]): number {
 
 /**
  * Remove generated package.json files.
+ * If a backup manifest is provided, restores original files instead of deleting.
  */
-export function cleanPackageJsonFiles(artifacts: WorkspaceArtifact[]): void {
+export function cleanPackageJsonFiles(artifacts: WorkspaceArtifact[], manifest?: FileBackupManifest): void {
   for (const artifact of artifacts) {
     const packageJsonPath = join(artifact.path, "package.json");
-    if (fs.exists(packageJsonPath)) {
+
+    if (manifest?.has(packageJsonPath)) {
+      restoreFiles(new Map([[packageJsonPath, manifest.get(packageJsonPath)!]]));
+    } else if (fs.exists(packageJsonPath)) {
       fs.unlink(packageJsonPath);
     }
   }
