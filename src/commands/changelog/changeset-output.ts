@@ -7,26 +7,32 @@ import type { ArtifactChangelog } from "./changelog.types";
 const CHANGESET_DIR = ".changeset";
 
 /**
- * Generate a .changeset/*.md file from artifact changelogs.
- * Returns the file path written.
+ * Generate one .changeset/*.md file per artifact.
+ * Each file contains isolated frontmatter + body to prevent cross-contamination.
+ * Returns the list of file paths written.
  */
-export function generateChangesetFile(
+export function generateChangesetFiles(
   artifacts: ArtifactChangelog[],
   workspaceRoot: string,
-): string {
+): string[] {
   const changesetDir = join(workspaceRoot, CHANGESET_DIR);
 
   if (!fs.exists(changesetDir)) {
     fs.mkdir(changesetDir, { recursive: true });
   }
 
-  const filename = `${randomBytes(4).toString("hex")}.md`;
-  const filepath = join(changesetDir, filename);
+  const paths: string[] = [];
 
-  const content = buildChangesetContent(artifacts);
-  fs.writeFile(filepath, content);
+  for (const artifact of artifacts) {
+    const filename = `${randomBytes(4).toString("hex")}.md`;
+    const filepath = join(changesetDir, filename);
+    const content = buildChangesetContent([artifact]);
 
-  return filepath;
+    fs.writeFile(filepath, content);
+    paths.push(filepath);
+  }
+
+  return paths;
 }
 
 /**

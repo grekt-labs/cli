@@ -17,7 +17,7 @@ vi.mock("#/context", () => ({
 }));
 
 import {
-  generateChangesetFile,
+  generateChangesetFiles,
   previewChangesetContent,
   formatJson,
   formatYaml,
@@ -62,12 +62,12 @@ function createArtifactChangelog(
   };
 }
 
-describe("generateChangesetFile", () => {
+describe("generateChangesetFiles", () => {
   // Error paths / edge cases
   test("creates .changeset directory when it does not exist", () => {
     mockExists.mockReturnValue(false);
 
-    generateChangesetFile([createArtifactChangelog()], "/workspace");
+    generateChangesetFiles([createArtifactChangelog()], "/workspace");
 
     expect(mockMkdir).toHaveBeenCalledWith(
       expect.stringContaining(".changeset"),
@@ -78,43 +78,91 @@ describe("generateChangesetFile", () => {
   test("does not recreate .changeset directory when it exists", () => {
     mockExists.mockReturnValue(true);
 
-    generateChangesetFile([createArtifactChangelog()], "/workspace");
+    generateChangesetFiles([createArtifactChangelog()], "/workspace");
 
     expect(mockMkdir).not.toHaveBeenCalled();
   });
 
-  // File system side effects
-  test("writes file to .changeset directory with .md extension", () => {
-    const filepath = generateChangesetFile(
+  // Single artifact produces one file
+  test("writes one file for a single artifact", () => {
+    const paths = generateChangesetFiles(
       [createArtifactChangelog()],
       "/workspace",
     );
 
-    expect(filepath).toContain(".changeset");
-    expect(filepath).toMatch(/\.md$/);
+    expect(paths).toHaveLength(1);
+    expect(paths[0]).toContain(".changeset");
+    expect(paths[0]).toMatch(/\.md$/);
     expect(mockWriteFile).toHaveBeenCalledTimes(1);
   });
 
   test("writes valid changeset content to file", () => {
-    generateChangesetFile([createArtifactChangelog()], "/workspace");
+    generateChangesetFiles([createArtifactChangelog()], "/workspace");
 
     const writtenContent = mockWriteFile.mock.calls[0][1] as string;
     expect(writtenContent).toContain("---");
     expect(writtenContent).toContain('"@scope/core": minor');
   });
 
+  // Multiple artifacts produce separate isolated files
+  test("writes one file per artifact with isolated content", () => {
+    const artifacts = [
+      createArtifactChangelog({
+        name: "@scope/core",
+        bump: "minor",
+        commits: [
+          {
+            hash: "abc123",
+            type: "feat",
+            scope: null,
+            breaking: false,
+            message: "add core feature",
+            raw: "abc123 feat: add core feature",
+          },
+        ],
+      }),
+      createArtifactChangelog({
+        name: "@scope/cli",
+        bump: "patch",
+        commits: [
+          {
+            hash: "def456",
+            type: "fix",
+            scope: null,
+            breaking: false,
+            message: "fix cli bug",
+            raw: "def456 fix: fix cli bug",
+          },
+        ],
+      }),
+    ];
+
+    const paths = generateChangesetFiles(artifacts, "/workspace");
+
+    expect(paths).toHaveLength(2);
+    expect(mockWriteFile).toHaveBeenCalledTimes(2);
+
+    const coreContent = mockWriteFile.mock.calls[0][1] as string;
+    expect(coreContent).toContain('"@scope/core": minor');
+    expect(coreContent).not.toContain("@scope/cli");
+
+    const cliContent = mockWriteFile.mock.calls[1][1] as string;
+    expect(cliContent).toContain('"@scope/cli": patch');
+    expect(cliContent).not.toContain("@scope/core");
+  });
+
   // Idempotency
   test("generates unique filenames on consecutive calls", () => {
-    const path1 = generateChangesetFile(
+    const paths1 = generateChangesetFiles(
       [createArtifactChangelog()],
       "/workspace",
     );
-    const path2 = generateChangesetFile(
+    const paths2 = generateChangesetFiles(
       [createArtifactChangelog()],
       "/workspace",
     );
 
-    expect(path1).not.toBe(path2);
+    expect(paths1[0]).not.toBe(paths2[0]);
   });
 });
 

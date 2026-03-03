@@ -27,7 +27,7 @@ import {
   mapFilesToArtifacts,
 } from "./conventional-commits";
 import {
-  generateChangesetFile,
+  generateChangesetFiles,
   previewChangesetContent,
   formatJson,
   formatYaml,
@@ -278,7 +278,7 @@ function outputResult(
     return;
   }
 
-  const filepath = generateChangesetFile(artifactChangelogs, cwd);
+  const paths = generateChangesetFiles(artifactChangelogs, cwd);
   newline();
-  success(`Changeset written to ${filepath}`);
+  success(`Generated ${paths.length} changeset file(s)`);
 }
