@@ -1,3 +1,10 @@
+# [6.41.0](https://github.com/grekt-labs/cli/compare/v6.40.3...v6.41.0) (2026-03-03)
+
+
+### Features
+
+* migrate engine dependency from GitHub Packages to npm ([830debc](https://github.com/grekt-labs/cli/commit/830debc404acbfa52d0c01c2dfb6c051cbd89c2a))
+
 ## [6.40.3](https://github.com/grekt-labs/cli/compare/v6.40.2...v6.40.3) (2026-03-03)
 
 
