@@ -1,26 +1,7 @@
-import { shell } from "#/context";
 import { warning } from "#/shared/ui/ui";
+import { exec, execOrNull, splitLines } from "#/shared/git/git";
 
-function exec(args: string[]): string {
-  return shell.execFile("git", args).trim();
-}
-
-function execOrNull(args: string[]): string | null {
-  try {
-    const result = exec(args);
-    return result || null;
-  } catch {
-    return null;
-  }
-}
-
-function splitLines(output: string | null): string[] {
-  if (!output) return [];
-  return output
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
-}
+export { detectArtifactBaseRef } from "#/shared/git/git";
 
 function detectDefaultBranch(): string {
   const symbolicRef = execOrNull([
@@ -34,10 +15,6 @@ function detectDefaultBranch(): string {
   }
 
   return "main";
-}
-
-function getFirstCommit(): string | null {
-  return execOrNull(["rev-list", "--max-parents=0", "HEAD"]);
 }
 
 /**
@@ -74,29 +51,6 @@ export function detectBaseRef(overrideSince?: string): string | null {
 
   warning("No remote found, falling back to local refs");
   return defaultBranch;
-}
-
-/**
- * Detect base ref for a specific artifact on the default branch.
- * Looks for tags matching the artifact name pattern (e.g. @scope/name@1.0.0).
- * Falls back to the first commit in the repo.
- */
-export function detectArtifactBaseRef(artifactName: string): string {
-  const lastTag = execOrNull([
-    "describe",
-    "--tags",
-    "--abbrev=0",
-    "--match",
-    `${artifactName}@*`,
-  ]);
-
-  if (lastTag) return lastTag;
-
-  const firstCommit = getFirstCommit();
-  if (firstCommit) return firstCommit;
-
-  warning(`${artifactName}: no tags found, falling back to HEAD~1`);
-  return "HEAD~1";
 }
 
 /**
