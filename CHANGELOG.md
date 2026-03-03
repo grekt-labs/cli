@@ -1,3 +1,10 @@
+## [6.40.2](https://github.com/grekt-labs/cli/compare/v6.40.1...v6.40.2) (2026-03-03)
+
+
+### Bug Fixes
+
+* generate one changeset file per artifact to prevent cross-contamination ([4a274c0](https://github.com/grekt-labs/cli/commit/4a274c0e3b78e5a8577c9a2a14d022576001976d))
+
 ## [6.40.1](https://github.com/grekt-labs/cli/compare/v6.40.0...v6.40.1) (2026-03-03)
 
 
