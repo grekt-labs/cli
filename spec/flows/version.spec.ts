@@ -1,6 +1,7 @@
 import { describe, test, expect, afterEach } from "vitest";
-import { mkdirSync, writeFileSync, readFileSync } from "fs";
+import { mkdirSync, writeFileSync, readFileSync, existsSync } from "fs";
 import { join } from "path";
+import { stringify } from "yaml";
 import { runCli } from "../helpers/cli";
 import { createTestProject, type TestProject } from "../helpers/project";
 
@@ -18,6 +19,21 @@ function createArtifactManifest(dir: string, name: string, version: string): voi
       "  - tooling",
     ].join("\n")
   );
+}
+
+function createWorkspaceProject(artifacts: Array<{ name: string; version: string; dir: string }>): TestProject {
+  const project = createTestProject();
+
+  writeFileSync(
+    join(project.root, "grekt-workspace.yaml"),
+    stringify({ workspaces: ["packages/*"] }),
+  );
+
+  for (const artifact of artifacts) {
+    createArtifactManifest(join(project.root, "packages", artifact.dir), artifact.name, artifact.version);
+  }
+
+  return project;
 }
 
 describe("grekt version", () => {
@@ -214,6 +230,94 @@ describe("grekt version", () => {
       // Files unchanged
       const manifestA = readFileSync(join(project.root, "artifact-a", "grekt.yaml"), "utf-8");
       expect(manifestA).toContain('"1.0.0"');
+    });
+  });
+
+  // ── Author uses external versioning tool (changesets, etc.) ──
+
+  describe("exec mode", () => {
+    test("generates workspace config, runs command, syncs versions, cleans up", async () => {
+      project = createWorkspaceProject([
+        { name: "@test/alpha", version: "1.0.0", dir: "alpha" },
+        { name: "@test/beta", version: "2.0.0", dir: "beta" },
+      ]);
+
+      // Simulate external tool bumping versions via package.json
+      const bumpScript = [
+        `node -e "`,
+        `const fs = require('fs'); const path = require('path');`,
+        `['alpha','beta'].forEach(d => {`,
+        `  const p = path.join('packages', d, 'package.json');`,
+        `  const pkg = JSON.parse(fs.readFileSync(p, 'utf-8'));`,
+        `  const parts = pkg.version.split('.'); parts[1] = String(Number(parts[1]) + 1); parts[2] = '0';`,
+        `  pkg.version = parts.join('.');`,
+        `  fs.writeFileSync(p, JSON.stringify(pkg, null, 2));`,
+        `});`,
+        `"`,
+      ].join("");
+
+      const result = await runCli(["version", "--exec", bumpScript], {
+        cwd: project.root,
+      });
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("Workspace: 2 artifact(s)");
+      expect(result.stdout).toContain("Version update complete");
+
+      // grekt.yaml should reflect bumped versions
+      const manifestAlpha = readFileSync(join(project.root, "packages/alpha/grekt.yaml"), "utf-8");
+      const manifestBeta = readFileSync(join(project.root, "packages/beta/grekt.yaml"), "utf-8");
+      expect(manifestAlpha).toContain("1.1.0");
+      expect(manifestBeta).toContain("2.1.0");
+
+      // Temporary files should be cleaned up
+      expect(existsSync(join(project.root, "pnpm-workspace.yaml"))).toBe(false);
+      expect(existsSync(join(project.root, "package.json"))).toBe(false);
+      expect(existsSync(join(project.root, "packages/alpha/package.json"))).toBe(false);
+      expect(existsSync(join(project.root, "packages/beta/package.json"))).toBe(false);
+    });
+
+    test("cleans up temporary files on command failure", async () => {
+      project = createWorkspaceProject([
+        { name: "@test/fail", version: "1.0.0", dir: "fail-artifact" },
+      ]);
+
+      const result = await runCli(["version", "--exec", "exit 1"], {
+        cwd: project.root,
+      });
+
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain("Command failed");
+
+      // Temporary files should still be cleaned up
+      expect(existsSync(join(project.root, "pnpm-workspace.yaml"))).toBe(false);
+      expect(existsSync(join(project.root, "package.json"))).toBe(false);
+      expect(existsSync(join(project.root, "packages/fail-artifact/package.json"))).toBe(false);
+    });
+
+    test("fails when not in a workspace root", async () => {
+      project = createTestProject();
+      createArtifactManifest(join(project.root, "my-artifact"), "@test/no-ws", "1.0.0");
+
+      const result = await runCli(["version", "--exec", "echo ok"], {
+        cwd: project.root,
+      });
+
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain("grekt-workspace.yaml");
+    });
+
+    test("reports no changes when command does not modify versions", async () => {
+      project = createWorkspaceProject([
+        { name: "@test/unchanged", version: "1.0.0", dir: "unchanged" },
+      ]);
+
+      const result = await runCli(["version", "--exec", "echo noop"], {
+        cwd: project.root,
+      });
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("No version changes detected");
     });
   });
 });

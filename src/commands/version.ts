@@ -15,6 +15,8 @@ import {
 import { success, error, info, log, colors, spinner } from "#/shared/ui/ui";
 import {
   loadWorkspace,
+  generateWorkspaceFile,
+  cleanWorkspaceFile,
   generatePackageJsonFiles,
   syncVersionsToManifest,
   cleanPackageJsonFiles,
@@ -182,12 +184,13 @@ async function handleExecMode(options: { cwd: string; command: string; dryRun?: 
     return;
   }
 
-  // Step 1: Generate package.json files
-  const genSpin = spinner("Generating package.json files...");
+  // Step 1: Generate temporary workspace config files
+  const genSpin = spinner("Generating workspace config files...");
   genSpin.start();
+  generateWorkspaceFile(cwd, workspace.artifacts);
   generatePackageJsonFiles(workspace.artifacts);
   genSpin.stop();
-  success(`Generated ${workspace.artifacts.length} package.json file(s)`);
+  success("Generated workspace config files");
 
   // Step 2: Run external command
   log("");
@@ -202,6 +205,7 @@ async function handleExecMode(options: { cwd: string; command: string; dryRun?: 
 
   if (result.status !== 0) {
     // Cleanup on failure
+    cleanWorkspaceFile(cwd);
     cleanPackageJsonFiles(workspace.artifacts);
     error(`Command failed with exit code ${result.status}`);
     process.exit(result.status ?? 1);
@@ -216,6 +220,7 @@ async function handleExecMode(options: { cwd: string; command: string; dryRun?: 
   const updatedWorkspace = await loadWorkspace(cwd);
   if (!updatedWorkspace) {
     syncSpin.stop();
+    cleanWorkspaceFile(cwd);
     cleanPackageJsonFiles(workspace.artifacts);
     error("Failed to reload workspace");
     process.exit(1);
@@ -233,9 +238,10 @@ async function handleExecMode(options: { cwd: string; command: string; dryRun?: 
   // Step 4: Cleanup
   const cleanSpin = spinner("Cleaning up...");
   cleanSpin.start();
+  cleanWorkspaceFile(cwd);
   cleanPackageJsonFiles(workspace.artifacts);
   cleanSpin.stop();
-  success("Removed temporary package.json files");
+  success("Removed temporary config files");
 
   log("");
   success("Version update complete");
