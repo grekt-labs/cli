@@ -127,7 +127,6 @@ The release workflow requires these repository secrets:
 | Secret | Purpose |
 |--------|---------|
 | `GITHUB_TOKEN` | Automatic, used by semantic-release for tags, commits, and GitHub releases |
-| `GREKT_PACKAGES_NPMRC` | Auth token for `@grekt-labs` GitHub Packages (private npm deps) |
 | `NPM_TOKEN` | npm auth token for publishing `@grekt/cli` to the npm registry |
 | `HOMEBREW_TAP_TOKEN` | PAT with repo access to `grekt-labs/homebrew-grekt` for formula updates |
 
