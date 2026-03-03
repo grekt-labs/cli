@@ -21,6 +21,7 @@ import {
   syncVersionsToManifest,
   cleanPackageJsonFiles,
 } from "#/workspace/workspace";
+import { backupFiles } from "#/workspace/file-backup/file-backup";
 
 const MANIFEST_FILE = "grekt.yaml";
 const BUMP_TYPES = ["patch", "minor", "major", "prerelease"] as const;
@@ -184,6 +185,14 @@ async function handleExecMode(options: { cwd: string; command: string; dryRun?: 
     return;
   }
 
+  // Step 0: Backup existing files that will be overwritten
+  const filesToTouch = [
+    join(cwd, "pnpm-workspace.yaml"),
+    join(cwd, "package.json"),
+    ...workspace.artifacts.map((a) => join(a.path, "package.json")),
+  ];
+  const manifest = backupFiles(filesToTouch);
+
   // Step 1: Generate temporary workspace config files
   const genSpin = spinner("Generating workspace config files...");
   genSpin.start();
@@ -205,8 +214,8 @@ async function handleExecMode(options: { cwd: string; command: string; dryRun?: 
 
   if (result.status !== 0) {
     // Cleanup on failure
-    cleanWorkspaceFile(cwd);
-    cleanPackageJsonFiles(workspace.artifacts);
+    cleanWorkspaceFile(cwd, manifest);
+    cleanPackageJsonFiles(workspace.artifacts, manifest);
     error(`Command failed with exit code ${result.status}`);
     process.exit(result.status ?? 1);
   }
@@ -220,8 +229,8 @@ async function handleExecMode(options: { cwd: string; command: string; dryRun?: 
   const updatedWorkspace = await loadWorkspace(cwd);
   if (!updatedWorkspace) {
     syncSpin.stop();
-    cleanWorkspaceFile(cwd);
-    cleanPackageJsonFiles(workspace.artifacts);
+    cleanWorkspaceFile(cwd, manifest);
+    cleanPackageJsonFiles(workspace.artifacts, manifest);
     error("Failed to reload workspace");
     process.exit(1);
   }
@@ -238,8 +247,8 @@ async function handleExecMode(options: { cwd: string; command: string; dryRun?: 
   // Step 4: Cleanup
   const cleanSpin = spinner("Cleaning up...");
   cleanSpin.start();
-  cleanWorkspaceFile(cwd);
-  cleanPackageJsonFiles(workspace.artifacts);
+  cleanWorkspaceFile(cwd, manifest);
+  cleanPackageJsonFiles(workspace.artifacts, manifest);
   cleanSpin.stop();
   success("Removed temporary config files");
 

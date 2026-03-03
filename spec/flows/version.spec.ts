@@ -307,6 +307,32 @@ describe("grekt version", () => {
       expect(result.stderr).toContain("grekt-workspace.yaml");
     });
 
+    test("preserves pre-existing package.json files after --exec", async () => {
+      project = createWorkspaceProject([
+        { name: "@test/alpha", version: "1.0.0", dir: "alpha" },
+      ]);
+
+      // Create pre-existing package.json files (user already had them)
+      const rootPackageJson = '{\n  "name": "my-monorepo",\n  "private": true,\n  "workspaces": ["packages/*"]\n}\n';
+      const artifactPackageJson = '{\n  "name": "@test/alpha",\n  "version": "1.0.0",\n  "scripts": {\n    "build": "tsc"\n  }\n}\n';
+      const pnpmWorkspace = "packages:\n  - packages/*\n";
+
+      writeFileSync(join(project.root, "package.json"), rootPackageJson);
+      writeFileSync(join(project.root, "packages/alpha/package.json"), artifactPackageJson);
+      writeFileSync(join(project.root, "pnpm-workspace.yaml"), pnpmWorkspace);
+
+      const result = await runCli(["version", "--exec", "echo noop"], {
+        cwd: project.root,
+      });
+
+      expect(result.exitCode).toBe(0);
+
+      // Pre-existing files should be restored with original content
+      expect(readFileSync(join(project.root, "package.json"), "utf-8")).toBe(rootPackageJson);
+      expect(readFileSync(join(project.root, "packages/alpha/package.json"), "utf-8")).toBe(artifactPackageJson);
+      expect(readFileSync(join(project.root, "pnpm-workspace.yaml"), "utf-8")).toBe(pnpmWorkspace);
+    });
+
     test("reports no changes when command does not modify versions", async () => {
       project = createWorkspaceProject([
         { name: "@test/unchanged", version: "1.0.0", dir: "unchanged" },
