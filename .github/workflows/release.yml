@@ -181,7 +181,6 @@ jobs:
 
   npm-publish:
     needs: [semantic-release, publish]
-    if: needs.semantic-release.outputs.is-prerelease != 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -213,7 +212,12 @@ jobs:
         run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" >> .npmrc
 
       - name: Publish to npm
-        run: npm publish --access public
+        run: |
+          if [ "${{ needs.semantic-release.outputs.is-prerelease }}" = "true" ]; then
+            npm publish --access public --tag beta
+          else
+            npm publish --access public
+          fi
 
   update-homebrew:
     needs: [semantic-release, publish, npm-publish]
