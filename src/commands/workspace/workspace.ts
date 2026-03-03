@@ -5,6 +5,8 @@ import { error, info, log, colors } from "#/shared/ui/ui";
 // Re-export workspace utilities for backwards compatibility
 export {
   loadWorkspace,
+  generateWorkspaceFile,
+  cleanWorkspaceFile,
   generatePackageJsonFiles,
   syncVersionsToManifest,
   cleanPackageJsonFiles,

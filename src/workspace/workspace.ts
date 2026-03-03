@@ -63,6 +63,35 @@ export async function loadWorkspace(cwd: string): Promise<WorkspaceData | null> 
 }
 
 /**
+ * Generate temporary pnpm-workspace.yaml for external tool workspace discovery.
+ * Tools like changesets use @manypkg/find-root which detects pnpm workspaces
+ * without requiring a lock file, making this the most portable approach.
+ */
+export function generateWorkspaceFile(root: string, artifacts: WorkspaceArtifact[]): void {
+  const workspacePath = join(root, "pnpm-workspace.yaml");
+  const rootPackageJsonPath = join(root, "package.json");
+  const relativePaths = artifacts.map((artifact) => artifact.relativePath);
+
+  fs.writeFile(workspacePath, stringifyYaml({ packages: relativePaths }));
+  fs.writeFile(rootPackageJsonPath, JSON.stringify({ name: "workspace-root", private: true }, null, 2) + "\n");
+}
+
+/**
+ * Remove temporary pnpm-workspace.yaml and root package.json.
+ */
+export function cleanWorkspaceFile(root: string): void {
+  const workspacePath = join(root, "pnpm-workspace.yaml");
+  const rootPackageJsonPath = join(root, "package.json");
+
+  if (fs.exists(workspacePath)) {
+    fs.unlink(workspacePath);
+  }
+  if (fs.exists(rootPackageJsonPath)) {
+    fs.unlink(rootPackageJsonPath);
+  }
+}
+
+/**
  * Generate temporary package.json files for changeset compatibility.
  */
 export function generatePackageJsonFiles(artifacts: WorkspaceArtifact[]): void {
