@@ -1,3 +1,10 @@
+# [6.43.0-beta.5](https://github.com/grekt-labs/cli/compare/v6.43.0-beta.4...v6.43.0-beta.5) (2026-03-04)
+
+
+### Bug Fixes
+
+* handle promptfoo exit code 1 on test failures as expected behavior ([b4a5560](https://github.com/grekt-labs/cli/commit/b4a55600dc6e1d39e14dfa0f8a8e4129200ed571))
+
 # [6.43.0-beta.4](https://github.com/grekt-labs/cli/compare/v6.43.0-beta.3...v6.43.0-beta.4) (2026-03-04)
 
 
