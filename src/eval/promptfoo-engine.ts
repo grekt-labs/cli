@@ -174,10 +174,14 @@ async function runViaCli(mode: PromptfooMode, config: EvalRunConfig): Promise<Ev
     );
 
     const exitCode = await proc.exited;
+    const { existsSync } = await import("fs");
 
-    if (exitCode !== 0) {
+    // promptfoo returns exit code 1 when tests fail, which is expected.
+    // Only treat as error if the output file was not generated.
+    if (!existsSync(outputPath)) {
       const stderr = await new Response(proc.stderr).text();
-      throw new Error(`promptfoo eval failed: ${stderr}`);
+      const stdout = await new Response(proc.stdout).text();
+      throw new Error(`promptfoo eval failed (exit ${exitCode}): ${stderr || stdout}`);
     }
 
     const output = JSON.parse(readFileSync(outputPath, "utf-8")) as Record<string, unknown>;
