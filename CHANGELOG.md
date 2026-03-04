@@ -1,3 +1,10 @@
+# [6.43.0-beta.4](https://github.com/grekt-labs/cli/compare/v6.43.0-beta.3...v6.43.0-beta.4) (2026-03-04)
+
+
+### Bug Fixes
+
+* use async spawn for animated spinner and handle promptfoo output formats ([64e3561](https://github.com/grekt-labs/cli/commit/64e3561ff087062a021ff8741c1056ee88239e3f))
+
 # [6.43.0-beta.3](https://github.com/grekt-labs/cli/compare/v6.43.0-beta.2...v6.43.0-beta.3) (2026-03-04)
 
 
