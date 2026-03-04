@@ -168,20 +168,37 @@ async function runViaCli(mode: PromptfooMode, config: EvalRunConfig): Promise<Ev
     writeFileSync(configPath, JSON.stringify(promptfooConfig, null, 2));
 
     const cmd = getCommand(mode);
-    const result = Bun.spawnSync(
+    const proc = Bun.spawn(
       [...cmd, "eval", "--config", configPath, "--output", outputPath, "--no-cache"],
       { stdout: "pipe", stderr: "pipe" }
     );
 
-    if (result.exitCode !== 0) {
-      const stderr = result.stderr.toString();
+    const exitCode = await proc.exited;
+
+    if (exitCode !== 0) {
+      const stderr = await new Response(proc.stderr).text();
       throw new Error(`promptfoo eval failed: ${stderr}`);
     }
 
     const output = JSON.parse(readFileSync(outputPath, "utf-8")) as Record<string, unknown>;
-    const results = (output.results ?? []) as unknown[];
+    const results = extractResultsArray(output);
     return extractFailures(results);
   } finally {
     rmSync(tempDir, { recursive: true, force: true });
   }
+}
+
+function extractResultsArray(output: Record<string, unknown>): unknown[] {
+  // promptfoo CLI output can nest results differently depending on version
+  if (Array.isArray(output.results)) return output.results;
+
+  // Some versions wrap in { results: { results: [...] } }
+  const nested = output.results as Record<string, unknown> | undefined;
+  if (nested && Array.isArray(nested.results)) return nested.results;
+
+  // Try top-level table format: { results: { table: { body: [...] } } }
+  const table = nested?.table as Record<string, unknown> | undefined;
+  if (table && Array.isArray(table.body)) return table.body;
+
+  return [];
 }
