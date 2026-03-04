@@ -38,12 +38,10 @@ function assemblePromptfooConfig(config: EvalRunConfig): Record<string, unknown>
   return {
     prompts: [
       {
-        role: "system",
-        content: config.systemPrompt,
-      },
-      {
-        role: "user",
-        content: "{{input}}",
+        raw: JSON.stringify([
+          { role: "system", content: config.systemPrompt },
+          { role: "user", content: "{{input}}" },
+        ]),
       },
     ],
     providers: [config.provider],
