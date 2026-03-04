@@ -1,3 +1,10 @@
+# [6.43.0-beta.2](https://github.com/grekt-labs/cli/compare/v6.43.0-beta.1...v6.43.0-beta.2) (2026-03-04)
+
+
+### Bug Fixes
+
+* use raw prompt format for promptfoo CLI compatibility ([64baa8b](https://github.com/grekt-labs/cli/commit/64baa8b5459860ee381c6901b22576c837a744f9))
+
 # [6.43.0-beta.1](https://github.com/grekt-labs/cli/compare/v6.42.1...v6.43.0-beta.1) (2026-03-04)
 
 
