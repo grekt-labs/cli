@@ -36,8 +36,8 @@ describe("grekt pack", () => {
         [
           "---",
           "grk-type: skills",
-          "grk-name: do-stuff",
-          "grk-description: Does stuff",
+          "name: do-stuff",
+          "description: Does stuff",
           "---",
           "",
           "# Do Stuff",
@@ -75,8 +75,8 @@ describe("grekt pack", () => {
         [
           "---",
           "grk-type: skills",
-          "grk-name: another-skill",
-          "grk-description: Another skill",
+          "name: another-skill",
+          "description: Another skill",
           "---",
           "",
           "# Another Skill",
