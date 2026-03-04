@@ -34,16 +34,18 @@ function getCommand(mode: PromptfooMode): string[] {
   return mode === "npx" ? ["npx", "promptfoo"] : ["promptfoo"];
 }
 
-function assemblePromptfooConfig(config: EvalRunConfig): Record<string, unknown> {
+function assemblePromptMessages(config: EvalRunConfig): unknown[] {
+  return [
+    { role: "system", content: config.systemPrompt },
+    { role: "user", content: "{{input}}" },
+  ];
+}
+
+function assemblePromptfooConfig(config: EvalRunConfig, promptPath?: string): Record<string, unknown> {
   return {
-    prompts: [
-      {
-        raw: JSON.stringify([
-          { role: "system", content: config.systemPrompt },
-          { role: "user", content: "{{input}}" },
-        ]),
-      },
-    ],
+    prompts: promptPath
+      ? [promptPath]
+      : [assemblePromptMessages(config)],
     providers: [config.provider],
     tests: config.tests.map((test: EvalTestCase) => ({
       description: test.description,
@@ -124,8 +126,6 @@ export function createPromptfooEngine(): EvalEngine {
     },
 
     async run(config: EvalRunConfig): Promise<EvalRunResult> {
-      const promptfooConfig = assemblePromptfooConfig(config);
-
       // Try Node API first (only available with global install), fall back to CLI
       if (mode === "global") {
         try {
@@ -133,7 +133,8 @@ export function createPromptfooEngine(): EvalEngine {
           const promptfoo = await import("promptfoo") as Record<string, unknown>;
           const evaluate = promptfoo.evaluate as (config: unknown) => Promise<Record<string, unknown>>;
           if (typeof evaluate === "function") {
-            const evaluateResult = await evaluate(promptfooConfig);
+            const nodeConfig = assemblePromptfooConfig(config);
+            const evaluateResult = await evaluate(nodeConfig);
             const results = (evaluateResult.results ?? []) as unknown[];
             return extractFailures(results);
           }
@@ -142,7 +143,7 @@ export function createPromptfooEngine(): EvalEngine {
         }
       }
 
-      return runViaCli(mode, promptfooConfig);
+      return runViaCli(mode, config);
     },
 
     openReport(): void {
@@ -152,15 +153,18 @@ export function createPromptfooEngine(): EvalEngine {
   };
 }
 
-async function runViaCli(mode: PromptfooMode, promptfooConfig: Record<string, unknown>): Promise<EvalRunResult> {
+async function runViaCli(mode: PromptfooMode, config: EvalRunConfig): Promise<EvalRunResult> {
   const tempDir = `${process.env.TMPDIR ?? "/tmp"}/grekt-eval-${Date.now()}`;
   const configPath = `${tempDir}/promptfoo-config.json`;
+  const promptPath = `${tempDir}/prompt.json`;
   const outputPath = `${tempDir}/output.json`;
 
   const { mkdirSync, writeFileSync, readFileSync, rmSync } = await import("fs");
   mkdirSync(tempDir, { recursive: true });
 
   try {
+    writeFileSync(promptPath, JSON.stringify(assemblePromptMessages(config), null, 2));
+    const promptfooConfig = assemblePromptfooConfig(config, promptPath);
     writeFileSync(configPath, JSON.stringify(promptfooConfig, null, 2));
 
     const cmd = getCommand(mode);
