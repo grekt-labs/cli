@@ -1,3 +1,10 @@
+# [6.43.0-beta.3](https://github.com/grekt-labs/cli/compare/v6.43.0-beta.2...v6.43.0-beta.3) (2026-03-04)
+
+
+### Bug Fixes
+
+* write prompt as file for promptfoo CLI and add discovery feedback ([3e227de](https://github.com/grekt-labs/cli/commit/3e227dea552f51b3541ae97b166dba359cbdb5fd))
+
 # [6.43.0-beta.2](https://github.com/grekt-labs/cli/compare/v6.43.0-beta.1...v6.43.0-beta.2) (2026-03-04)
 
 
