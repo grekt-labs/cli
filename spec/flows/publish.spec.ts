@@ -49,8 +49,8 @@ describe("grekt publish", () => {
         [
           "---",
           "grk-type: skills",
-          "grk-name: skill",
-          "grk-description: A skill",
+          "name: skill",
+          "description: A skill",
           "---",
           "",
           "# Skill",

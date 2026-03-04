@@ -66,8 +66,8 @@ For `agents`, `skills`, `commands`, and `rules`. Use YAML frontmatter with `grk-
 ```markdown
 ---
 grk-type: skills
-grk-name: do-something
-grk-description: Does something useful
+name: do-something
+description: Does something useful
 ---
 
 Instructions for the AI...
@@ -76,8 +76,8 @@ Instructions for the AI...
 | Field | Required | Description |
 |-------|----------|-------------|
 | `grk-type` | Yes | One of: `agents`, `skills`, `commands`, `rules` |
-| `grk-name` | Yes | Component name |
-| `grk-description` | Yes | What this component does |
+| `name` | Yes | Component name |
+| `description` | Yes | What this component does |
 | `grk-agents` | No | Associate with an agent (for skills/commands) |
 
 **Why `grk-` prefix?**
@@ -91,8 +91,8 @@ For `mcps`. Same fields but as JSON properties:
 ```json
 {
   "grk-type": "mcps",
-  "grk-name": "my-server",
-  "grk-description": "MCP server for X",
+  "name": "my-server",
+  "description": "MCP server for X",
   "command": "node",
   "args": ["server.js"]
 }
@@ -147,8 +147,8 @@ keywords: [keyword1, keyword2, keyword3]
 ```markdown
 ---
 grk-type: agents
-grk-name: my-agent
-grk-description: Agent description
+name: my-agent
+description: Agent description
 ---
 
 ... agent instructions ...
@@ -170,8 +170,8 @@ Instructions...
 ```markdown
 ---
 grk-type: skills
-grk-name: my-skill
-grk-description: What it does
+name: my-skill
+description: What it does
 ---
 
 Instructions...
@@ -206,7 +206,7 @@ description: Does stuff
 ```markdown
 ---
 grk-type: skills
-grk-name: something
-grk-description: Does stuff
+name: something
+description: Does stuff
 ---
 ```
