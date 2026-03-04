@@ -57,7 +57,7 @@ export function determineBumpType(commits: ConventionalCommit[]): BumpType {
  */
 export function mapFilesToArtifacts(
   changedFiles: string[],
-  artifacts: WorkspaceArtifact[],
+  artifacts: readonly Pick<WorkspaceArtifact, "relativePath">[],
 ): Map<string, string[]> {
   const result = new Map<string, string[]>();
 
