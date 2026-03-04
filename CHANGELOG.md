@@ -1,3 +1,10 @@
+# [6.43.0-beta.6](https://github.com/grekt-labs/cli/compare/v6.43.0-beta.5...v6.43.0-beta.6) (2026-03-04)
+
+
+### Bug Fixes
+
+* update @grekt/engine to 6.2.0 ([23292f7](https://github.com/grekt-labs/cli/commit/23292f71a90c5ac1a9d37bce10dbd90a2501743c))
+
 # [6.43.0-beta.5](https://github.com/grekt-labs/cli/compare/v6.43.0-beta.4...v6.43.0-beta.5) (2026-03-04)
 
 
