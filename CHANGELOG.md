@@ -1,3 +1,16 @@
+# [6.43.0-beta.1](https://github.com/grekt-labs/cli/compare/v6.42.1...v6.43.0-beta.1) (2026-03-04)
+
+
+### Bug Fixes
+
+* migrate grk-name and grk-description to unprefixed fields ([6ecae25](https://github.com/grekt-labs/cli/commit/6ecae2568088ae88eaddd9be522eac1852467a2a))
+* update @grekt/engine to 6.2.0-beta.1 ([2ea12ca](https://github.com/grekt-labs/cli/commit/2ea12ca8924a06aee8b11e6a2d2543f3f43990a0))
+
+
+### Features
+
+* add grekt eval command with engine-agnostic architecture ([b02fef6](https://github.com/grekt-labs/cli/commit/b02fef652bf606fb2c94b482e3190e78d4c108b7))
+
 ## [6.42.1](https://github.com/grekt-labs/cli/compare/v6.42.0...v6.42.1) (2026-03-03)
 
 
