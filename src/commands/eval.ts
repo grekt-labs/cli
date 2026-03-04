@@ -106,6 +106,8 @@ export const evalCommand = new Command("eval")
       process.exit(0);
     }
 
+    info(`Found ${allDiscovered.length} eval${allDiscovered.length === 1 ? "" : "s"} using ${engine.name}`);
+
     // Run evals
     const spin = spinner("Running evals...");
     spin.start();
