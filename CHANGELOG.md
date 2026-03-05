@@ -1,3 +1,21 @@
+# [6.43.0](https://github.com/grekt-labs/cli/compare/v6.42.1...v6.43.0) (2026-03-05)
+
+
+### Bug Fixes
+
+* handle promptfoo exit code 1 on test failures as expected behavior ([d34fbb4](https://github.com/grekt-labs/cli/commit/d34fbb43c74bde96eae0671fc5a9b5975ae7b2f5))
+* migrate grk-name and grk-description to unprefixed fields ([a3ee5ad](https://github.com/grekt-labs/cli/commit/a3ee5ad31882e327ec0f2d4679b73bc504052c0d))
+* update @grekt/engine to 6.2.0 ([523e998](https://github.com/grekt-labs/cli/commit/523e998097358ca977d16f6f41b05e8cd67213a0))
+* update @grekt/engine to 6.2.0-beta.1 ([259f686](https://github.com/grekt-labs/cli/commit/259f68685526edccf2f34bb9bb09c1ba52c998dc))
+* use async spawn for animated spinner and handle promptfoo output formats ([99c8977](https://github.com/grekt-labs/cli/commit/99c8977f2e91922a2059067ebc9a590de6e30b4f))
+* use raw prompt format for promptfoo CLI compatibility ([52b3791](https://github.com/grekt-labs/cli/commit/52b3791d5cd8207066b1125f7f94cf297e32d578))
+* write prompt as file for promptfoo CLI and add discovery feedback ([e28bb11](https://github.com/grekt-labs/cli/commit/e28bb110b1e37554cf709f70890c1c0b27f5afec))
+
+
+### Features
+
+* add grekt eval command with engine-agnostic architecture ([af43a58](https://github.com/grekt-labs/cli/commit/af43a58c50f6772501cae3a0aadd61044f5cf0bc))
+
 # [6.43.0-beta.6](https://github.com/grekt-labs/cli/compare/v6.43.0-beta.5...v6.43.0-beta.6) (2026-03-04)
 
 
