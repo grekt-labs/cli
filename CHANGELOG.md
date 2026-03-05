@@ -1,3 +1,11 @@
+## [6.44.1-beta.1](https://github.com/grekt-labs/cli/compare/v6.44.0...v6.44.1-beta.1) (2026-03-05)
+
+
+### Bug Fixes
+
+* handle WSL and spawn errors in openBrowser ([07a6c43](https://github.com/grekt-labs/cli/commit/07a6c436b3c7ada9abe5cfe079f4d7b9c0de51bc))
+* parallelize read-only steps in lifecycle e2e test ([fb55d2a](https://github.com/grekt-labs/cli/commit/fb55d2adcb3cb719b90afa238e78735a45b8b1ee))
+
 # [6.44.0](https://github.com/grekt-labs/cli/compare/v6.43.0...v6.44.0) (2026-03-05)
 
 
