@@ -2,22 +2,26 @@
   <img src="docs/grekt-banner.png" alt="grekt - Know your AI stack." width="100%" />
 </p>
 
-[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/grekt-labs/cli/badge)](https://securityscorecards.dev/viewer/?uri=github.com/grekt-labs/cli)
 [![Snyk](https://snyk.io/test/github/grekt-labs/cli/badge.svg)](https://snyk.io/test/github/grekt-labs/cli)
 [![Socket](https://socket.dev/api/badge/npm/package/@grekt/cli)](https://socket.dev/npm/package/@grekt/cli)
 
-The package manager for AI coding tools. Manage prompts, rules, agents, and skills across Claude Code, Cursor, Windsurf, Copilot, Cline, and [more](https://docs.grekt.com) - version-controlled, shareable, and synced.
+Local-first AI tooling infrastructure. Audit, manage, and secure MCPs, agents, skills, hooks, and commands across Claude Code, Cursor, and [more](https://docs.grekt.com) from your machine, with no cloud dependency.
 
-> **Free to use.** grekt is free for personal and commercial use. If you're building something with it, we'd love to hear about it. The source is available under [BSL 1.1](./LICENSE), which just means you can't use this code to build something that competes with grekt. Each version converts to [MIT](./LICENSING.md) after two years.
+> **Free to use.** grekt is free for personal and commercial use. The source is available under [BSL 1.1](./LICENSE), which means you can't use this code to build something that competes with grekt. Each version converts to [MIT](./LICENSING.md) after two years.
 
 ## Why grekt?
 
-AI coding assistants rely on project rules, custom instructions, and agent configurations - but there's no standard way to manage, share, or keep them in sync. grekt solves this:
+You are running AI tools you have never checked. Every time you install a skill from a registry, add an MCP server, or pull an agent config you are trusting code that has direct access to your editor, your files, and your workflow.
 
-- **One command** to add community or private artifacts to any project
-- **Deterministic installs** via lockfile, just like npm or cargo
-- **Auto-sync** to every tool your team uses - no manual copy-paste between `.cursorrules`, `CLAUDE.md`, `.windsurfrules`, etc.
-- **Publish and share** artifacts with your team or the [community registry](https://explore.grekt.com)
+No sandbox. No review. No audit.
+[20% of skills in public registries have been flagged as malicious](https://thehackernews.com/2026/02/researchers-find-341-malicious-clawhub.html).
+84% of developers use AI tools daily, but only 29% trust what they're running. The gap between adoption and trust is growing. grekt closes it.
+
+grekt gives you three things:
+
+- **Visibility.** See every AI artifact in your projects. What it does, what it touches, whether anyone has actually checked it.
+- **Verification.** Every artifact scanned for security risks and evaluated for quality. PASS, FAIL, or WARN -- no ambiguity.
+- **Control.** Lock versions. Pin hashes. Sync verified configurations across your team. Your tools, your machine, your rules.
 
 ## Installation
 
@@ -48,23 +52,35 @@ grekt install                     # Install from lockfile
 grekt sync                        # Sync to your AI tools
 ```
 
-Artifacts can come from the [public registry](https://explore.grekt.com) (`@scope/name`), GitHub (`github:user/repo`), GitLab (`gitlab:host/user/repo`), or a local path (`./path`).
+### Verify your stack
+
+```bash
+grekt scan                        # Scan artifacts for security risks
+grekt eval                        # Evaluate artifact quality and behavior
+grekt check                       # Check lockfile integrity and drift
+```
+
+### Manage artifacts
+
+```bash
+grekt list                        # List installed artifacts
+grekt outdated                    # Check for available updates
+grekt upgrade                     # Upgrade artifacts
+grekt trust @scope/artifact       # Mark an artifact as trusted
+```
+
+Artifacts can come from:
+
+- Your **self-hosted** registry on [GitHub](https://grekt.com/en-US/docs/guide/sources/github.html) or [GitLab](https://grekt.com/en-US/docs/guide/sources/gitlab.html)
+- The [public registry](https://explore.grekt.com) (`@scope/name`)
+- Official repos on GitHub (`github:user/repo`) or GitLab (`gitlab:host/user/repo`)
+- A local path on your machine (`./path`)
 
 ### Supported tools
 
-grekt syncs to Claude Code, Cursor, Windsurf, Cline, GitHub Copilot, Aider, Continue, OpenCode, Amazon Q, and any tool following the [agentskills.io](https://agentskills.io) standard (Codex, Gemini CLI, Devin, Amp, Zed, and others).
+grekt syncs to Claude Code, Cursor, Windsurf, Cline, GitHub Copilot, Aider, Continue, OpenCode, Amazon Q, and any tool following the [agentskills.io](https://agentskills.io) standard.
 
 For the full command reference and guides, visit the [documentation](https://docs.grekt.com).
-
-## Development
-
-Requires [Bun](https://bun.sh) >= 1.0.
-
-```bash
-bun install
-bun link    # makes grekt available globally
-bun test
-```
 
 ## Contributing
 
@@ -72,4 +88,4 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md). Feature requests and bug reports are w
 
 ## License
 
-[BSL 1.1](./LICENSE) - [What does this mean?](./LICENSING.md)
+[BSL 1.1](./LICENSE) -- [What does this mean?](./LICENSING.md)
