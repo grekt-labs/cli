@@ -1,5 +1,9 @@
 # grekt
 
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/grekt-labs/cli/badge)](https://securityscorecards.dev/viewer/?uri=github.com/grekt-labs/cli)
+[![Snyk](https://snyk.io/test/github/grekt-labs/cli/badge.svg)](https://snyk.io/test/github/grekt-labs/cli)
+[![Socket](https://socket.dev/api/badge/npm/package/@grekt/cli)](https://socket.dev/npm/package/@grekt/cli)
+
 The package manager for AI coding tools. Manage prompts, rules, agents, and skills across Claude Code, Cursor, Windsurf, Copilot, Cline, and [more](https://docs.grekt.com) - version-controlled, shareable, and synced.
 
 > **Free to use.** grekt is free for personal and commercial use. If you're building something with it, we'd love to hear about it. The source is available under [BSL 1.1](./LICENSE), which just means you can't use this code to build something that competes with grekt. Each version converts to [MIT](./LICENSING.md) after two years.
