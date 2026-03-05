@@ -1,7 +1,8 @@
 import { getSupabaseClient, getSupabaseUrl } from "#/auth/session/session";
 import { saveGlobalSession } from "#/config/user/user";
 import type { StoredSession } from "@grekt/engine";
-import { spawn } from "child_process";
+import { execSync, spawn } from "child_process";
+import { existsSync } from "fs";
 import { randomUUID } from "crypto";
 
 const LOGIN_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
@@ -9,9 +10,26 @@ const POLL_INTERVAL_MS = 2_000; // 2 seconds
 
 export type OAuthProvider = "github" | "google";
 
+function isWSL(): boolean {
+  try {
+    if (!existsSync("/proc/version")) return false;
+    const version = execSync("cat /proc/version", { encoding: "utf-8" });
+    return /microsoft|wsl/i.test(version);
+  } catch {
+    return false;
+  }
+}
+
+function getLinuxBrowserCommand(url: string): { command: string; args: string[] } {
+  if (isWSL()) {
+    return { command: "cmd.exe", args: ["/c", "start", "", url] };
+  }
+  return { command: "xdg-open", args: [url] };
+}
+
 /**
  * Open a URL in the default browser.
- * Supports macOS, Windows, and Linux.
+ * Supports macOS, Windows, Linux, and WSL.
  * Uses spawn with detached + unref so the browser process does not block the CLI.
  * Arguments are passed as an array to prevent URL injection.
  */
@@ -29,14 +47,18 @@ export function openBrowser(url: string): boolean {
       command = "rundll32";
       args = ["url.dll,FileProtocolHandler", url];
     } else {
-      command = "xdg-open";
-      args = [url];
+      ({ command, args } = getLinuxBrowserCommand(url));
     }
 
     const child = spawn(command, args, {
       detached: true,
       stdio: "ignore",
     });
+
+    child.on("error", () => {
+      // Silently fail — the CLI already shows the URL as fallback
+    });
+
     child.unref();
 
     return true;
