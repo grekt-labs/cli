@@ -1,3 +1,10 @@
+# [6.44.0](https://github.com/grekt-labs/cli/compare/v6.43.0...v6.44.0) (2026-03-05)
+
+
+### Features
+
+* add security badges to README ([b777d75](https://github.com/grekt-labs/cli/commit/b777d75af1252d2957a0419b36cc1a77d17ebc77))
+
 # [6.43.0](https://github.com/grekt-labs/cli/compare/v6.42.1...v6.43.0) (2026-03-05)
 
 
