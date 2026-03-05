@@ -38,43 +38,42 @@ describe("full lifecycle", () => {
     expect(addResult.exitCode).toBe(0);
     expect(addResult.stdout).toContain("Installed");
 
-    // Verify artifact is on disk
     const artifactDir = join(project.root, ".grekt", "artifacts", "@test", "artifact");
     expect(existsSync(artifactDir)).toBe(true);
 
-    // 3. List
-    const listResult = await runCli(["list"], { cwd: project.root });
+    // 3. List, list --json, and check are read-only — run in parallel
+    const [listResult, listJsonResult, checkResult] = await Promise.all([
+      runCli(["list"], { cwd: project.root }),
+      runCli(["list", "--json"], { cwd: project.root }),
+      runCli(["check"], { cwd: project.root }),
+    ]);
+
     expect(listResult.exitCode).toBe(0);
     expect(listResult.stdout).toContain("@test/artifact");
     expect(listResult.stdout).toContain("1.0.0");
 
-    // 4. List JSON
-    const listJsonResult = await runCli(["list", "--json"], { cwd: project.root });
     expect(listJsonResult.exitCode).toBe(0);
     const jsonOutput = JSON.parse(listJsonResult.stdout);
     expect(jsonOutput.artifacts["@test/artifact"]).toBeDefined();
 
-    // 5. Check
-    const checkResult = await runCli(["check"], { cwd: project.root });
     expect(checkResult.exitCode).toBe(0);
 
-    // 6. Sync
+    // 4. Sync
     const syncResult = await runCli(["sync", "--force"], { cwd: project.root });
     expect(syncResult.exitCode).toBe(0);
     expect(syncResult.stdout).toContain("Sync complete");
 
-    // 7. Remove
+    // 5. Remove
     const removeResult = await runCli(["remove", "@test/artifact", "--force"], { cwd: project.root });
     expect(removeResult.exitCode).toBe(0);
     expect(removeResult.stdout).toContain("Removed");
 
-    // Verify cleanup
     expect(existsSync(artifactDir)).toBe(false);
 
     const config = parse(readFileSync(join(project.root, "grekt.yaml"), "utf-8"));
     expect(config.artifacts["@test/artifact"]).toBeUndefined();
 
-    // 8. List (empty)
+    // 6. List (empty)
     const listEmptyResult = await runCli(["list"], { cwd: project.root });
     expect(listEmptyResult.exitCode).toBe(0);
     expect(listEmptyResult.stdout).toContain("No artifacts installed");
