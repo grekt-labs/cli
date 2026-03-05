@@ -1,4 +1,6 @@
-# grekt
+<p align="center">
+  <img src="docs/grekt-banner.png" alt="grekt - Know your AI stack." width="100%" />
+</p>
 
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/grekt-labs/cli/badge)](https://securityscorecards.dev/viewer/?uri=github.com/grekt-labs/cli)
 [![Snyk](https://snyk.io/test/github/grekt-labs/cli/badge.svg)](https://snyk.io/test/github/grekt-labs/cli)
