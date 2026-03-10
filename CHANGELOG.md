@@ -1,3 +1,10 @@
+# [6.45.0](https://github.com/grekt-labs/cli/compare/v6.44.1...v6.45.0) (2026-03-10)
+
+
+### Features
+
+* integrate MCP security scanning into grekt scan ([1471cdf](https://github.com/grekt-labs/cli/commit/1471cdf056d710b2e2af8700cd0fb6dcfdac1d3c))
+
 ## [6.44.1](https://github.com/grekt-labs/cli/compare/v6.44.0...v6.44.1) (2026-03-05)
 
 
