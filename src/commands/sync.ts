@@ -8,6 +8,7 @@ import { runSync } from "#/sync/helpers/helpers";
 import { syncFromDirectory } from "#/sync/standalone/standalone";
 import { success, error, info, warning, log, newline, colors } from "#/shared/ui/ui";
 import { withPromptHandler } from "#/shared/prompts/prompts";
+import { reportToDashboard } from "#/dashboard/dashboard";
 
 interface SyncCommandOptions {
   dryRun?: boolean;
@@ -202,4 +203,8 @@ async function handleProjectSync(options: SyncCommandOptions, projectRoot: strin
 
   newline();
   success("Sync complete!");
+
+  await reportToDashboard(async (reporter) => {
+    await reporter.reportProject(config, lockfile, projectRoot)
+  })
 }

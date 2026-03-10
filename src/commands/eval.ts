@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import { join } from "path";
 import { requireInitialized } from "#/shared/guards/guards";
-import { getLocalConfig } from "#/config/project/project";
+import { getConfig, getLocalConfig } from "#/config/project/project";
 import { getLockfile } from "#/context";
 import { fs } from "#/context";
 import { discoverEvals, summarizeResults } from "@grekt/engine";
@@ -11,6 +11,7 @@ import { runAllEvals } from "#/eval/runner";
 import { displaySummary, displayDetails, displayJson } from "#/eval/display";
 import { error, info, log, warning, newline, spinner, colors } from "#/shared/ui/ui";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
+import { reportToDashboard } from "#/dashboard/dashboard";
 
 interface EvalOptions {
   artifact?: string;
@@ -134,6 +135,11 @@ export const evalCommand = new Command("eval")
     } else {
       displaySummary(summary);
     }
+
+    await reportToDashboard(async (reporter) => {
+      const projectConfig = getConfig(projectRoot)
+      await reporter.reportEval(summary, projectConfig.name ?? "unnamed", "cli")
+    })
 
     if (summary.totalIssues > 0) {
       process.exit(1);
