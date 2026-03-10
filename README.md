@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/grekt-banner.png" alt="grekt - Know your AI stack." width="100%" />
+  <img src="https://github.com/grekt-labs/cli/raw/main/docs/grekt-banner.png" alt="grekt - Know your AI stack." width="100%" />
 </p>
 
 [![Snyk](https://snyk.io/test/github/grekt-labs/cli/badge.svg)](https://snyk.io/test/github/grekt-labs/cli)
