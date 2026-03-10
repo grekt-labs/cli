@@ -42,6 +42,7 @@
     "commander": "^12.1.0",
     "fast-glob": "^3.3.3",
     "gray-matter": "^4.0.3",
+    "mcp-guardian": "^2.4.0",
     "ora": "^8.1.1",
     "smol-toml": "^1.6.0",
     "tar": "^7.4.0",
