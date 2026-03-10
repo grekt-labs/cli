@@ -14,6 +14,7 @@ import { getSourceDisplayName } from "#/registry/registry";
 import { getConfig } from "#/config/project/project";
 import { isArtifactTrusted } from "#/artifact/mode/mode";
 import { error, warning, info, log, newline, colors, symbols, spinner } from "#/shared/ui/ui";
+import { enrichReportWithMcpFindings } from "#/mcp-security/mcp-security";
 
 const VALID_BADGES: TrustBadge[] = ["certified", "conditional", "suspicious", "rejected"];
 
@@ -167,7 +168,8 @@ async function scanRemoteArtifact(source: ParsedSource, projectRoot: string, jso
       scanSpin.start();
 
       try {
-        const report = await scanArtifactSecurity(fs, tempDir);
+        const baseReport = await scanArtifactSecurity(fs, tempDir);
+        const report = enrichReportWithMcpFindings(baseReport, tempDir);
         scanSpin.stop();
 
         log(`Scanning ${colors.highlight(displayName)}...`);
@@ -194,7 +196,8 @@ async function scanRemoteArtifact(source: ParsedSource, projectRoot: string, jso
       }
 
       try {
-        const report = await scanArtifactSecurity(fs, tempDir);
+        const baseReport = await scanArtifactSecurity(fs, tempDir);
+        const report = enrichReportWithMcpFindings(baseReport, tempDir);
         console.log(JSON.stringify(report, null, 2));
 
         if (failOnThreshold) {
@@ -232,7 +235,8 @@ async function scanSingleArtifact(artifactPath: string, jsonOutput?: boolean, fa
     spin.start();
 
     try {
-      const report = await scanArtifactSecurity(fs, scanPath);
+      const baseReport = await scanArtifactSecurity(fs, scanPath);
+      const report = enrichReportWithMcpFindings(baseReport, scanPath);
       spin.stop();
 
       log(`Scanning ${colors.highlight(label)}...`);
@@ -250,7 +254,8 @@ async function scanSingleArtifact(artifactPath: string, jsonOutput?: boolean, fa
     }
   } else {
     try {
-      const report = await scanArtifactSecurity(fs, scanPath);
+      const baseReport = await scanArtifactSecurity(fs, scanPath);
+      const report = enrichReportWithMcpFindings(baseReport, scanPath);
       console.log(JSON.stringify(report, null, 2));
 
       if (failOnThreshold) {
@@ -311,7 +316,8 @@ async function scanAllInstalled(projectRoot: string, jsonOutput?: boolean, failO
     }
 
     try {
-      const report = await scanArtifactSecurity(fs, artifactDir);
+      const baseReport = await scanArtifactSecurity(fs, artifactDir);
+      const report = enrichReportWithMcpFindings(baseReport, artifactDir);
       const trusted = isArtifactTrusted(artifactId, config, trustKey);
       results.push({ artifactId, report, trusted });
     } catch (err) {
