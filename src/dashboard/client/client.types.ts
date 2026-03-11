@@ -14,8 +14,3 @@ export interface PBListResponse {
   totalItems: number
   items: PBRecord[]
 }
-
-export interface PBAuthResponse {
-  token: string
-  record: PBRecord
-}

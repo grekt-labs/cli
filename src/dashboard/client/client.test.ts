@@ -1,4 +1,4 @@
-import { describe, test, expect, vi, beforeEach, afterEach } from "vitest"
+import { describe, test, expect, vi, afterEach } from "vitest"
 import { createMockFetch, jsonResponse, errorResponse } from "#/test-utils"
 
 vi.mock("#/context/http", () => ({
@@ -17,65 +17,13 @@ describe("DashboardClient", () => {
     restoreFetch = undefined
   })
 
-  describe("authenticate", () => {
-    test("returns false when server is unreachable", async () => {
-      restoreFetch = createMockFetch(async () => {
-        throw new TypeError("fetch failed")
-      })
-
-      const client = new DashboardClient("http://127.0.0.1:8090")
-      const result = await client.authenticate("dev@grekt.com", "pass")
-      expect(result).toBe(false)
-    })
-
-    test("returns false when credentials are invalid", async () => {
-      restoreFetch = createMockFetch(async () => {
-        return errorResponse(400, { message: "Failed to authenticate." })
-      })
-
-      const client = new DashboardClient("http://127.0.0.1:8090")
-      const result = await client.authenticate("bad@grekt.com", "wrong")
-      expect(result).toBe(false)
-    })
-
-    test("returns true and stores token on success", async () => {
-      restoreFetch = createMockFetch(async () => {
-        return jsonResponse({
-          token: "test-jwt-token",
-          record: { id: "user123", email: "dev@grekt.com" },
-        })
-      })
-
-      const client = new DashboardClient("http://127.0.0.1:8090")
-      const result = await client.authenticate("dev@grekt.com", "devdevdev")
-      expect(result).toBe(true)
-    })
-
-    test("sends identity and password in request body", async () => {
-      let capturedBody: string | undefined
-
-      restoreFetch = createMockFetch(async (_url, init) => {
-        capturedBody = init?.body as string
-        return jsonResponse({ token: "tok", record: { id: "u1" } })
-      })
-
-      const client = new DashboardClient("http://127.0.0.1:8090")
-      await client.authenticate("dev@grekt.com", "devdevdev")
-
-      expect(JSON.parse(capturedBody!)).toEqual({
-        identity: "dev@grekt.com",
-        password: "devdevdev",
-      })
-    })
-  })
-
   describe("findRecord", () => {
     test("returns null when no records match", async () => {
       restoreFetch = createMockFetch(async () => {
         return jsonResponse({ page: 1, perPage: 1, totalPages: 0, totalItems: 0, items: [] })
       })
 
-      const client = new DashboardClient("http://127.0.0.1:8090")
+      const client = new DashboardClient("http://127.0.0.1:8090", "gdk_test-token")
       const result = await client.findRecord("projects", 'name = "test"')
       expect(result).toBeNull()
     })
@@ -87,7 +35,7 @@ describe("DashboardClient", () => {
         return jsonResponse({ page: 1, perPage: 1, totalPages: 1, totalItems: 1, items: [record] })
       })
 
-      const client = new DashboardClient("http://127.0.0.1:8090")
+      const client = new DashboardClient("http://127.0.0.1:8090", "gdk_test-token")
       const result = await client.findRecord("projects", 'name = "test"')
       expect(result).toEqual(record)
     })
@@ -100,7 +48,7 @@ describe("DashboardClient", () => {
         return jsonResponse({ page: 1, perPage: 1, totalPages: 0, totalItems: 0, items: [] })
       })
 
-      const client = new DashboardClient("http://127.0.0.1:8090")
+      const client = new DashboardClient("http://127.0.0.1:8090", "gdk_test-token")
       await client.findRecord("projects", 'name = "test project"')
 
       expect(capturedUrl).toContain("filter=")
@@ -112,7 +60,7 @@ describe("DashboardClient", () => {
         return errorResponse(500, { message: "Internal error" })
       })
 
-      const client = new DashboardClient("http://127.0.0.1:8090")
+      const client = new DashboardClient("http://127.0.0.1:8090", "gdk_test-token")
       await expect(client.findRecord("projects", 'name = "x"')).rejects.toThrow("PocketBase 500")
     })
   })
@@ -129,7 +77,7 @@ describe("DashboardClient", () => {
         return jsonResponse(created)
       })
 
-      const client = new DashboardClient("http://127.0.0.1:8090")
+      const client = new DashboardClient("http://127.0.0.1:8090", "gdk_test-token")
       const result = await client.createRecord("projects", { name: "my-project" })
 
       expect(capturedMethod).toBe("POST")
@@ -142,7 +90,7 @@ describe("DashboardClient", () => {
         return errorResponse(400, { message: "Validation failed" })
       })
 
-      const client = new DashboardClient("http://127.0.0.1:8090")
+      const client = new DashboardClient("http://127.0.0.1:8090", "gdk_test-token")
       await expect(client.createRecord("projects", {})).rejects.toThrow("PocketBase 400")
     })
   })
@@ -158,7 +106,7 @@ describe("DashboardClient", () => {
         return jsonResponse({ id: "rec1", name: "updated" })
       })
 
-      const client = new DashboardClient("http://127.0.0.1:8090")
+      const client = new DashboardClient("http://127.0.0.1:8090", "gdk_test-token")
       await client.updateRecord("projects", "rec1", { name: "updated" })
 
       expect(capturedUrl).toContain("/api/collections/projects/records/rec1")
@@ -180,7 +128,7 @@ describe("DashboardClient", () => {
         return jsonResponse({ id: "new1", name: "test" })
       })
 
-      const client = new DashboardClient("http://127.0.0.1:8090")
+      const client = new DashboardClient("http://127.0.0.1:8090", "gdk_test-token")
       const result = await client.upsertByFilter("projects", 'name = "test"', { name: "test" })
 
       expect(result.id).toBe("new1")
@@ -204,7 +152,7 @@ describe("DashboardClient", () => {
         return jsonResponse({ id: "existing1", name: "updated" })
       })
 
-      const client = new DashboardClient("http://127.0.0.1:8090")
+      const client = new DashboardClient("http://127.0.0.1:8090", "gdk_test-token")
       const result = await client.upsertByFilter("projects", 'name = "old"', { name: "updated" })
 
       expect(result.id).toBe("existing1")
@@ -214,23 +162,18 @@ describe("DashboardClient", () => {
   })
 
   describe("auth header", () => {
-    test("includes token in requests after authentication", async () => {
+    test("includes token in all requests", async () => {
       let requestHeaders: Record<string, string> = {}
 
-      restoreFetch = createMockFetch(async (url, init) => {
-        const urlStr = url as string
-        if (urlStr.includes("auth-with-password")) {
-          return jsonResponse({ token: "my-jwt-token", record: { id: "u1" } })
-        }
+      restoreFetch = createMockFetch(async (_url, init) => {
         requestHeaders = (init?.headers ?? {}) as Record<string, string>
         return jsonResponse({ page: 1, perPage: 1, totalPages: 0, totalItems: 0, items: [] })
       })
 
-      const client = new DashboardClient("http://127.0.0.1:8090")
-      await client.authenticate("dev@grekt.com", "pass")
+      const client = new DashboardClient("http://127.0.0.1:8090", "gdk_my-token")
       await client.findRecord("projects", 'name = "x"')
 
-      expect(requestHeaders["Authorization"]).toBe("my-jwt-token")
+      expect(requestHeaders["Authorization"]).toBe("gdk_my-token")
     })
   })
 
@@ -243,7 +186,7 @@ describe("DashboardClient", () => {
         return jsonResponse({ page: 1, perPage: 1, totalPages: 0, totalItems: 0, items: [] })
       })
 
-      const client = new DashboardClient("http://127.0.0.1:8090/")
+      const client = new DashboardClient("http://127.0.0.1:8090/", "gdk_test-token")
       await client.findRecord("projects", 'name = "x"')
 
       expect(capturedUrl).toContain("http://127.0.0.1:8090/api/")

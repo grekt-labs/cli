@@ -21,21 +21,14 @@ export class DashboardReporter {
     this.client = client
   }
 
-  static async create(): Promise<DashboardReporter | null> {
+  static create(): DashboardReporter | null {
     const config = getDashboardConfig()
 
-    if (!config || !config.enabled) {
+    if (!config) {
       return null
     }
 
-    const client = new DashboardClient(config.url)
-    const authenticated = await client.authenticate(config.email, config.password)
-
-    if (!authenticated) {
-      warning("Dashboard: authentication failed")
-      return null
-    }
-
+    const client = new DashboardClient(config.url, config.token)
     return new DashboardReporter(client)
   }
 

@@ -26,35 +26,8 @@ vi.mock("#/context", () => ({
   scanArtifact: vi.fn(() => null),
 }))
 
-import { createMockFetch, jsonResponse, errorResponse } from "#/test-utils"
+import { createMockFetch, jsonResponse } from "#/test-utils"
 import { DashboardReporter } from "./reporter"
-
-function createAuthenticatedReporter() {
-  let restoreFetch: (() => void) | undefined
-
-  const upsertCalls: Array<{ collection: string; filter: string; data: Record<string, unknown> }> = []
-
-  restoreFetch = createMockFetch(async (url, init) => {
-    const urlStr = url as string
-
-    if (urlStr.includes("auth-with-password")) {
-      return jsonResponse({ token: "test-token", record: { id: "user1" } })
-    }
-
-    const method = init?.method ?? "GET"
-
-    if (method === "POST") {
-      const body = JSON.parse(init?.body as string)
-      upsertCalls.push({ collection: urlStr.split("/records")[0].split("/").pop()!, filter: "", data: body })
-      return jsonResponse({ id: `created-${upsertCalls.length}`, ...body })
-    }
-
-    // GET (findRecord) — return empty so upsert creates
-    return jsonResponse({ page: 1, perPage: 1, totalPages: 0, totalItems: 0, items: [] })
-  })
-
-  return { restoreFetch, upsertCalls }
-}
 
 describe("DashboardReporter", () => {
   beforeEach(() => {
@@ -63,63 +36,22 @@ describe("DashboardReporter", () => {
   })
 
   describe("create", () => {
-    test("returns null when config is missing", async () => {
+    test("returns null when config is missing", () => {
       mockGetDashboardConfig.mockReturnValue(null)
 
-      const reporter = await DashboardReporter.create()
+      const reporter = DashboardReporter.create()
       expect(reporter).toBeNull()
     })
 
-    test("returns null when config is disabled", async () => {
+    test("returns reporter when config is valid", () => {
       mockGetDashboardConfig.mockReturnValue({
-        enabled: false,
         url: "http://127.0.0.1:8090",
-        email: "dev@grekt.com",
-        password: "pass",
+        token: "gdk_test-token",
       })
 
-      const reporter = await DashboardReporter.create()
-      expect(reporter).toBeNull()
-    })
-
-    test("returns null and warns when authentication fails", async () => {
-      mockGetDashboardConfig.mockReturnValue({
-        enabled: true,
-        url: "http://127.0.0.1:8090",
-        email: "bad@grekt.com",
-        password: "wrong",
-      })
-
-      const restoreFetch = createMockFetch(async () => {
-        return errorResponse(400, { message: "Failed to authenticate." })
-      })
-
-      const reporter = await DashboardReporter.create()
-
-      expect(reporter).toBeNull()
-      expect(mockWarning).toHaveBeenCalledWith("Dashboard: authentication failed")
-
-      restoreFetch()
-    })
-
-    test("returns reporter when authentication succeeds", async () => {
-      mockGetDashboardConfig.mockReturnValue({
-        enabled: true,
-        url: "http://127.0.0.1:8090",
-        email: "dev@grekt.com",
-        password: "devdevdev",
-      })
-
-      const restoreFetch = createMockFetch(async () => {
-        return jsonResponse({ token: "jwt-token", record: { id: "user1" } })
-      })
-
-      const reporter = await DashboardReporter.create()
-
+      const reporter = DashboardReporter.create()
       expect(reporter).not.toBeNull()
       expect(reporter).toBeInstanceOf(DashboardReporter)
-
-      restoreFetch()
     })
   })
 
@@ -128,10 +60,8 @@ describe("DashboardReporter", () => {
 
     beforeEach(() => {
       mockGetDashboardConfig.mockReturnValue({
-        enabled: true,
         url: "http://127.0.0.1:8090",
-        email: "dev@grekt.com",
-        password: "devdevdev",
+        token: "gdk_test-token",
       })
     })
 
@@ -153,10 +83,6 @@ describe("DashboardReporter", () => {
           body: init?.body ? JSON.parse(init.body as string) : undefined,
         })
 
-        if (urlStr.includes("auth-with-password")) {
-          return jsonResponse({ token: "test-token", record: { id: "user1" } })
-        }
-
         // findRecord returns empty — triggers create
         if (!init?.method || method === "GET") {
           return jsonResponse({ page: 1, perPage: 1, totalPages: 0, totalItems: 0, items: [] })
@@ -166,7 +92,7 @@ describe("DashboardReporter", () => {
         return jsonResponse({ id: "reg1", scope: "@company" })
       })
 
-      const reporter = await DashboardReporter.create()
+      const reporter = DashboardReporter.create()
       expect(reporter).not.toBeNull()
 
       await reporter!.reportRegistries({
@@ -193,10 +119,6 @@ describe("DashboardReporter", () => {
         const method = init?.method ?? "GET"
         requestLog.push({ method, url: urlStr })
 
-        if (urlStr.includes("auth-with-password")) {
-          return jsonResponse({ token: "test-token", record: { id: "user1" } })
-        }
-
         if (!init?.method || method === "GET") {
           return jsonResponse({
             page: 1, perPage: 1, totalPages: 1, totalItems: 1,
@@ -207,7 +129,7 @@ describe("DashboardReporter", () => {
         return jsonResponse({ id: "existing1", scope: "@company" })
       })
 
-      const reporter = await DashboardReporter.create()
+      const reporter = DashboardReporter.create()
       await reporter!.reportRegistries({
         "@company": { type: "gitlab", host: "gitlab.company.com" },
       })
@@ -224,21 +146,14 @@ describe("DashboardReporter", () => {
       const requestLog: Array<{ url: string }> = []
 
       restoreFetch = createMockFetch(async (url) => {
-        const urlStr = url as string
-        requestLog.push({ url: urlStr })
-
-        if (urlStr.includes("auth-with-password")) {
-          return jsonResponse({ token: "test-token", record: { id: "user1" } })
-        }
-
+        requestLog.push({ url: url as string })
         return jsonResponse({ page: 1, perPage: 1, totalPages: 0, totalItems: 0, items: [] })
       })
 
-      const reporter = await DashboardReporter.create()
+      const reporter = DashboardReporter.create()
       await reporter!.reportRegistries({})
 
-      const registryRequests = requestLog.filter((r) => r.url.includes("/registries/"))
-      expect(registryRequests).toHaveLength(0)
+      expect(requestLog).toHaveLength(0)
     })
   })
 })

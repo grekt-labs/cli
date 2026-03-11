@@ -1,31 +1,15 @@
 import { http } from "#/context/http"
-import type { PBRecord, PBListResponse, PBAuthResponse } from "./client.types"
+import type { PBRecord, PBListResponse } from "./client.types"
 
 const REQUEST_TIMEOUT_MS = 5_000
 
 export class DashboardClient {
   private baseUrl: string
-  private token: string | null = null
+  private token: string
 
-  constructor(baseUrl: string) {
+  constructor(baseUrl: string, token: string) {
     this.baseUrl = baseUrl.replace(/\/$/, "")
-  }
-
-  async authenticate(email: string, password: string): Promise<boolean> {
-    try {
-      const response = await this.request<PBAuthResponse>(
-        "/api/collections/users/auth-with-password",
-        {
-          method: "POST",
-          body: JSON.stringify({ identity: email, password }),
-        },
-      )
-
-      this.token = response.token
-      return true
-    } catch {
-      return false
-    }
+    this.token = token
   }
 
   async findRecord(collection: string, filter: string): Promise<PBRecord | null> {
@@ -64,10 +48,7 @@ export class DashboardClient {
   private async request<T>(path: string, options?: RequestInit): Promise<T> {
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
-    }
-
-    if (this.token) {
-      headers["Authorization"] = this.token
+      "Authorization": this.token,
     }
 
     const response = await http.fetch(`${this.baseUrl}${path}`, {
