@@ -29,7 +29,7 @@ import { compareSemver, CATEGORIES, type Category } from "@grekt/engine";
 import { syncToTargets } from "#/sync/helpers/helpers";
 import { promptAndInstallHooks } from "#/sync/hooks";
 import { promptAndInstallMcps } from "#/sync/mcp";
-import { reportToDashboard } from "#/dashboard/dashboard";
+import { syncToDashboard } from "#/dashboard/dashboard";
 
 
 export const addCommand = new Command("add")
@@ -280,7 +280,7 @@ export const addCommand = new Command("add")
     // Auto-sync to targets
     await syncToTargets(config, lockfile, projectRoot);
 
-    await reportToDashboard(async (reporter) => {
+    await syncToDashboard(async (reporter) => {
       await reporter.reportProject(config, lockfile, projectRoot)
     })
   });
