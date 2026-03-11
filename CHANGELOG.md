@@ -1,3 +1,10 @@
+# [6.46.0-beta.1](https://github.com/grekt-labs/cli/compare/v6.45.0...v6.46.0-beta.1) (2026-03-11)
+
+
+### Features
+
+* add dashboard reporter for CLI-to-PocketBase integration ([c50004d](https://github.com/grekt-labs/cli/commit/c50004dc68e6c254060060832d6b7130cdcaa20f))
+
 # [6.45.0](https://github.com/grekt-labs/cli/compare/v6.44.1...v6.45.0) (2026-03-10)
 
 
