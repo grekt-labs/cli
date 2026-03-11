@@ -1,3 +1,10 @@
+# [6.46.0-beta.3](https://github.com/grekt-labs/cli/compare/v6.46.0-beta.2...v6.46.0-beta.3) (2026-03-11)
+
+
+### Bug Fixes
+
+* remove Bearer prefix from dashboard Authorization header ([73f6463](https://github.com/grekt-labs/cli/commit/73f64633f4bb58cbbf61e0bbbd277b83c730475b))
+
 # [6.46.0-beta.2](https://github.com/grekt-labs/cli/compare/v6.46.0-beta.1...v6.46.0-beta.2) (2026-03-11)
 
 
