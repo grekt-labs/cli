@@ -173,7 +173,7 @@ describe("DashboardClient", () => {
       const client = new DashboardClient("http://127.0.0.1:8090", "gdk_my-token")
       await client.findRecord("projects", 'name = "x"')
 
-      expect(requestHeaders["Authorization"]).toBe("Bearer gdk_my-token")
+      expect(requestHeaders["Authorization"]).toBe("gdk_my-token")
     })
   })
 
