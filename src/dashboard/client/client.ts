@@ -1,5 +1,5 @@
 import { http } from "#/context/http"
-import type { PBRecord, PBListResponse } from "./client.types"
+import type { PBRecord, PBListResponse } from "@grekt/engine"
 
 const REQUEST_TIMEOUT_MS = 5_000
 
