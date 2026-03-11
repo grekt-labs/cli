@@ -41,6 +41,7 @@ export function mapArtifactToRecord(
     artifact_id: artifactId,
     version: lockEntry.version,
     name: artifactInfo?.manifest.name ?? artifactId,
+    description: artifactInfo?.manifest.description ?? "",
     mode: lockEntry.mode,
     element_count: elementCount,
     registry_scope: scope,
