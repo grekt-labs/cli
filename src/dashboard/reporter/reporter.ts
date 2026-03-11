@@ -12,7 +12,7 @@ import {
   mapEvalRunToRecord,
   mapEvalResultToRecord,
   mapRegistryToRecord,
-} from "#/dashboard/mappers/mappers"
+} from "@grekt/engine"
 
 export class DashboardReporter {
   private client: DashboardClient
