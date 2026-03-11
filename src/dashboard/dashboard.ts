@@ -3,7 +3,7 @@ import { warning } from "#/shared/ui/ui"
 
 export { DashboardReporter } from "#/dashboard/reporter/reporter"
 
-export async function reportToDashboard(
+export async function syncToDashboard(
   callback: (reporter: DashboardReporter) => Promise<void>,
 ): Promise<void> {
   try {
