@@ -26,6 +26,7 @@ import { worktreeCommand } from "#/commands/worktree";
 import { scanCommand } from "#/commands/scan";
 import { trustCommand, untrustCommand } from "#/commands/trust";
 import { evalCommand } from "#/commands/eval";
+import { dashboardCommand } from "#/commands/dashboard/dashboard";
 import { loginCommand } from "#/commands/login";
 import { logoutCommand } from "#/commands/logout";
 import { whoamiCommand } from "#/commands/whoami";
@@ -86,6 +87,9 @@ program.addCommand(untrustCommand);
 
 // Eval commands
 program.addCommand(evalCommand);
+
+// Dashboard commands
+program.addCommand(dashboardCommand);
 
 setupUpdateCheck(pkg.version);
 
