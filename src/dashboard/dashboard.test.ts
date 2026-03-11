@@ -18,9 +18,9 @@ vi.mock("#/shared/ui/ui", () => ({
   warning: mockWarning,
 }))
 
-import { reportToDashboard } from "./dashboard"
+import { syncToDashboard } from "./dashboard"
 
-describe("reportToDashboard", () => {
+describe("syncToDashboard", () => {
   beforeEach(() => {
     mockCreate.mockClear()
     mockWarning.mockClear()
@@ -30,7 +30,7 @@ describe("reportToDashboard", () => {
     mockCreate.mockResolvedValue(null)
     const callback = vi.fn()
 
-    await reportToDashboard(callback)
+    await syncToDashboard(callback)
 
     expect(callback).not.toHaveBeenCalled()
   })
@@ -40,7 +40,7 @@ describe("reportToDashboard", () => {
     mockCreate.mockResolvedValue(fakeReporter)
     const callback = vi.fn()
 
-    await reportToDashboard(callback)
+    await syncToDashboard(callback)
 
     expect(callback).toHaveBeenCalledWith(fakeReporter)
   })
@@ -49,7 +49,7 @@ describe("reportToDashboard", () => {
     const fakeReporter = {}
     mockCreate.mockResolvedValue(fakeReporter)
 
-    await reportToDashboard(async () => {
+    await syncToDashboard(async () => {
       throw new Error("PocketBase 500: internal error")
     })
 
@@ -59,7 +59,7 @@ describe("reportToDashboard", () => {
   test("catches and warns on reporter creation errors", async () => {
     mockCreate.mockRejectedValue(new Error("Network unreachable"))
 
-    await reportToDashboard(async () => {})
+    await syncToDashboard(async () => {})
 
     expect(mockWarning).toHaveBeenCalledWith("Dashboard: Network unreachable")
   })
@@ -68,7 +68,7 @@ describe("reportToDashboard", () => {
     const fakeReporter = {}
     mockCreate.mockResolvedValue(fakeReporter)
 
-    await reportToDashboard(async () => {
+    await syncToDashboard(async () => {
       throw "string error"
     })
 
@@ -78,6 +78,6 @@ describe("reportToDashboard", () => {
   test("never throws regardless of what happens", async () => {
     mockCreate.mockRejectedValue(new Error("boom"))
 
-    await expect(reportToDashboard(async () => {})).resolves.toBeUndefined()
+    await expect(syncToDashboard(async () => {})).resolves.toBeUndefined()
   })
 })
