@@ -112,6 +112,27 @@ describe("mapArtifactToRecord", () => {
     expect(result.name).toBe("@scope/tool")
   })
 
+  test("includes description from artifact info", () => {
+    const info = {
+      manifest: { name: "tool", version: "1.0.0", description: "A useful tool" },
+      skills: [],
+      agents: [],
+      commands: [],
+      mcps: [],
+      rules: [],
+      hooks: [],
+      invalidFiles: [],
+    } as unknown as ArtifactInfo
+
+    const result = mapArtifactToRecord("tool", baseLockEntry, info, "proj1")
+    expect(result.description).toBe("A useful tool")
+  })
+
+  test("defaults description to empty when artifact info is null", () => {
+    const result = mapArtifactToRecord("tool", baseLockEntry, null, "proj1")
+    expect(result.description).toBe("")
+  })
+
   test("uses resolved URL from lock entry", () => {
     const result = mapArtifactToRecord("tool", baseLockEntry, null, "proj1")
     expect(result.registry_url).toBe("https://registry.grekt.com/@scope/tool")
