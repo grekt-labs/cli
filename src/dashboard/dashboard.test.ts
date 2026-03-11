@@ -27,7 +27,7 @@ describe("syncToDashboard", () => {
   })
 
   test("does nothing when reporter creation returns null", async () => {
-    mockCreate.mockResolvedValue(null)
+    mockCreate.mockReturnValue(null)
     const callback = vi.fn()
 
     await syncToDashboard(callback)
@@ -37,7 +37,7 @@ describe("syncToDashboard", () => {
 
   test("calls callback with reporter when available", async () => {
     const fakeReporter = { reportProject: vi.fn() }
-    mockCreate.mockResolvedValue(fakeReporter)
+    mockCreate.mockReturnValue(fakeReporter)
     const callback = vi.fn()
 
     await syncToDashboard(callback)
@@ -47,7 +47,7 @@ describe("syncToDashboard", () => {
 
   test("catches and warns on callback errors", async () => {
     const fakeReporter = {}
-    mockCreate.mockResolvedValue(fakeReporter)
+    mockCreate.mockReturnValue(fakeReporter)
 
     await syncToDashboard(async () => {
       throw new Error("PocketBase 500: internal error")
@@ -57,16 +57,18 @@ describe("syncToDashboard", () => {
   })
 
   test("catches and warns on reporter creation errors", async () => {
-    mockCreate.mockRejectedValue(new Error("Network unreachable"))
+    mockCreate.mockImplementation(() => {
+      throw new Error("Invalid config")
+    })
 
     await syncToDashboard(async () => {})
 
-    expect(mockWarning).toHaveBeenCalledWith("Dashboard: Network unreachable")
+    expect(mockWarning).toHaveBeenCalledWith("Dashboard: Invalid config")
   })
 
   test("handles non-Error thrown values", async () => {
     const fakeReporter = {}
-    mockCreate.mockResolvedValue(fakeReporter)
+    mockCreate.mockReturnValue(fakeReporter)
 
     await syncToDashboard(async () => {
       throw "string error"
@@ -76,7 +78,9 @@ describe("syncToDashboard", () => {
   })
 
   test("never throws regardless of what happens", async () => {
-    mockCreate.mockRejectedValue(new Error("boom"))
+    mockCreate.mockImplementation(() => {
+      throw new Error("boom")
+    })
 
     await expect(syncToDashboard(async () => {})).resolves.toBeUndefined()
   })

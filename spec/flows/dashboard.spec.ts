@@ -15,17 +15,14 @@ afterAll(() => {
   dashboard?.stop();
 });
 
-function writeDashboardConfig(root: string, options: { enabled?: boolean; registries?: Record<string, Record<string, string>> }) {
+function writeDashboardConfig(root: string, options: { registries?: Record<string, Record<string, string>> }) {
   const grektDir = join(root, ".grekt");
   mkdirSync(grektDir, { recursive: true });
 
-  const enabled = options.enabled ?? true;
   const lines = [
     "dashboard:",
-    `  enabled: ${enabled}`,
     `  url: ${dashboard.url}`,
-    "  email: dev@grekt.com",
-    "  password: devdevdev",
+    "  token: gdk_test-token-e2e",
   ];
 
   if (options.registries) {
@@ -85,21 +82,25 @@ describe("grekt dashboard sync", () => {
     expect(result.stdout).toContain("No registries configured");
   });
 
-  test("exits silently when dashboard is disabled", async () => {
+  test("skips silently when no dashboard config exists", async () => {
     project = createTestProject({ initialized: true });
-    writeDashboardConfig(project.root, {
-      enabled: false,
-      registries: {
-        "@scope": { type: "gitlab", host: "gitlab.com" },
-      },
-    });
+
+    // Write config without dashboard block
+    const grektDir = join(project.root, ".grekt");
+    mkdirSync(grektDir, { recursive: true });
+    writeFileSync(join(grektDir, "config.yaml"), [
+      "registries:",
+      '  "@scope":',
+      "    type: gitlab",
+      "    host: gitlab.com",
+    ].join("\n"));
 
     const result = await runCli(["dashboard", "sync", "registries"], {
       cwd: project.root,
     });
 
     expect(result.exitCode).toBe(0);
-    // Should still show success message since syncToDashboard silently skips
+    // syncToDashboard silently skips when no dashboard config
     expect(result.stdout).toContain("Synced 1 registry to dashboard");
   });
 

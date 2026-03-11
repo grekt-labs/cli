@@ -7,11 +7,13 @@ import type { DashboardConfig } from "./config.types"
 
 const LOCAL_CONFIG_FILE = "config.yaml"
 
+const DASHBOARD_TOKEN_PREFIX = "gdk_"
+
 const DashboardConfigSchema = z.object({
-  enabled: z.boolean(),
   url: z.string().url(),
-  email: z.string().email(),
-  password: z.string().min(1),
+  token: z.string().startsWith(DASHBOARD_TOKEN_PREFIX, {
+    message: `Dashboard token must start with "${DASHBOARD_TOKEN_PREFIX}"`,
+  }),
 })
 
 function findLocalConfigPath(startDir: string): string | null {
