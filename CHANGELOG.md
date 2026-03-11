@@ -1,3 +1,21 @@
+# [6.46.0-beta.2](https://github.com/grekt-labs/cli/compare/v6.46.0-beta.1...v6.46.0-beta.2) (2026-03-11)
+
+
+### Bug Fixes
+
+* add Bearer prefix to dashboard Authorization header ([b8ba3e4](https://github.com/grekt-labs/cli/commit/b8ba3e43e9b8be366a75e463bbff42a77da85e4a))
+* include artifact description in dashboard sync ([79bbc46](https://github.com/grekt-labs/cli/commit/79bbc464b7ad27d05e7de4fb5fba705142df7025))
+* move e2e tests to spec/flows with proper test infrastructure ([bbf310d](https://github.com/grekt-labs/cli/commit/bbf310d5d1c678c6ec8b511d28d944e3e7bdb708))
+* simplify dashboard config to token-based auth with gdk_ prefix ([1f550c7](https://github.com/grekt-labs/cli/commit/1f550c7539fa7f44b0f91c0f5370ca7c897c233a))
+* use @grekt/engine for dashboard schemas, types, and mappers ([9c9967d](https://github.com/grekt-labs/cli/commit/9c9967d96ac7ebcb62f275398ab37bd77820ebe7))
+
+
+### Features
+
+* add e2e tests for dashboard sync registries command ([47f1f20](https://github.com/grekt-labs/cli/commit/47f1f20d6f9e9c934d551ab1d28be5623e188726))
+* add grekt dashboard sync command ([a753f65](https://github.com/grekt-labs/cli/commit/a753f65e260fd34d3c6a2396e0a992a6379a7d09))
+* add tests for dashboard sync command and reporter ([f9a192c](https://github.com/grekt-labs/cli/commit/f9a192cd13158857b4a287a2472b3233d6bb7ad2))
+
 # [6.46.0-beta.1](https://github.com/grekt-labs/cli/compare/v6.45.0...v6.46.0-beta.1) (2026-03-11)
 
 
