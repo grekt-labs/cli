@@ -48,7 +48,7 @@ export class DashboardClient {
   private async request<T>(path: string, options?: RequestInit): Promise<T> {
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${this.token}`,
+      "Authorization": this.token,
     }
 
     const response = await http.fetch(`${this.baseUrl}${path}`, {
