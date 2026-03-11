@@ -7,7 +7,7 @@ export async function syncToDashboard(
   callback: (reporter: DashboardReporter) => Promise<void>,
 ): Promise<void> {
   try {
-    const reporter = await DashboardReporter.create()
+    const reporter = DashboardReporter.create()
 
     if (!reporter) {
       return

@@ -9,7 +9,6 @@ interface DashboardServer {
  * Starts a local HTTP server that mocks PocketBase for dashboard tests.
  *
  * Endpoints:
- * - POST /api/collections/users/auth-with-password -> returns auth token
  * - GET  /api/collections/:collection/records -> returns empty list (triggers create)
  * - POST /api/collections/:collection/records -> captures created record
  */
@@ -21,14 +20,6 @@ export async function startDashboardServer(): Promise<DashboardServer> {
     port: 0,
     async fetch(request) {
       const url = new URL(request.url);
-
-      // Auth endpoint
-      if (url.pathname === "/api/collections/users/auth-with-password" && request.method === "POST") {
-        return Response.json({
-          token: "mock-jwt-token",
-          record: { id: "user1", email: "dev@grekt.com" },
-        });
-      }
 
       // List/find records (returns empty to trigger create on upsert)
       if (url.pathname.endsWith("/records") && request.method === "GET") {

@@ -54,24 +54,20 @@ describe("getDashboardConfig", () => {
     mockFs.exists.mockReturnValue(true)
     mockFs.readFile.mockReturnValue([
       "dashboard:",
-      "  enabled: true",
       "  url: not-a-url",
-      "  email: dev@grekt.com",
-      "  password: devdevdev",
+      "  token: gdk_test-token",
     ].join("\n"))
 
     const result = getDashboardConfig("/project")
     expect(result).toBeNull()
   })
 
-  test("returns null when dashboard block has invalid email", () => {
+  test("returns null when token has wrong prefix", () => {
     mockFs.exists.mockReturnValue(true)
     mockFs.readFile.mockReturnValue([
       "dashboard:",
-      "  enabled: true",
       "  url: http://127.0.0.1:8090",
-      "  email: not-an-email",
-      "  password: devdevdev",
+      "  token: pb_wrong-prefix",
     ].join("\n"))
 
     const result = getDashboardConfig("/project")
@@ -82,21 +78,19 @@ describe("getDashboardConfig", () => {
     mockFs.exists.mockReturnValue(true)
     mockFs.readFile.mockReturnValue([
       "dashboard:",
-      "  enabled: true",
+      "  url: http://127.0.0.1:8090",
     ].join("\n"))
 
     const result = getDashboardConfig("/project")
     expect(result).toBeNull()
   })
 
-  test("returns null when password is empty string", () => {
+  test("returns null when token is missing", () => {
     mockFs.exists.mockReturnValue(true)
     mockFs.readFile.mockReturnValue([
       "dashboard:",
-      '  enabled: true',
-      '  url: http://127.0.0.1:8090',
-      '  email: dev@grekt.com',
-      '  password: ""',
+      "  url: http://127.0.0.1:8090",
+      '  token: ""',
     ].join("\n"))
 
     const result = getDashboardConfig("/project")
@@ -107,37 +101,14 @@ describe("getDashboardConfig", () => {
     mockFs.exists.mockReturnValue(true)
     mockFs.readFile.mockReturnValue([
       "dashboard:",
-      "  enabled: true",
       "  url: http://127.0.0.1:8090",
-      "  email: dev@grekt.com",
-      "  password: devdevdev",
+      "  token: gdk_test-token-123",
     ].join("\n"))
 
     const result = getDashboardConfig("/project")
     expect(result).toEqual({
-      enabled: true,
       url: "http://127.0.0.1:8090",
-      email: "dev@grekt.com",
-      password: "devdevdev",
-    })
-  })
-
-  test("returns config with enabled false when explicitly disabled", () => {
-    mockFs.exists.mockReturnValue(true)
-    mockFs.readFile.mockReturnValue([
-      "dashboard:",
-      "  enabled: false",
-      "  url: http://127.0.0.1:8090",
-      "  email: dev@grekt.com",
-      "  password: devdevdev",
-    ].join("\n"))
-
-    const result = getDashboardConfig("/project")
-    expect(result).toEqual({
-      enabled: false,
-      url: "http://127.0.0.1:8090",
-      email: "dev@grekt.com",
-      password: "devdevdev",
+      token: "gdk_test-token-123",
     })
   })
 
@@ -147,14 +118,12 @@ describe("getDashboardConfig", () => {
     })
     mockFs.readFile.mockReturnValue([
       "dashboard:",
-      "  enabled: true",
       "  url: http://127.0.0.1:8090",
-      "  email: dev@grekt.com",
-      "  password: devdevdev",
+      "  token: gdk_test-token",
     ].join("\n"))
 
     const result = getDashboardConfig("/project/packages/cli")
     expect(result).not.toBeNull()
-    expect(result!.enabled).toBe(true)
+    expect(result!.url).toBe("http://127.0.0.1:8090")
   })
 })
