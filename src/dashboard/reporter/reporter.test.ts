@@ -26,8 +26,21 @@ vi.mock("#/context", () => ({
   scanArtifact: vi.fn(() => null),
 }))
 
+import type { SecurityReport } from "@grekt/engine"
 import { createMockFetch, jsonResponse } from "#/test-utils"
 import { DashboardReporter } from "./reporter"
+
+function makeScanReport(overrides: Partial<SecurityReport> = {}): SecurityReport {
+  return {
+    score: 85,
+    badge: "conditional",
+    findings: [],
+    categoryScores: { permissions: 90, secrets: 80 },
+    scannedAt: "2026-03-12T00:00:00.000Z",
+    filesScanned: 10,
+    ...overrides,
+  }
+}
 
 describe("DashboardReporter", () => {
   beforeEach(() => {
@@ -158,6 +171,24 @@ describe("DashboardReporter", () => {
       )
     })
 
+    test("returns synced count", async () => {
+      restoreFetch = createMockFetch(async (_url, init) => {
+        if (!init?.method || init.method === "GET") {
+          return jsonResponse({ page: 1, perPage: 1, totalPages: 0, totalItems: 0, items: [] })
+        }
+        return jsonResponse({ id: "reg1", scope: "@a" })
+      })
+
+      const reporter = DashboardReporter.create()
+      const count = await reporter!.reportRegistries({
+        "@a": { type: "gitlab", host: "gitlab.com", project: "group/a" },
+        "@b": { type: "gitlab", host: "gitlab.com", project: "group/b" },
+        "@no-project": { type: "gitlab", host: "gitlab.com" },
+      })
+
+      expect(count).toBe(2)
+    })
+
     test("handles empty registries without making requests", async () => {
       const requestLog: Array<{ url: string }> = []
 
@@ -170,6 +201,164 @@ describe("DashboardReporter", () => {
       await reporter!.reportRegistries({})
 
       expect(requestLog).toHaveLength(0)
+    })
+  })
+
+  describe("reportScan", () => {
+    let restoreFetch: (() => void) | undefined
+
+    beforeEach(() => {
+      mockGetDashboardConfig.mockReturnValue({
+        url: "http://127.0.0.1:8090",
+        token: "gdk_test-token",
+      })
+    })
+
+    afterEach(() => {
+      restoreFetch?.()
+      restoreFetch = undefined
+    })
+
+    test("creates scan_run and scan_results for each artifact", async () => {
+      const requestLog: Array<{ method: string; url: string; body?: unknown }> = []
+      const projectRecord = { id: "proj1", collectionName: "projects", name: "test-project" }
+      const artifactRecord = { id: "pa1", collectionName: "project_artifacts", artifact_id: "@scope/art" }
+
+      restoreFetch = createMockFetch(async (url, init) => {
+        const urlStr = url as string
+        const method = init?.method ?? "GET"
+        requestLog.push({
+          method,
+          url: urlStr,
+          body: init?.body ? JSON.parse(init.body as string) : undefined,
+        })
+
+        if (!init?.method || method === "GET") {
+          if (urlStr.includes("/projects/")) {
+            return jsonResponse({ page: 1, perPage: 1, totalPages: 1, totalItems: 1, items: [projectRecord] })
+          }
+          if (urlStr.includes("/project_artifacts/")) {
+            return jsonResponse({ page: 1, perPage: 1, totalPages: 1, totalItems: 1, items: [artifactRecord] })
+          }
+          return jsonResponse({ page: 1, perPage: 1, totalPages: 0, totalItems: 0, items: [] })
+        }
+
+        if (urlStr.includes("/scan_runs/")) {
+          return jsonResponse({ id: "sr1" })
+        }
+        return jsonResponse({ id: "sres1" })
+      })
+
+      const reporter = DashboardReporter.create()
+      await reporter!.reportScan("test-project", [
+        { artifactId: "@scope/art", report: makeScanReport(), trusted: false },
+      ], "cli")
+
+      const scanRunPosts = requestLog.filter((r) => r.method === "POST" && r.url.includes("/scan_runs/"))
+      expect(scanRunPosts).toHaveLength(1)
+      expect(scanRunPosts[0].body).toMatchObject({
+        project: "proj1",
+        triggered_by: "cli",
+        total_artifacts: 1,
+        total_findings: 0,
+      })
+
+      const scanResultPosts = requestLog.filter((r) => r.method === "POST" && r.url.includes("/scan_results/"))
+      expect(scanResultPosts).toHaveLength(1)
+      expect(scanResultPosts[0].body).toMatchObject({
+        scan_run: "sr1",
+        project_artifact: "pa1",
+        score: 85,
+        badge: "conditional",
+        trusted: false,
+      })
+    })
+
+    test("warns and skips when project not found", async () => {
+      restoreFetch = createMockFetch(async () => {
+        return jsonResponse({ page: 1, perPage: 1, totalPages: 0, totalItems: 0, items: [] })
+      })
+
+      const reporter = DashboardReporter.create()
+      await reporter!.reportScan("unknown-project", [
+        { artifactId: "@scope/art", report: makeScanReport() },
+      ], "cli")
+
+      expect(mockWarning).toHaveBeenCalledWith(
+        'Dashboard: project "unknown-project" not found, skipping scan report',
+      )
+    })
+
+    test("skips artifacts without project_artifact record", async () => {
+      const projectRecord = { id: "proj1", collectionName: "projects", name: "test-project" }
+      const requestLog: Array<{ method: string; url: string }> = []
+
+      restoreFetch = createMockFetch(async (url, init) => {
+        const urlStr = url as string
+        const method = init?.method ?? "GET"
+        requestLog.push({ method, url: urlStr })
+
+        if (!init?.method || method === "GET") {
+          if (urlStr.includes("/projects/")) {
+            return jsonResponse({ page: 1, perPage: 1, totalPages: 1, totalItems: 1, items: [projectRecord] })
+          }
+          // project_artifacts not found
+          return jsonResponse({ page: 1, perPage: 1, totalPages: 0, totalItems: 0, items: [] })
+        }
+
+        if (urlStr.includes("/scan_runs/")) {
+          return jsonResponse({ id: "sr1" })
+        }
+        return jsonResponse({ id: "sres1" })
+      })
+
+      const reporter = DashboardReporter.create()
+      await reporter!.reportScan("test-project", [
+        { artifactId: "@scope/missing", report: makeScanReport() },
+      ], "cli")
+
+      const scanResultPosts = requestLog.filter((r) => r.method === "POST" && r.url.includes("/scan_results/"))
+      expect(scanResultPosts).toHaveLength(0)
+    })
+
+    test("counts total findings across all results", async () => {
+      const projectRecord = { id: "proj1", collectionName: "projects", name: "test-project" }
+      const requestLog: Array<{ method: string; url: string; body?: unknown }> = []
+
+      restoreFetch = createMockFetch(async (url, init) => {
+        const urlStr = url as string
+        const method = init?.method ?? "GET"
+        requestLog.push({
+          method,
+          url: urlStr,
+          body: init?.body ? JSON.parse(init.body as string) : undefined,
+        })
+
+        if (!init?.method || method === "GET") {
+          if (urlStr.includes("/projects/")) {
+            return jsonResponse({ page: 1, perPage: 1, totalPages: 1, totalItems: 1, items: [projectRecord] })
+          }
+          return jsonResponse({ page: 1, perPage: 1, totalPages: 1, totalItems: 1, items: [{ id: "pa1" }] })
+        }
+
+        return jsonResponse({ id: "new1" })
+      })
+
+      const reportWithFindings = makeScanReport({
+        findings: [
+          { id: "F1", category: "secrets", severity: "high", title: "Secret found", description: "", evidence: "key=abc", deduction: 20, recommendation: "Remove" },
+          { id: "F2", category: "permissions", severity: "medium", title: "Wide perms", description: "", evidence: "*", deduction: 10, recommendation: "Restrict" },
+        ],
+      })
+
+      const reporter = DashboardReporter.create()
+      await reporter!.reportScan("test-project", [
+        { artifactId: "@scope/a", report: reportWithFindings },
+        { artifactId: "@scope/b", report: makeScanReport() },
+      ], "cli")
+
+      const scanRunPost = requestLog.find((r) => r.method === "POST" && r.url.includes("/scan_runs/"))
+      expect((scanRunPost?.body as Record<string, unknown>).total_findings).toBe(2)
     })
   })
 })

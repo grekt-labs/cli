@@ -5,6 +5,7 @@ import { DashboardClient } from "#/dashboard/client/client"
 import { scanArtifact } from "#/context"
 import { ARTIFACTS_DIR } from "#/config/paths/paths"
 import { warning } from "#/shared/ui/ui"
+import type { SecurityReport } from "@grekt/engine"
 import {
   mapProjectToRecord,
   mapArtifactToRecord,
@@ -12,6 +13,8 @@ import {
   mapEvalRunToRecord,
   mapEvalResultToRecord,
   mapRegistryToRecord,
+  mapScanRunToRecord,
+  mapScanResultToRecord,
 } from "@grekt/engine"
 
 export class DashboardReporter {
@@ -96,6 +99,37 @@ export class DashboardReporter {
 
       const resultData = mapEvalResultToRecord(result, evalRun.id, projectArtifact.id)
       await this.client.createRecord("eval_results", resultData)
+    }
+  }
+
+  async reportScan(
+    projectName: string,
+    results: Array<{ artifactId: string; report: SecurityReport; trusted?: boolean }>,
+    triggeredBy: "cli" | "ci",
+  ): Promise<void> {
+    const project = await this.client.findRecord("projects", `name = "${projectName}"`)
+
+    if (!project) {
+      warning(`Dashboard: project "${projectName}" not found, skipping scan report`)
+      return
+    }
+
+    const totalFindings = results.reduce((sum, r) => sum + r.report.findings.length, 0)
+    const scanRunData = mapScanRunToRecord(project.id, results.length, totalFindings, triggeredBy)
+    const scanRun = await this.client.createRecord("scan_runs", scanRunData)
+
+    for (const { artifactId, report, trusted } of results) {
+      const projectArtifact = await this.client.findRecord(
+        "project_artifacts",
+        `project = "${project.id}" && artifact_id = "${artifactId}"`,
+      )
+
+      if (!projectArtifact) {
+        continue
+      }
+
+      const resultData = mapScanResultToRecord(scanRun.id, projectArtifact.id, report, trusted ?? false)
+      await this.client.createRecord("scan_results", resultData)
     }
   }
 

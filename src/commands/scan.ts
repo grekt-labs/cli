@@ -15,6 +15,7 @@ import { getConfig } from "#/config/project/project";
 import { isArtifactTrusted } from "#/artifact/mode/mode";
 import { error, warning, info, log, newline, colors, symbols, spinner } from "#/shared/ui/ui";
 import { enrichReportWithMcpFindings } from "#/mcp-security/mcp-security";
+import { syncToDashboard } from "#/dashboard/dashboard";
 
 const VALID_BADGES: TrustBadge[] = ["certified", "conditional", "suspicious", "rejected"];
 
@@ -336,6 +337,13 @@ async function scanAllInstalled(projectRoot: string, jsonOutput?: boolean, failO
     }
     console.log(JSON.stringify(output, null, 2));
 
+    if (results.length > 0) {
+      const projectName = config.name ?? projectRoot.split("/").pop() ?? "unnamed";
+      await syncToDashboard(async (reporter) => {
+        await reporter.reportScan(projectName, results, "cli");
+      });
+    }
+
     if (failOnThreshold) {
       const result = evaluateFailOn(results, failOnThreshold);
       if (result.failed) process.exit(1);
@@ -349,6 +357,13 @@ async function scanAllInstalled(projectRoot: string, jsonOutput?: boolean, failO
 
   for (const { artifactId, message } of errors) {
     warning(`${colors.highlight(artifactId)}: ${message}`);
+  }
+
+  if (results.length > 0) {
+    const projectName = config.name ?? projectRoot.split("/").pop() ?? "unnamed";
+    await syncToDashboard(async (reporter) => {
+      await reporter.reportScan(projectName, results, "cli");
+    });
   }
 
   if (failOnThreshold) {
