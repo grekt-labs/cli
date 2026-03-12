@@ -361,9 +361,14 @@ async function scanAllInstalled(projectRoot: string, jsonOutput?: boolean, failO
 
   if (results.length > 0) {
     const projectName = config.name ?? projectRoot.split("/").pop() ?? "unnamed";
-    await syncToDashboard(async (reporter) => {
+    const synced = await syncToDashboard(async (reporter) => {
       await reporter.reportScan(projectName, results, "cli");
     });
+
+    if (synced) {
+      newline();
+      info("Scan results synced to dashboard.");
+    }
   }
 
   if (failOnThreshold) {
