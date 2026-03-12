@@ -1,3 +1,10 @@
+# [6.46.0-beta.9](https://github.com/grekt-labs/cli/compare/v6.46.0-beta.8...v6.46.0-beta.9) (2026-03-12)
+
+
+### Bug Fixes
+
+* show confirmation message after scan syncs to dashboard ([4fae9ed](https://github.com/grekt-labs/cli/commit/4fae9edd35ac3bdbaea79e7f7d098dcd50d22109))
+
 # [6.46.0-beta.8](https://github.com/grekt-labs/cli/compare/v6.46.0-beta.7...v6.46.0-beta.8) (2026-03-12)
 
 
