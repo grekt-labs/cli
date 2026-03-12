@@ -115,13 +115,15 @@ describe("grekt dashboard sync", () => {
     expect(result.stderr).toContain("Unknown sync target");
   });
 
-  test("fails without sync target argument", async () => {
+  test("runs full sync without target argument", async () => {
     project = createTestProject({ initialized: true });
+    writeDashboardConfig(project.root, {});
 
     const result = await runCli(["dashboard", "sync"], {
       cwd: project.root,
     });
 
-    expect(result.exitCode).toBe(1);
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain("Dashboard sync complete");
   });
 });

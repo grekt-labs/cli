@@ -11,7 +11,7 @@ import { runAllEvals } from "#/eval/runner";
 import { displaySummary, displayDetails, displayJson } from "#/eval/display";
 import { error, info, log, warning, newline, spinner, colors } from "#/shared/ui/ui";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
-import { syncToDashboard } from "#/dashboard/dashboard";
+import { writeEvalReport } from "#/dashboard/reports/reports";
 
 interface EvalOptions {
   artifact?: string;
@@ -136,9 +136,12 @@ export const evalCommand = new Command("eval")
       displaySummary(summary);
     }
 
-    await syncToDashboard(async (reporter) => {
-      await reporter.reportEval(summary, getProjectName(projectRoot), "cli")
+    writeEvalReport(projectRoot, {
+      projectName: getProjectName(projectRoot),
+      triggeredBy: "cli",
+      summary,
     })
+    info("Eval report saved to .grekt/reports/eval.json")
 
     if (summary.totalIssues > 0) {
       process.exit(1);

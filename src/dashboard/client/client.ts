@@ -35,6 +35,34 @@ export class DashboardClient {
     })
   }
 
+  async listRecords(collection: string, filter: string): Promise<PBRecord[]> {
+    const allItems: PBRecord[] = []
+    let page = 1
+
+    while (true) {
+      const params = new URLSearchParams({ filter, page: String(page), perPage: "200" })
+      const response = await this.request<PBListResponse>(
+        `/api/collections/${collection}/records?${params.toString()}`,
+      )
+
+      allItems.push(...response.items)
+
+      if (page >= response.totalPages) {
+        break
+      }
+
+      page++
+    }
+
+    return allItems
+  }
+
+  async deleteRecord(collection: string, id: string): Promise<void> {
+    await this.requestRaw(`/api/collections/${collection}/records/${id}`, {
+      method: "DELETE",
+    })
+  }
+
   async upsertByFilter(collection: string, filter: string, data: Record<string, unknown>): Promise<PBRecord> {
     const existing = await this.findRecord(collection, filter)
 
@@ -45,7 +73,7 @@ export class DashboardClient {
     return this.createRecord(collection, data)
   }
 
-  private async request<T>(path: string, options?: RequestInit): Promise<T> {
+  private async requestRaw(path: string, options?: RequestInit): Promise<Response> {
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
       "Authorization": `Bearer ${this.token}`,
@@ -62,6 +90,11 @@ export class DashboardClient {
       throw new Error(`PocketBase ${response.status}: ${body}`)
     }
 
+    return response
+  }
+
+  private async request<T>(path: string, options?: RequestInit): Promise<T> {
+    const response = await this.requestRaw(path, options)
     return response.json() as Promise<T>
   }
 }
