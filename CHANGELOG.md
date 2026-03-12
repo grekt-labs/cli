@@ -1,3 +1,10 @@
+# [6.46.0-beta.4](https://github.com/grekt-labs/cli/compare/v6.46.0-beta.3...v6.46.0-beta.4) (2026-03-12)
+
+
+### Bug Fixes
+
+* syncToDashboard returns boolean to prevent false success messages ([cb69224](https://github.com/grekt-labs/cli/commit/cb69224071b954ffea27ba53574474df3932859c))
+
 # [6.46.0-beta.3](https://github.com/grekt-labs/cli/compare/v6.46.0-beta.2...v6.46.0-beta.3) (2026-03-11)
 
 
