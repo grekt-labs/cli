@@ -100,8 +100,8 @@ describe("grekt dashboard sync", () => {
     });
 
     expect(result.exitCode).toBe(0);
-    // syncToDashboard silently skips when no dashboard config
-    expect(result.stdout).toContain("Synced 1 registry to dashboard");
+    // syncToDashboard silently skips when no dashboard config — no success message
+    expect(result.stdout).not.toContain("Synced");
   });
 
   test("fails with unknown sync target", async () => {
