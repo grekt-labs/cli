@@ -1,3 +1,11 @@
+# [6.46.0-beta.10](https://github.com/grekt-labs/cli/compare/v6.46.0-beta.9...v6.46.0-beta.10) (2026-03-12)
+
+
+### Bug Fixes
+
+* bump @grekt/engine to 6.4.0 (stable) ([d86687a](https://github.com/grekt-labs/cli/commit/d86687a5aea0511e5a7818e559f421715f5b9294))
+* extract getProjectName to eliminate duplicated project name logic ([59ce865](https://github.com/grekt-labs/cli/commit/59ce865c40606819607e0ab52d6270588d9f8035))
+
 # [6.46.0-beta.9](https://github.com/grekt-labs/cli/compare/v6.46.0-beta.8...v6.46.0-beta.9) (2026-03-12)
 
 
