@@ -1,3 +1,11 @@
+# [6.46.0-beta.6](https://github.com/grekt-labs/cli/compare/v6.46.0-beta.5...v6.46.0-beta.6) (2026-03-12)
+
+
+### Bug Fixes
+
+* skip registries without project during dashboard sync ([6032a46](https://github.com/grekt-labs/cli/commit/6032a46f676ded9767725e1f230150ab6c7f7572))
+* update tests for registry project requirement ([c032698](https://github.com/grekt-labs/cli/commit/c032698edc2ab5e4c7a82e2f2139bb1824638bf5))
+
 # [6.46.0-beta.5](https://github.com/grekt-labs/cli/compare/v6.46.0-beta.4...v6.46.0-beta.5) (2026-03-12)
 
 
