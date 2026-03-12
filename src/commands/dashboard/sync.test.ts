@@ -69,6 +69,7 @@ describe("dashboard sync command", () => {
     mockGetLocalConfig.mockReturnValue({ registries })
     mockSyncToDashboard.mockImplementation(async (cb: Function) => {
       await cb({ reportRegistries: vi.fn() })
+      return true
     })
 
     await dashboardSyncCommand.parseAsync(["registries"], { from: "user" })
@@ -85,6 +86,7 @@ describe("dashboard sync command", () => {
     mockGetLocalConfig.mockReturnValue({ registries })
     mockSyncToDashboard.mockImplementation(async (cb: Function) => {
       await cb({ reportRegistries: vi.fn() })
+      return true
     })
 
     await dashboardSyncCommand.parseAsync(["registries"], { from: "user" })
