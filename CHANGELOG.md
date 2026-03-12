@@ -1,3 +1,37 @@
+# [6.46.0](https://github.com/grekt-labs/cli/compare/v6.45.0...v6.46.0) (2026-03-12)
+
+
+### Bug Fixes
+
+* add Bearer prefix to dashboard Authorization header ([4c05a03](https://github.com/grekt-labs/cli/commit/4c05a03334708a58e40067a74be4430e6c310961))
+* add Bearer prefix to dashboard Authorization header ([1494248](https://github.com/grekt-labs/cli/commit/1494248ab0a4427da6fcdc8472c3f9cd5adb9099))
+* add project field to e2e dashboard sync test registries ([42be888](https://github.com/grekt-labs/cli/commit/42be888283e81b525cb82dd40a06a16306e9c5a0))
+* bump @grekt/engine to 6.2.0-beta.5 ([ffa3b83](https://github.com/grekt-labs/cli/commit/ffa3b83653c235a21e6d21c24310ffe35aeed13f))
+* bump @grekt/engine to 6.4.0 (stable) ([e445148](https://github.com/grekt-labs/cli/commit/e4451480f9b3a418d2136406afb96856c1335086))
+* extract getProjectName to eliminate duplicated project name logic ([9994c68](https://github.com/grekt-labs/cli/commit/9994c68f589f91f26dc9541fccb15a767502034b))
+* include artifact description in dashboard sync ([0dcc8e3](https://github.com/grekt-labs/cli/commit/0dcc8e35239ef44a2e6e2d90e266a52c5f327c01))
+* install script picks highest beta version using semver sort ([e9f5963](https://github.com/grekt-labs/cli/commit/e9f5963935cdc883efd6c7e7a51b1410c1b8b77d))
+* move e2e tests to spec/flows with proper test infrastructure ([95e6d4d](https://github.com/grekt-labs/cli/commit/95e6d4d30cf2881d5e059b311f661ecd46d05aa3))
+* remove Bearer prefix from dashboard Authorization header ([4a92dc9](https://github.com/grekt-labs/cli/commit/4a92dc9691953b6aa233813e91c9fd417de28fce))
+* show confirmation message after scan syncs to dashboard ([4b3c7de](https://github.com/grekt-labs/cli/commit/4b3c7deefac50dd15897ae945781a62a302c9da8))
+* simplify dashboard config to token-based auth with gdk_ prefix ([b41fcc7](https://github.com/grekt-labs/cli/commit/b41fcc7d9e52b2cd3322a129ccde4ad1f7f4fbd2))
+* skip registries without project during dashboard sync ([1c64f4d](https://github.com/grekt-labs/cli/commit/1c64f4d5b6b21950300cb42a3ad1d0ae8ca3e105))
+* suppress info message in scan --json output path ([669a704](https://github.com/grekt-labs/cli/commit/669a70424aec4142770361c91635f39b64553edc))
+* syncToDashboard returns boolean to prevent false success messages ([a93de5b](https://github.com/grekt-labs/cli/commit/a93de5bd5df1b8470acf2d21d153f0cb33912c17))
+* update tests for registry project requirement ([b498d1f](https://github.com/grekt-labs/cli/commit/b498d1fab4600a4225c98ad06f8084650d95b6c8))
+* use @grekt/engine for dashboard schemas, types, and mappers ([2914aed](https://github.com/grekt-labs/cli/commit/2914aedbe75a082c12e2de8995fddef494220373))
+
+
+### Features
+
+* add dashboard reporter for CLI-to-PocketBase integration ([485faf2](https://github.com/grekt-labs/cli/commit/485faf2ce518ec106ccc4bdaade9206771a2ff03))
+* add e2e tests for dashboard sync registries command ([13f4980](https://github.com/grekt-labs/cli/commit/13f49801b0bacb8d0d3cb9e77e6e11e9605faf69))
+* add grekt dashboard sync command ([3b8330f](https://github.com/grekt-labs/cli/commit/3b8330f1abaa117e96de8e089a912b444bdce3a6))
+* add scanner parameter to reportScan ([19ad219](https://github.com/grekt-labs/cli/commit/19ad21912ef3697dc8bdbca3b03e4b6ab028e4eb))
+* add tests for dashboard sync command and reporter ([8e2b321](https://github.com/grekt-labs/cli/commit/8e2b32172c3181053899c077c3b6dfb416cf2dae))
+* centralize dashboard sync as single communication point ([7024740](https://github.com/grekt-labs/cli/commit/7024740d0ade13ee55d7030d1d1b9858831fcf09))
+* sync security scan results to dashboard ([a9cc66d](https://github.com/grekt-labs/cli/commit/a9cc66d5cb2a705feb2a32b55f32ee51b328a1a7))
+
 # [6.46.0-beta.12](https://github.com/grekt-labs/cli/compare/v6.46.0-beta.11...v6.46.0-beta.12) (2026-03-12)
 
 
