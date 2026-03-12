@@ -51,7 +51,7 @@ describe("grekt dashboard sync", () => {
     writeDashboardConfig(project.root, {
       registries: {
         "@company": { type: "gitlab", host: "gitlab.company.com", project: "group/artifacts" },
-        "@oss": { type: "gitlab", host: "gitlab.com" },
+        "@oss": { type: "gitlab", host: "gitlab.com", project: "open/artifacts" },
       },
     });
 
