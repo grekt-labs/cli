@@ -6,7 +6,7 @@
       "name": "grekt",
       "dependencies": {
         "@aws-sdk/client-s3": "^3.971.0",
-        "@grekt/engine": "6.2.0-beta.5",
+        "@grekt/engine": "6.4.0",
         "@inquirer/prompts": "^7.2.0",
         "@supabase/supabase-js": "^2.91.0",
         "chalk": "^5.4.1",
@@ -183,7 +183,7 @@
 
     "@esbuild/win32-x64": ["@esbuild/win32-x64@0.27.3", "", { "os": "win32", "cpu": "x64" }, "sha512-4uJGhsxuptu3OcpVAzli+/gWusVGwZZHTlS63hh++ehExkVT8SgiEf7/uC/PclrPPkLhZqGgCTjd0VWLo6xMqA=="],
 
-    "@grekt/engine": ["@grekt/engine@6.2.0-beta.5", "", { "dependencies": { "agentverus-scanner": "^0.5.0", "gray-matter": "^4.0.3", "semver": "^7.7.3", "yaml": "^2.6.1", "zod": "^3.24.1" } }, "sha512-747p3r71GH5L8pLfHhaDdsREgh50E9PCYAwYStCnqueLJA2g4aiS+JS7w31mf0iFifaB+XpE01hychmAEkaN9g=="],
+    "@grekt/engine": ["@grekt/engine@6.4.0", "", { "dependencies": { "agentverus-scanner": "^0.5.0", "gray-matter": "^4.0.3", "semver": "^7.7.3", "yaml": "^2.6.1", "zod": "^3.24.1" } }, "sha512-XYj9pFtr6wSPbfSkVgOrY0x+rpI+OJS2xshLN6zrRuJeT6dABWa416JxtIjfsibbzEtbzs8KbozQzAwmRBJjRQ=="],
 
     "@hono/node-server": ["@hono/node-server@1.19.11", "", { "peerDependencies": { "hono": "^4" } }, "sha512-dr8/3zEaB+p0D2n/IUrlPF1HZm586qgJNXK1a9fhg/PzdtkK7Ksd5l312tJX2yBuALqDYBlG20QEbayqPyxn+g=="],
 
