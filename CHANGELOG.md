@@ -1,3 +1,10 @@
+# [6.46.0-beta.7](https://github.com/grekt-labs/cli/compare/v6.46.0-beta.6...v6.46.0-beta.7) (2026-03-12)
+
+
+### Features
+
+* sync security scan results to dashboard ([64f080c](https://github.com/grekt-labs/cli/commit/64f080c43131a1117eb82a5f623ad7d087e08f7d))
+
 # [6.46.0-beta.6](https://github.com/grekt-labs/cli/compare/v6.46.0-beta.5...v6.46.0-beta.6) (2026-03-12)
 
 
