@@ -99,10 +99,20 @@ export class DashboardReporter {
     }
   }
 
-  async reportRegistries(registries: NonNullable<LocalConfig["registries"]>): Promise<void> {
+  async reportRegistries(registries: NonNullable<LocalConfig["registries"]>): Promise<number> {
+    let syncedCount = 0
+
     for (const [scope, registry] of Object.entries(registries)) {
+      if (!registry.project) {
+        warning(`Registry "${scope}" has no project configured, skipping sync.`)
+        continue
+      }
+
       const data = mapRegistryToRecord(scope, registry)
       await this.client.upsertByFilter("registries", `scope = "${scope}"`, data)
+      syncedCount++
     }
+
+    return syncedCount
   }
 }
