@@ -1,6 +1,6 @@
 {
   "name": "@grekt/cli",
-  "version": "6.46.0-beta.9",
+  "version": "6.46.0-beta.10",
   "description": "AI tools versioned, synced, and shared across tools and teams",
   "type": "module",
   "bin": {
