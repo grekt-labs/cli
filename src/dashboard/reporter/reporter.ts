@@ -106,6 +106,7 @@ export class DashboardReporter {
     projectName: string,
     results: Array<{ artifactId: string; report: SecurityReport; trusted?: boolean }>,
     triggeredBy: "cli" | "ci",
+    scanner: string = "agentverus",
   ): Promise<void> {
     const project = await this.client.findRecord("projects", `name = "${projectName}"`)
 
@@ -115,7 +116,7 @@ export class DashboardReporter {
     }
 
     const totalFindings = results.reduce((sum, r) => sum + r.report.findings.length, 0)
-    const scanRunData = mapScanRunToRecord(project.id, results.length, totalFindings, triggeredBy)
+    const scanRunData = mapScanRunToRecord(project.id, results.length, totalFindings, triggeredBy, scanner)
     const scanRun = await this.client.createRecord("scan_runs", scanRunData)
 
     for (const { artifactId, report, trusted } of results) {
