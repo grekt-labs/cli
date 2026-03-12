@@ -99,9 +99,8 @@ get_latest_stable_version() {
 get_latest_beta_version() {
     response=$(fetch_github "${GITHUB_API}/repos/${REPO}/releases?per_page=20")
 
-    # Find the first release where prerelease is true and extract its tag_name
-    # JSON structure: each release has "prerelease": true/false and "tag_name": "vX.Y.Z-beta.N"
-    version=$(echo "$response" | grep -B5 '"prerelease"[[:space:]]*:[[:space:]]*true' | grep -o '"tag_name"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')
+    # Extract all beta tag names and pick the highest version using semver sort
+    version=$(echo "$response" | grep -o '"tag_name"[[:space:]]*:[[:space:]]*"[^"]*-beta\.[^"]*"' | sed 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | sort -V | tail -1)
 
     if [ -z "$version" ]; then
         error "No beta releases found. Check available releases at ${GITHUB_RELEASES}"
