@@ -26,43 +26,47 @@ describe("syncToDashboard", () => {
     mockWarning.mockClear()
   })
 
-  test("does nothing when reporter creation returns null", async () => {
+  test("returns false when reporter creation returns null", async () => {
     mockCreate.mockReturnValue(null)
     const callback = vi.fn()
 
-    await syncToDashboard(callback)
+    const result = await syncToDashboard(callback)
 
     expect(callback).not.toHaveBeenCalled()
+    expect(result).toBe(false)
   })
 
-  test("calls callback with reporter when available", async () => {
+  test("returns true when callback succeeds", async () => {
     const fakeReporter = { reportProject: vi.fn() }
     mockCreate.mockReturnValue(fakeReporter)
     const callback = vi.fn()
 
-    await syncToDashboard(callback)
+    const result = await syncToDashboard(callback)
 
     expect(callback).toHaveBeenCalledWith(fakeReporter)
+    expect(result).toBe(true)
   })
 
-  test("catches and warns on callback errors", async () => {
+  test("returns false and warns on callback errors", async () => {
     const fakeReporter = {}
     mockCreate.mockReturnValue(fakeReporter)
 
-    await syncToDashboard(async () => {
+    const result = await syncToDashboard(async () => {
       throw new Error("PocketBase 500: internal error")
     })
 
+    expect(result).toBe(false)
     expect(mockWarning).toHaveBeenCalledWith("Dashboard: PocketBase 500: internal error")
   })
 
-  test("catches and warns on reporter creation errors", async () => {
+  test("returns false and warns on reporter creation errors", async () => {
     mockCreate.mockImplementation(() => {
       throw new Error("Invalid config")
     })
 
-    await syncToDashboard(async () => {})
+    const result = await syncToDashboard(async () => {})
 
+    expect(result).toBe(false)
     expect(mockWarning).toHaveBeenCalledWith("Dashboard: Invalid config")
   })
 
@@ -70,10 +74,11 @@ describe("syncToDashboard", () => {
     const fakeReporter = {}
     mockCreate.mockReturnValue(fakeReporter)
 
-    await syncToDashboard(async () => {
+    const result = await syncToDashboard(async () => {
       throw "string error"
     })
 
+    expect(result).toBe(false)
     expect(mockWarning).toHaveBeenCalledWith("Dashboard: string error")
   })
 
@@ -82,6 +87,6 @@ describe("syncToDashboard", () => {
       throw new Error("boom")
     })
 
-    await expect(syncToDashboard(async () => {})).resolves.toBeUndefined()
+    await expect(syncToDashboard(async () => {})).resolves.toBe(false)
   })
 })

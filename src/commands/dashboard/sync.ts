@@ -17,12 +17,14 @@ async function handleSyncRegistries(): Promise<void> {
 
   const scopeCount = Object.keys(registries).length;
 
-  await syncToDashboard(async (reporter) => {
+  const synced = await syncToDashboard(async (reporter) => {
     await reporter.reportRegistries(registries);
   });
 
-  newline();
-  success(`Synced ${scopeCount} ${scopeCount === 1 ? "registry" : "registries"} to dashboard.`);
+  if (synced) {
+    newline();
+    success(`Synced ${scopeCount} ${scopeCount === 1 ? "registry" : "registries"} to dashboard.`);
+  }
 }
 
 const syncHandlers: Record<SyncTarget, () => Promise<void>> = {
