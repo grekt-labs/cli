@@ -64,11 +64,11 @@ describe("dashboard sync command", () => {
 
   test("syncs registries to dashboard", async () => {
     const registries = {
-      "@company": { type: "gitlab", host: "gitlab.company.com" },
+      "@company": { type: "gitlab", host: "gitlab.company.com", project: "group/artifacts" },
     }
     mockGetLocalConfig.mockReturnValue({ registries })
     mockSyncToDashboard.mockImplementation(async (cb: Function) => {
-      await cb({ reportRegistries: vi.fn() })
+      await cb({ reportRegistries: vi.fn().mockResolvedValue(1) })
       return true
     })
 
@@ -80,12 +80,12 @@ describe("dashboard sync command", () => {
 
   test("pluralizes registries count", async () => {
     const registries = {
-      "@company": { type: "gitlab", host: "gitlab.company.com" },
-      "@other": { type: "gitlab", host: "gitlab.other.com" },
+      "@company": { type: "gitlab", host: "gitlab.company.com", project: "group/artifacts" },
+      "@other": { type: "gitlab", host: "gitlab.other.com", project: "team/artifacts" },
     }
     mockGetLocalConfig.mockReturnValue({ registries })
     mockSyncToDashboard.mockImplementation(async (cb: Function) => {
-      await cb({ reportRegistries: vi.fn() })
+      await cb({ reportRegistries: vi.fn().mockResolvedValue(2) })
       return true
     })
 

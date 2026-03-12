@@ -97,7 +97,7 @@ describe("DashboardReporter", () => {
 
       await reporter!.reportRegistries({
         "@company": { type: "gitlab", host: "gitlab.company.com", project: "group/artifacts" },
-        "@other": { type: "gitlab", host: "gitlab.other.com" },
+        "@other": { type: "gitlab", host: "gitlab.other.com", project: "team/artifacts" },
       })
 
       const registryRequests = requestLog.filter((r) => r.url.includes("/registries/"))
@@ -131,7 +131,7 @@ describe("DashboardReporter", () => {
 
       const reporter = DashboardReporter.create()
       await reporter!.reportRegistries({
-        "@company": { type: "gitlab", host: "gitlab.company.com" },
+        "@company": { type: "gitlab", host: "gitlab.company.com", project: "group/artifacts" },
       })
 
       const registryRequests = requestLog.filter((r) => r.url.includes("/registries/"))
@@ -140,6 +140,22 @@ describe("DashboardReporter", () => {
 
       expect(patches).toHaveLength(1)
       expect(posts).toHaveLength(0)
+    })
+
+    test("skips registries without project and warns", async () => {
+      restoreFetch = createMockFetch(async () => {
+        return jsonResponse({ page: 1, perPage: 1, totalPages: 0, totalItems: 0, items: [] })
+      })
+
+      const reporter = DashboardReporter.create()
+      const count = await reporter!.reportRegistries({
+        "@no-project": { type: "gitlab", host: "gitlab.com" },
+      })
+
+      expect(count).toBe(0)
+      expect(mockWarning).toHaveBeenCalledWith(
+        'Registry "@no-project" has no project configured, skipping sync.',
+      )
     })
 
     test("handles empty registries without making requests", async () => {
