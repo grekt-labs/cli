@@ -1,3 +1,16 @@
+# [6.46.0-beta.8](https://github.com/grekt-labs/cli/compare/v6.46.0-beta.7...v6.46.0-beta.8) (2026-03-12)
+
+
+### Bug Fixes
+
+* add project field to e2e dashboard sync test registries ([004b8e8](https://github.com/grekt-labs/cli/commit/004b8e823664bb2a6318736373b98ba49b338e22))
+* bump @grekt/engine to 6.2.0-beta.5 ([44cca38](https://github.com/grekt-labs/cli/commit/44cca3891a9de000005b6fdc72ff19c19bb93b72))
+
+
+### Features
+
+* add scanner parameter to reportScan ([85ac029](https://github.com/grekt-labs/cli/commit/85ac0293bbde0d9d56adc6ab8d3e8912b7bed7a8))
+
 # [6.46.0-beta.7](https://github.com/grekt-labs/cli/compare/v6.46.0-beta.6...v6.46.0-beta.7) (2026-03-12)
 
 
