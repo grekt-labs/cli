@@ -15,15 +15,15 @@ async function handleSyncRegistries(): Promise<void> {
     return;
   }
 
-  const scopeCount = Object.keys(registries).length;
+  let syncedCount = 0;
 
   const synced = await syncToDashboard(async (reporter) => {
-    await reporter.reportRegistries(registries);
+    syncedCount = await reporter.reportRegistries(registries);
   });
 
-  if (synced) {
+  if (synced && syncedCount > 0) {
     newline();
-    success(`Synced ${scopeCount} ${scopeCount === 1 ? "registry" : "registries"} to dashboard.`);
+    success(`Synced ${syncedCount} ${syncedCount === 1 ? "registry" : "registries"} to dashboard.`);
   }
 }
 
