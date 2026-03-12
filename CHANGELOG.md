@@ -1,3 +1,15 @@
+# [6.46.0-beta.12](https://github.com/grekt-labs/cli/compare/v6.46.0-beta.11...v6.46.0-beta.12) (2026-03-12)
+
+
+### Bug Fixes
+
+* suppress info message in scan --json output path ([ac762c3](https://github.com/grekt-labs/cli/commit/ac762c39f75fe68628827ed6f97f452765651704))
+
+
+### Features
+
+* centralize dashboard sync as single communication point ([8e0481e](https://github.com/grekt-labs/cli/commit/8e0481ebf8d24f811f9878d42d57e68dca693b81))
+
 # [6.46.0-beta.11](https://github.com/grekt-labs/cli/compare/v6.46.0-beta.10...v6.46.0-beta.11) (2026-03-12)
 
 
