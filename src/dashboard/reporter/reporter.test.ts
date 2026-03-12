@@ -259,6 +259,7 @@ describe("DashboardReporter", () => {
       expect(scanRunPosts[0].body).toMatchObject({
         project: "proj1",
         triggered_by: "cli",
+        scanner: "agentverus",
         total_artifacts: 1,
         total_findings: 0,
       })
