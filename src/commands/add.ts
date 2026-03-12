@@ -29,8 +29,6 @@ import { compareSemver, CATEGORIES, type Category } from "@grekt/engine";
 import { syncToTargets } from "#/sync/helpers/helpers";
 import { promptAndInstallHooks } from "#/sync/hooks";
 import { promptAndInstallMcps } from "#/sync/mcp";
-import { syncToDashboard } from "#/dashboard/dashboard";
-
 
 export const addCommand = new Command("add")
   .description("Add an artifact from registry, GitHub, GitLab, or local path")
@@ -280,7 +278,4 @@ export const addCommand = new Command("add")
     // Auto-sync to targets
     await syncToTargets(config, lockfile, projectRoot);
 
-    await syncToDashboard(async (reporter) => {
-      await reporter.reportProject(config, lockfile, projectRoot)
-    })
   });

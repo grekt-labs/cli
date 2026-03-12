@@ -10,5 +10,10 @@ export const GREKT_DIR = ".grekt";
 export const ARTIFACTS_DIR = join(GREKT_DIR, "artifacts");
 export const INDEX_FILE = join(GREKT_DIR, "index");
 
+// Reports directory (for dashboard sync consumption)
+export const REPORTS_DIR = join(GREKT_DIR, "reports");
+export const SCAN_REPORT_FILE = "scan.json";
+export const EVAL_REPORT_FILE = "eval.json";
+
 // Default registry
 export const DEFAULT_REGISTRY = REGISTRY_URL;
