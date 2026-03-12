@@ -135,6 +135,49 @@ export class DashboardReporter {
     }
   }
 
+  async reconcileArtifacts(projectName: string, currentArtifactIds: string[]): Promise<number> {
+    const project = await this.client.findRecord("projects", `name = "${projectName}"`)
+
+    if (!project) {
+      warning(`Dashboard: project "${projectName}" not found, skipping reconciliation`)
+      return 0
+    }
+
+    const remoteArtifacts = await this.client.listRecords(
+      "project_artifacts",
+      `project = "${project.id}"`,
+    )
+
+    const staleArtifacts = remoteArtifacts.filter(
+      (record) => !currentArtifactIds.includes(record["artifact_id"] as string),
+    )
+
+    for (const stale of staleArtifacts) {
+      // Delete scan_results referencing this project_artifact (no cascade)
+      const scanResults = await this.client.listRecords(
+        "scan_results",
+        `project_artifact = "${stale.id}"`,
+      )
+      for (const scanResult of scanResults) {
+        await this.client.deleteRecord("scan_results", scanResult.id)
+      }
+
+      // Delete eval_results referencing this project_artifact (no cascade)
+      const evalResults = await this.client.listRecords(
+        "eval_results",
+        `project_artifact = "${stale.id}"`,
+      )
+      for (const evalResult of evalResults) {
+        await this.client.deleteRecord("eval_results", evalResult.id)
+      }
+
+      // Delete the project_artifact itself (elements have cascade, auto-deleted)
+      await this.client.deleteRecord("project_artifacts", stale.id)
+    }
+
+    return staleArtifacts.length
+  }
+
   async reportRegistries(registries: NonNullable<LocalConfig["registries"]>): Promise<number> {
     let syncedCount = 0
 

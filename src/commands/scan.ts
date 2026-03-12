@@ -15,7 +15,7 @@ import { getConfig, getProjectName } from "#/config/project/project";
 import { isArtifactTrusted } from "#/artifact/mode/mode";
 import { error, warning, info, log, newline, colors, symbols, spinner } from "#/shared/ui/ui";
 import { enrichReportWithMcpFindings } from "#/mcp-security/mcp-security";
-import { syncToDashboard } from "#/dashboard/dashboard";
+import { writeScanReport } from "#/dashboard/reports/reports";
 
 const VALID_BADGES: TrustBadge[] = ["certified", "conditional", "suspicious", "rejected"];
 
@@ -339,9 +339,13 @@ async function scanAllInstalled(projectRoot: string, jsonOutput?: boolean, failO
 
     if (results.length > 0) {
       const projectName = getProjectName(projectRoot);
-      await syncToDashboard(async (reporter) => {
-        await reporter.reportScan(projectName, results, "cli");
+      writeScanReport(projectRoot, {
+        projectName,
+        triggeredBy: "cli",
+        scanner: "agentverus",
+        results,
       });
+      info("Scan report saved to .grekt/reports/scan.json");
     }
 
     if (failOnThreshold) {
@@ -360,14 +364,15 @@ async function scanAllInstalled(projectRoot: string, jsonOutput?: boolean, failO
   }
 
   if (results.length > 0) {
-    const synced = await syncToDashboard(async (reporter) => {
-      await reporter.reportScan(getProjectName(projectRoot), results, "cli");
+    const projectName = getProjectName(projectRoot);
+    writeScanReport(projectRoot, {
+      projectName,
+      triggeredBy: "cli",
+      scanner: "agentverus",
+      results,
     });
-
-    if (synced) {
-      newline();
-      info("Scan results synced to dashboard.");
-    }
+    newline();
+    info("Scan report saved to .grekt/reports/scan.json");
   }
 
   if (failOnThreshold) {

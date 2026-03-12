@@ -161,6 +161,87 @@ describe("DashboardClient", () => {
     })
   })
 
+  describe("listRecords", () => {
+    test("returns all records from a single page", async () => {
+      const records = [
+        { id: "rec1", collectionName: "project_artifacts", artifact_id: "@scope/a" },
+        { id: "rec2", collectionName: "project_artifacts", artifact_id: "@scope/b" },
+      ]
+
+      restoreFetch = createMockFetch(async () => {
+        return jsonResponse({ page: 1, perPage: 200, totalPages: 1, totalItems: 2, items: records })
+      })
+
+      const client = new DashboardClient("http://127.0.0.1:8090", "gdk_test-token")
+      const result = await client.listRecords("project_artifacts", 'project = "proj1"')
+
+      expect(result).toEqual(records)
+    })
+
+    test("paginates through multiple pages", async () => {
+      let callCount = 0
+
+      restoreFetch = createMockFetch(async () => {
+        callCount++
+        if (callCount === 1) {
+          return jsonResponse({
+            page: 1, perPage: 200, totalPages: 2, totalItems: 3,
+            items: [{ id: "rec1" }, { id: "rec2" }],
+          })
+        }
+        return jsonResponse({
+          page: 2, perPage: 200, totalPages: 2, totalItems: 3,
+          items: [{ id: "rec3" }],
+        })
+      })
+
+      const client = new DashboardClient("http://127.0.0.1:8090", "gdk_test-token")
+      const result = await client.listRecords("project_artifacts", 'project = "proj1"')
+
+      expect(result).toHaveLength(3)
+      expect(result.map((r) => r.id)).toEqual(["rec1", "rec2", "rec3"])
+    })
+
+    test("returns empty array when no records match", async () => {
+      restoreFetch = createMockFetch(async () => {
+        return jsonResponse({ page: 1, perPage: 200, totalPages: 0, totalItems: 0, items: [] })
+      })
+
+      const client = new DashboardClient("http://127.0.0.1:8090", "gdk_test-token")
+      const result = await client.listRecords("project_artifacts", 'project = "proj1"')
+
+      expect(result).toEqual([])
+    })
+  })
+
+  describe("deleteRecord", () => {
+    test("sends DELETE request to correct URL", async () => {
+      let capturedUrl: string | undefined
+      let capturedMethod: string | undefined
+
+      restoreFetch = createMockFetch(async (url, init) => {
+        capturedUrl = url as string
+        capturedMethod = init?.method
+        return new Response(null, { status: 204 })
+      })
+
+      const client = new DashboardClient("http://127.0.0.1:8090", "gdk_test-token")
+      await client.deleteRecord("project_artifacts", "rec1")
+
+      expect(capturedUrl).toContain("/api/collections/project_artifacts/records/rec1")
+      expect(capturedMethod).toBe("DELETE")
+    })
+
+    test("throws on server error", async () => {
+      restoreFetch = createMockFetch(async () => {
+        return errorResponse(404, { message: "Not found" })
+      })
+
+      const client = new DashboardClient("http://127.0.0.1:8090", "gdk_test-token")
+      await expect(client.deleteRecord("project_artifacts", "rec1")).rejects.toThrow("PocketBase 404")
+    })
+  })
+
   describe("auth header", () => {
     test("includes token in all requests", async () => {
       let requestHeaders: Record<string, string> = {}

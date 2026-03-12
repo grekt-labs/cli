@@ -204,6 +204,110 @@ describe("DashboardReporter", () => {
     })
   })
 
+  describe("reconcileArtifacts", () => {
+    let restoreFetch: (() => void) | undefined
+
+    beforeEach(() => {
+      mockGetDashboardConfig.mockReturnValue({
+        url: "http://127.0.0.1:8090",
+        token: "gdk_test-token",
+      })
+    })
+
+    afterEach(() => {
+      restoreFetch?.()
+      restoreFetch = undefined
+    })
+
+    test("returns 0 when project is not found", async () => {
+      restoreFetch = createMockFetch(async () => {
+        return jsonResponse({ page: 1, perPage: 1, totalPages: 0, totalItems: 0, items: [] })
+      })
+
+      const reporter = DashboardReporter.create()
+      const count = await reporter!.reconcileArtifacts("unknown", ["@scope/a"])
+
+      expect(count).toBe(0)
+      expect(mockWarning).toHaveBeenCalledWith(
+        'Dashboard: project "unknown" not found, skipping reconciliation',
+      )
+    })
+
+    test("returns 0 when all remote artifacts are current", async () => {
+      const projectRecord = { id: "proj1", collectionName: "projects", name: "test-project" }
+      const remoteArtifacts = [
+        { id: "pa1", collectionName: "project_artifacts", artifact_id: "@scope/a" },
+        { id: "pa2", collectionName: "project_artifacts", artifact_id: "@scope/b" },
+      ]
+
+      restoreFetch = createMockFetch(async (url, init) => {
+        const urlStr = url as string
+        if (!init?.method || init.method === "GET") {
+          if (urlStr.includes("/projects/") && urlStr.includes("perPage=1")) {
+            return jsonResponse({ page: 1, perPage: 1, totalPages: 1, totalItems: 1, items: [projectRecord] })
+          }
+          if (urlStr.includes("/project_artifacts/")) {
+            return jsonResponse({ page: 1, perPage: 200, totalPages: 1, totalItems: 2, items: remoteArtifacts })
+          }
+        }
+        return jsonResponse({ page: 1, perPage: 200, totalPages: 0, totalItems: 0, items: [] })
+      })
+
+      const reporter = DashboardReporter.create()
+      const count = await reporter!.reconcileArtifacts("test-project", ["@scope/a", "@scope/b"])
+
+      expect(count).toBe(0)
+    })
+
+    test("deletes stale artifacts and their related records", async () => {
+      const projectRecord = { id: "proj1", collectionName: "projects", name: "test-project" }
+      const remoteArtifacts = [
+        { id: "pa1", collectionName: "project_artifacts", artifact_id: "@scope/a" },
+        { id: "pa2", collectionName: "project_artifacts", artifact_id: "@scope/removed" },
+      ]
+      const scanResults = [{ id: "sr1", collectionName: "scan_results" }]
+      const evalResults = [{ id: "er1", collectionName: "eval_results" }]
+
+      const deletedIds: string[] = []
+
+      restoreFetch = createMockFetch(async (url, init) => {
+        const urlStr = url as string
+        const method = init?.method ?? "GET"
+
+        if (method === "DELETE") {
+          const id = urlStr.split("/").pop()!
+          deletedIds.push(id)
+          return new Response(null, { status: 204 })
+        }
+
+        if (method === "GET" || !init?.method) {
+          if (urlStr.includes("/projects/") && urlStr.includes("perPage=1")) {
+            return jsonResponse({ page: 1, perPage: 1, totalPages: 1, totalItems: 1, items: [projectRecord] })
+          }
+          if (urlStr.includes("/project_artifacts/") && urlStr.includes("perPage=200")) {
+            return jsonResponse({ page: 1, perPage: 200, totalPages: 1, totalItems: 2, items: remoteArtifacts })
+          }
+          if (urlStr.includes("/scan_results/")) {
+            return jsonResponse({ page: 1, perPage: 200, totalPages: 1, totalItems: 1, items: scanResults })
+          }
+          if (urlStr.includes("/eval_results/")) {
+            return jsonResponse({ page: 1, perPage: 200, totalPages: 1, totalItems: 1, items: evalResults })
+          }
+        }
+
+        return jsonResponse({ page: 1, perPage: 200, totalPages: 0, totalItems: 0, items: [] })
+      })
+
+      const reporter = DashboardReporter.create()
+      const count = await reporter!.reconcileArtifacts("test-project", ["@scope/a"])
+
+      expect(count).toBe(1)
+      expect(deletedIds).toContain("sr1")
+      expect(deletedIds).toContain("er1")
+      expect(deletedIds).toContain("pa2")
+    })
+  })
+
   describe("reportScan", () => {
     let restoreFetch: (() => void) | undefined
 
