@@ -345,7 +345,6 @@ async function scanAllInstalled(projectRoot: string, jsonOutput?: boolean, failO
         scanner: "agentverus",
         results,
       });
-      info("Scan report saved to .grekt/reports/scan.json");
     }
 
     if (failOnThreshold) {
