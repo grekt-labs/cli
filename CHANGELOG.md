@@ -1,3 +1,10 @@
+# [6.46.0-beta.11](https://github.com/grekt-labs/cli/compare/v6.46.0-beta.10...v6.46.0-beta.11) (2026-03-12)
+
+
+### Bug Fixes
+
+* install script picks highest beta version using semver sort ([fe1ac87](https://github.com/grekt-labs/cli/commit/fe1ac87f5741b8921e7ba284c569d69f97ab6d84))
+
 # [6.46.0-beta.10](https://github.com/grekt-labs/cli/compare/v6.46.0-beta.9...v6.46.0-beta.10) (2026-03-12)
 
 
