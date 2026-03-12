@@ -48,6 +48,11 @@ export function getConfig(projectRoot: string = process.cwd()): ProjectConfig {
   return result.data;
 }
 
+export function getProjectName(projectRoot: string = process.cwd()): string {
+  const config = getConfig(projectRoot);
+  return config.name ?? projectRoot.split("/").pop() ?? "unnamed";
+}
+
 export function saveConfig(config: ProjectConfig, projectRoot: string = process.cwd()): void {
   const filepath = `${projectRoot}/${GREKT_YAML}`;
   writeYaml(filepath, config);
