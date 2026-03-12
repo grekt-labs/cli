@@ -4,6 +4,7 @@ import { getDashboardConfig } from "#/dashboard/config/config"
 import { DashboardClient } from "#/dashboard/client/client"
 import { scanArtifact } from "#/context"
 import { ARTIFACTS_DIR } from "#/config/paths/paths"
+import { getProjectName } from "#/config/project/project"
 import { warning } from "#/shared/ui/ui"
 import type { SecurityReport } from "@grekt/engine"
 import {
@@ -40,7 +41,7 @@ export class DashboardReporter {
     lockfile: Lockfile,
     projectRoot: string,
   ): Promise<void> {
-    const projectName = config.name ?? projectRoot.split("/").pop() ?? "unnamed"
+    const projectName = getProjectName(projectRoot)
     const projectData = mapProjectToRecord(config, projectRoot)
     const project = await this.client.upsertByFilter(
       "projects",

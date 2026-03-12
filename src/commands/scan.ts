@@ -11,7 +11,7 @@ import {
 } from "@grekt/engine";
 import { parseSource, downloadFromSource, type ParsedSource } from "#/registry/sources/sources";
 import { getSourceDisplayName } from "#/registry/registry";
-import { getConfig } from "#/config/project/project";
+import { getConfig, getProjectName } from "#/config/project/project";
 import { isArtifactTrusted } from "#/artifact/mode/mode";
 import { error, warning, info, log, newline, colors, symbols, spinner } from "#/shared/ui/ui";
 import { enrichReportWithMcpFindings } from "#/mcp-security/mcp-security";
@@ -338,7 +338,7 @@ async function scanAllInstalled(projectRoot: string, jsonOutput?: boolean, failO
     console.log(JSON.stringify(output, null, 2));
 
     if (results.length > 0) {
-      const projectName = config.name ?? projectRoot.split("/").pop() ?? "unnamed";
+      const projectName = getProjectName(projectRoot);
       await syncToDashboard(async (reporter) => {
         await reporter.reportScan(projectName, results, "cli");
       });
@@ -360,9 +360,8 @@ async function scanAllInstalled(projectRoot: string, jsonOutput?: boolean, failO
   }
 
   if (results.length > 0) {
-    const projectName = config.name ?? projectRoot.split("/").pop() ?? "unnamed";
     const synced = await syncToDashboard(async (reporter) => {
-      await reporter.reportScan(projectName, results, "cli");
+      await reporter.reportScan(getProjectName(projectRoot), results, "cli");
     });
 
     if (synced) {

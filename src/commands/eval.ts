@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import { join } from "path";
 import { requireInitialized } from "#/shared/guards/guards";
-import { getConfig, getLocalConfig } from "#/config/project/project";
+import { getLocalConfig, getProjectName } from "#/config/project/project";
 import { getLockfile } from "#/context";
 import { fs } from "#/context";
 import { discoverEvals, summarizeResults } from "@grekt/engine";
@@ -137,8 +137,7 @@ export const evalCommand = new Command("eval")
     }
 
     await syncToDashboard(async (reporter) => {
-      const projectConfig = getConfig(projectRoot)
-      await reporter.reportEval(summary, projectConfig.name ?? "unnamed", "cli")
+      await reporter.reportEval(summary, getProjectName(projectRoot), "cli")
     })
 
     if (summary.totalIssues > 0) {
