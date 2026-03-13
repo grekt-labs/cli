@@ -8,7 +8,15 @@ Commands use [Commander.js](https://github.com/tj/commander.js). Each command li
 
 ```
 src/commands/
-├── init.ts          # Initialize grekt in a directory
+├── init/            # Initialize grekt (modular folder)
+│   ├── init.ts      # Orchestrator
+│   ├── targets.ts   # Auto-detect + target selection
+│   ├── registries.ts# Self-hosted registry wizard
+│   ├── dashboard.ts # Dashboard setup step
+│   ├── files.ts     # File creation
+│   ├── summary.ts   # Post-init summary
+│   ├── manifest.ts  # Artifact manifest prompts
+│   └── init.types.ts
 ├── add.ts           # Add artifact from registry/GitHub/GitLab
 ├── upgrade.ts       # Upgrade artifacts to latest versions
 ├── sync.ts          # Sync artifacts to AI tools
@@ -381,15 +389,13 @@ const configPath = `${projectRoot}/${GREKT_YAML}`;
 For interactive user input:
 
 ```typescript
-import { withPromptHandler, selectTargets } from "#/shared/prompts/prompts";
-import { confirm, input, select } from "@inquirer/prompts";
+import { withPromptHandler, selectTargets, confirmSelect } from "#/shared/prompts/prompts";
+import { input, select } from "@inquirer/prompts";
 
 // ALWAYS wrap prompts with withPromptHandler to handle Ctrl+C gracefully
 await withPromptHandler(async () => {
-  const shouldContinue = await confirm({
-    message: "Continue with installation?",
-    default: true,
-  });
+  // Use confirmSelect for Yes/No (arrow keys, no typing)
+  const shouldContinue = await confirmSelect("Continue with installation?", true);
 
   const name = await input({
     message: "Artifact name:",
@@ -417,7 +423,7 @@ For real-world examples, look at these commands in `src/commands/`:
 | `check.ts` | Simple, no args | Basic flow, exit codes |
 | `add.ts` | Args + options | Spinners, error handling, index regeneration |
 | `upgrade.ts` | Batch operation | Iterating artifacts, selection preservation |
-| `init.ts` | Interactive | Prompts with `withPromptHandler` |
+| `init/init.ts` | Modular wizard | Auto-detect, registries, dashboard, `confirmSelect` |
 | `sync.ts` | Multi-target | Iterating over plugins |
 | `trust.ts` | Paired commands | Two commands in one file, config mutation |
 | `scan.ts` | CI integration | `--fail-on` threshold, `evaluateFailOn` helper |
