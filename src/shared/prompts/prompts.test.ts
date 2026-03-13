@@ -127,6 +127,52 @@ describe("selectTargetsToAdd", () => {
   });
 });
 
+describe("confirmSelect", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("should return true when Yes is selected", async () => {
+    mockInquirer.select.mockResolvedValueOnce(true);
+
+    const { confirmSelect } = await import("./prompts");
+    const result = await confirmSelect("Continue?");
+
+    expect(result).toBe(true);
+  });
+
+  it("should return false when No is selected", async () => {
+    mockInquirer.select.mockResolvedValueOnce(false);
+
+    const { confirmSelect } = await import("./prompts");
+    const result = await confirmSelect("Continue?");
+
+    expect(result).toBe(false);
+  });
+
+  it("should put Yes first when default is true", async () => {
+    mockInquirer.select.mockResolvedValueOnce(true);
+
+    const { confirmSelect } = await import("./prompts");
+    await confirmSelect("Continue?", true);
+
+    const callArgs = mockInquirer.select.mock.calls[0][0];
+    expect(callArgs.choices[0].name).toBe("Yes");
+    expect(callArgs.choices[1].name).toBe("No");
+  });
+
+  it("should put No first when default is false", async () => {
+    mockInquirer.select.mockResolvedValueOnce(false);
+
+    const { confirmSelect } = await import("./prompts");
+    await confirmSelect("Continue?", false);
+
+    const callArgs = mockInquirer.select.mock.calls[0][0];
+    expect(callArgs.choices[0].name).toBe("No");
+    expect(callArgs.choices[1].name).toBe("Yes");
+  });
+});
+
 describe("selectTargetsToRemove", () => {
   beforeEach(() => {
     vi.clearAllMocks();

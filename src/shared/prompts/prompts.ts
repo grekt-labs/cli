@@ -1,5 +1,5 @@
 import { ExitPromptError, Separator } from "@inquirer/core";
-import { input, confirm } from "@inquirer/prompts";
+import { input, confirm, select } from "@inquirer/prompts";
 import { newline, info, log, colors } from "#/shared/ui/ui";
 import { CATEGORIES, type CustomTarget, type ComponentPaths, type Category } from "@grekt/engine";
 import { GLOBAL_PLUGIN_ID } from "#/sync/manager/manager";
@@ -19,6 +19,7 @@ export interface SelectTargetsOptions {
   currentTargets?: string[];
   currentCustomTargets?: Record<string, CustomTarget>;
   defaultCheckedIndex?: number;
+  detectedTargets?: string[];
 }
 
 /**
@@ -115,9 +116,11 @@ export async function selectTargets(
     currentTargets = [],
     currentCustomTargets = {},
     defaultCheckedIndex,
+    detectedTargets,
   } = options;
 
   const currentTargetSet = new Set(currentTargets);
+  const detectedSet = detectedTargets ? new Set(detectedTargets) : null;
 
   // Filter out the global fallback — users should pick specific tools
   const visibleChoices = pluginChoices.filter((c) => c.value !== GLOBAL_PLUGIN_ID);
@@ -126,7 +129,8 @@ export async function selectTargets(
     ...visibleChoices.map((choice, index) => ({
       ...choice,
       checked: currentTargetSet.has(choice.value) ||
-        (currentTargetSet.size === 0 && index === defaultCheckedIndex),
+        (detectedSet ? detectedSet.has(choice.value) : false) ||
+        (currentTargetSet.size === 0 && !detectedSet && index === defaultCheckedIndex),
     })),
     new Separator("──────────"),
     {
@@ -283,4 +287,15 @@ export async function selectTargetsToRemove(
   });
 
   return selected;
+}
+
+/**
+ * Yes/No prompt using arrow keys instead of typing Y/n.
+ */
+export async function confirmSelect(message: string, defaultValue = true): Promise<boolean> {
+  const choices = defaultValue
+    ? [{ name: "Yes", value: true }, { name: "No", value: false }]
+    : [{ name: "No", value: false }, { name: "Yes", value: true }];
+
+  return select({ message, choices });
 }
