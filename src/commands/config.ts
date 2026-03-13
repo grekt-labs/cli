@@ -87,8 +87,8 @@ const tokenCommand = configCommand
   .description("Manage tokens for git sources (github:, gitlab:)");
 
 tokenCommand
-  .command("set")
-  .description("Add a token for a git host")
+  .command("set [scope]")
+  .description("Add a token for a git host or update token for a registry scope (@scope)")
   .action(setTokenInteractive);
 
 tokenCommand

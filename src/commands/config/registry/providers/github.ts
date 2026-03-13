@@ -28,26 +28,21 @@ export const githubProvider: RegistryProvider = {
     }
 
     const project = await input({
-      message: "Namespace (username or org):",
+      message: "Owner (username or org, e.g. grekt-labs):",
       validate: (value) => {
-        if (!value.trim()) return "Namespace is required";
+        if (!value.trim()) return "Owner is required";
         return true;
       },
     });
 
-    const prefix = await input({
-      message: "Artifact nesting path (where artifacts are grouped, leave empty if root):",
-    });
-
     const token = await password({
-      message: "GitHub token (optional, can use GITHUB_TOKEN env var):",
+      message: "GitHub token (required, can be set later in .grekt/config.yaml):",
       mask: "*",
     });
 
     return {
       host,
       project,
-      prefix: prefix.trim() || undefined,
       token: token || undefined,
     };
   },
