@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { Command } from "commander";
-import { initCommand } from "#/commands/init";
+import { initCommand } from "#/commands/init/init";
 import { configCommand } from "#/commands/config";
 import { syncCommand } from "#/commands/sync";
 import { addTargetCommand } from "#/commands/add-target";
