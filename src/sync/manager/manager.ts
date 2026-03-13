@@ -208,5 +208,24 @@ export function getSyncPaths(target: string, customTargets?: Record<string, Cust
   return plugin.getSyncPaths();
 }
 
+/**
+ * Detect which AI tools are present in the project by checking
+ * if their target files/directories exist.
+ * Excludes the "global" fallback plugin.
+ */
+export function detectInstalledTargets(projectRoot: string): string[] {
+  const detected: string[] = [];
+
+  for (const [id, plugin] of Object.entries(builtInPlugins)) {
+    if (id === GLOBAL_PLUGIN_ID) continue;
+
+    if (plugin.targetExists(projectRoot)) {
+      detected.push(id);
+    }
+  }
+
+  return detected;
+}
+
 // Re-export types
 export type { SyncPlugin, SyncResult, SyncOptions, SyncPreview } from "#/sync/sync.types";
