@@ -140,6 +140,7 @@ function writeLocalConfigWithComments(filepath: string, config: LocalConfig): vo
       if (entry.project) lines.push(`    project: ${entry.project}`);
       if (entry.host) lines.push(`    host: ${entry.host}`);
       if (entry.token) lines.push(`    token: ${entry.token}`);
+      if (entry.prefix) lines.push(`    prefix: ${entry.prefix}`);
     }
     lines.push("");
   }
@@ -152,6 +153,15 @@ function writeLocalConfigWithComments(filepath: string, config: LocalConfig): vo
     for (const [name, token] of Object.entries(config.tokens)) {
       lines.push(`  ${name}: ${token}`);
     }
+    lines.push("");
+  }
+
+  // Dashboard section
+  if (config.dashboard) {
+    lines.push("# Dashboard connection for centralized monitoring");
+    lines.push("dashboard:");
+    lines.push(`  url: ${config.dashboard.url}`);
+    lines.push(`  token: ${config.dashboard.token}`);
     lines.push("");
   }
 

@@ -28,27 +28,22 @@ export const gitlabProvider: RegistryProvider = {
     }
 
     const project = await input({
-      message: "Project path (namespace/project):",
+      message: "Repository (owner/repo, e.g. grekt-labs/artifacts):",
       validate: (value) => {
-        if (!value.trim()) return "Project path is required";
-        if (!value.includes("/")) return "Must include namespace, e.g., myteam/artifacts";
+        if (!value.trim()) return "Repository is required";
+        if (!value.includes("/")) return "Must be owner/repo, e.g. grekt-labs/artifacts";
         return true;
       },
     });
 
-    const prefix = await input({
-      message: "Artifact nesting path (where artifacts are grouped, leave empty if root):",
-    });
-
     const token = await password({
-      message: "GitLab token (optional, can use GITLAB_TOKEN env var):",
+      message: "GitLab token (required, can be set later in .grekt/config.yaml):",
       mask: "*",
     });
 
     return {
       host,
       project,
-      prefix: prefix.trim() || undefined,
       token: token || undefined,
     };
   },
