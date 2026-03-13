@@ -1,3 +1,19 @@
+# [6.47.0](https://github.com/grekt-labs/cli/compare/v6.46.0...v6.47.0) (2026-03-13)
+
+
+### Bug Fixes
+
+* update internal docs for init folder structure and confirmSelect ([d02186d](https://github.com/grekt-labs/cli/commit/d02186d6e6791bb148c6db3ef6276279a138bc38))
+
+
+### Features
+
+* add confirmSelect prompt and detectedTargets support ([3289d0c](https://github.com/grekt-labs/cli/commit/3289d0c91eb6ce81ab53cb5b6114a3dc4541dacd))
+* add detectInstalledTargets for auto-detecting AI tools ([1a0e7bc](https://github.com/grekt-labs/cli/commit/1a0e7bce4bfba1cbb5ec4a6b54ab88b5ecdc4b25))
+* add standalone dashboard setup command ([d91243e](https://github.com/grekt-labs/cli/commit/d91243e0bc9e441c0ea740ddc24e27bf023883b1))
+* improve registry providers and add scope token management ([72ba396](https://github.com/grekt-labs/cli/commit/72ba396982310224cca8e84a97e860ccd7400dc8))
+* redesign init as full onboarding wizard ([7f57374](https://github.com/grekt-labs/cli/commit/7f573749d54d12775206002168eb90ef3eb0a6c2))
+
 # [6.46.0](https://github.com/grekt-labs/cli/compare/v6.45.0...v6.46.0) (2026-03-12)
 
 
