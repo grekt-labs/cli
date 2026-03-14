@@ -1,7 +1,7 @@
 import { join, resolve } from "path";
 import { Command } from "commander";
 import { requireInitialized } from "#/shared/guards/guards";
-import { fs, cryptoProvider, getLockfile } from "#/context";
+import { fs, cryptoProvider, getLockfile, lockfileExists } from "#/context";
 import { ARTIFACTS_DIR } from "#/config/paths/paths";
 import {
   scanArtifactSecurity,
@@ -122,6 +122,25 @@ function validateFailOnValue(value: string): TrustBadge {
   return value as TrustBadge;
 }
 
+/**
+ * Check if an artifact is already installed locally (in lockfile + directory exists).
+ * Returns the local directory path if found, undefined otherwise.
+ */
+export function resolveInstalledArtifactDir(source: ParsedSource, projectRoot: string): string | undefined {
+  if (!lockfileExists(projectRoot)) return undefined;
+
+  const displayName = getSourceDisplayName(source);
+  const lockfile = getLockfile(projectRoot);
+
+  if (!lockfile.artifacts[displayName]) return undefined;
+
+  const localDir = join(projectRoot, ARTIFACTS_DIR, displayName);
+
+  if (!fs.exists(localDir)) return undefined;
+
+  return localDir;
+}
+
 export const scanCommand = new Command("scan")
   .description("Scan artifacts for security issues using AgentVerus")
   .argument("[source]", "Artifact source (@scope/name, github:user/repo, or local path)")
@@ -141,7 +160,16 @@ export const scanCommand = new Command("scan")
     if (source.type === "local") {
       await scanSingleArtifact(sourceArg, options.json, failOnThreshold);
     } else {
-      await scanRemoteArtifact(source, projectRoot, options.json, failOnThreshold);
+      const localDir = resolveInstalledArtifactDir(source, projectRoot);
+
+      if (localDir) {
+        if (!options.json) {
+          info(`Using local copy of ${colors.highlight(getSourceDisplayName(source))}`);
+        }
+        await scanSingleArtifact(localDir, options.json, failOnThreshold);
+      } else {
+        await scanRemoteArtifact(source, projectRoot, options.json, failOnThreshold);
+      }
     }
   });
 
