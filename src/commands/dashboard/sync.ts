@@ -54,15 +54,17 @@ async function handleFullSync(): Promise<void> {
       }
     }
 
-    // 3. Consume scan report
+    // 3. Consume scan reports (one per scanner)
     if (scanReport) {
-      await reporter.reportScan(
-        scanReport.projectName,
-        scanReport.results,
-        scanReport.triggeredBy,
-        scanReport.scanner,
-      )
-      log(`  ${colors.success("✓")} Scan results (${scanReport.results.length} artifact${scanReport.results.length === 1 ? "" : "s"})`)
+      for (const entry of scanReport.scanners) {
+        await reporter.reportScan(
+          scanReport.projectName,
+          entry.results,
+          scanReport.triggeredBy,
+          entry.scanner,
+        )
+        log(`  ${colors.success("✓")} Scan results [${entry.scanner}] (${entry.results.length} artifact${entry.results.length === 1 ? "" : "s"})`)
+      }
     }
 
     // 4. Consume eval report
