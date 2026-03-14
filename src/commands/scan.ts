@@ -1,7 +1,7 @@
 import { join, resolve } from "path"
 import { Command } from "commander"
 import { requireInitialized } from "#/shared/guards/guards"
-import { fs, getLockfile } from "#/context"
+import { fs, getLockfile, lockfileExists } from "#/context"
 import { ARTIFACTS_DIR } from "#/config/paths/paths"
 import { isBadgeAtOrAbove, type SecurityReport, type TrustBadge } from "@grekt/engine"
 import { parseSource, downloadFromSource, type ParsedSource } from "#/registry/sources/sources"
@@ -392,6 +392,25 @@ function exitWithFailOnResult(result: FailOnResult, threshold: TrustBadge): void
   process.exit(1)
 }
 
+/**
+ * Check if an artifact is already installed locally (in lockfile + directory exists).
+ * Returns the local directory path if found, undefined otherwise.
+ */
+export function resolveInstalledArtifactDir(source: ParsedSource, projectRoot: string): string | undefined {
+  if (!lockfileExists(projectRoot)) return undefined
+
+  const displayName = getSourceDisplayName(source)
+  const lockfile = getLockfile(projectRoot)
+
+  if (!lockfile.artifacts[displayName]) return undefined
+
+  const localDir = join(projectRoot, ARTIFACTS_DIR, displayName)
+
+  if (!fs.exists(localDir)) return undefined
+
+  return localDir
+}
+
 // -- Command --
 
 export const scanCommand = new Command("scan")
@@ -413,6 +432,15 @@ export const scanCommand = new Command("scan")
     if (source.type === "local") {
       await scanSingleArtifact(sourceArg, options.json, failOnThreshold)
     } else {
-      await scanRemoteArtifact(source, projectRoot, options.json, failOnThreshold)
+      const localDir = resolveInstalledArtifactDir(source, projectRoot)
+
+      if (localDir) {
+        if (!options.json) {
+          info(`Using local copy of ${colors.highlight(getSourceDisplayName(source))}`)
+        }
+        await scanSingleArtifact(localDir, options.json, failOnThreshold)
+      } else {
+        await scanRemoteArtifact(source, projectRoot, options.json, failOnThreshold)
+      }
     }
   })

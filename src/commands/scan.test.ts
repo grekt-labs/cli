@@ -1,8 +1,27 @@
-import { describe, test, expect } from "vitest"
+import { describe, test, expect, vi, beforeEach } from "vitest"
 import { parseSource } from "#/registry/sources/sources"
-import { formatBadge, severityIcon, truncate, evaluateFailOn } from "./scan"
+import { formatBadge, severityIcon, truncate, evaluateFailOn, resolveInstalledArtifactDir } from "./scan"
 import type { SecurityReport, TrustBadge } from "@grekt/engine"
 import type { ArtifactScanResult } from "#/security/security"
+
+const { mockLockfileExists, mockGetLockfile, mockFsExists } = vi.hoisted(() => ({
+  mockLockfileExists: vi.fn(() => false),
+  mockGetLockfile: vi.fn(() => ({ version: 1, artifacts: {} })),
+  mockFsExists: vi.fn(() => false),
+}))
+
+vi.mock("#/context", async (importOriginal) => {
+  const original = await importOriginal<Record<string, unknown>>()
+  return {
+    ...original,
+    lockfileExists: mockLockfileExists,
+    getLockfile: mockGetLockfile,
+    fs: {
+      ...(original.fs as Record<string, unknown>),
+      exists: mockFsExists,
+    },
+  }
+})
 
 describe("scan", () => {
   describe("source detection", () => {
@@ -223,6 +242,74 @@ describe("scan", () => {
       const result = evaluateFailOn([], "suspicious")
       expect(result.failed).toBe(false)
       expect(result.failedArtifacts).toHaveLength(0)
+    })
+  })
+
+  describe("resolveInstalledArtifactDir", () => {
+    beforeEach(() => {
+      mockLockfileExists.mockClear()
+      mockGetLockfile.mockClear()
+      mockFsExists.mockClear()
+    })
+
+    test("returns undefined when lockfile does not exist", () => {
+      mockLockfileExists.mockReturnValue(false)
+      const source = parseSource("@scope/artifact")
+      const result = resolveInstalledArtifactDir(source, "/project")
+      expect(result).toBeUndefined()
+      expect(mockGetLockfile).not.toHaveBeenCalled()
+    })
+
+    test("returns undefined when artifact is not in lockfile", () => {
+      mockLockfileExists.mockReturnValue(true)
+      mockGetLockfile.mockReturnValue({ version: 1, artifacts: {} })
+      const source = parseSource("@scope/artifact")
+      const result = resolveInstalledArtifactDir(source, "/project")
+      expect(result).toBeUndefined()
+    })
+
+    test("returns undefined when artifact is in lockfile but directory is missing", () => {
+      mockLockfileExists.mockReturnValue(true)
+      mockGetLockfile.mockReturnValue({
+        version: 1,
+        artifacts: { "@scope/artifact": { source: "@scope/artifact", resolved: "https://example.com", integrity: "sha256-abc" } },
+      })
+      mockFsExists.mockReturnValue(false)
+      const source = parseSource("@scope/artifact")
+      const result = resolveInstalledArtifactDir(source, "/project")
+      expect(result).toBeUndefined()
+    })
+
+    test("returns local directory path when artifact is installed", () => {
+      mockLockfileExists.mockReturnValue(true)
+      mockGetLockfile.mockReturnValue({
+        version: 1,
+        artifacts: { "@scope/artifact": { source: "@scope/artifact", resolved: "https://example.com", integrity: "sha256-abc" } },
+      })
+      mockFsExists.mockReturnValue(true)
+      const source = parseSource("@scope/artifact")
+      const result = resolveInstalledArtifactDir(source, "/project")
+      expect(result).toBe("/project/.grekt/artifacts/@scope/artifact")
+    })
+
+    test("returns undefined for github source not in lockfile", () => {
+      mockLockfileExists.mockReturnValue(true)
+      mockGetLockfile.mockReturnValue({ version: 1, artifacts: {} })
+      const source = parseSource("github:user/repo")
+      const result = resolveInstalledArtifactDir(source, "/project")
+      expect(result).toBeUndefined()
+    })
+
+    test("returns local directory for github source when installed", () => {
+      mockLockfileExists.mockReturnValue(true)
+      mockGetLockfile.mockReturnValue({
+        version: 1,
+        artifacts: { "github:user/repo": { source: "github:user/repo", resolved: "https://github.com/user/repo", integrity: "sha256-abc" } },
+      })
+      mockFsExists.mockReturnValue(true)
+      const source = parseSource("github:user/repo")
+      const result = resolveInstalledArtifactDir(source, "/project")
+      expect(result).toBe("/project/.grekt/artifacts/github:user/repo")
     })
   })
 })
