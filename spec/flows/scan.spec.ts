@@ -50,8 +50,9 @@ describe("grekt scan", () => {
 
     const output = JSON.parse(result.stdout);
     expect(output).toHaveProperty("@test/artifact");
-    expect(output["@test/artifact"]).toHaveProperty("score");
-    expect(output["@test/artifact"]).toHaveProperty("badge");
+    expect(output["@test/artifact"]).toHaveProperty("summary");
+    expect(output["@test/artifact"].summary).toHaveProperty("score");
+    expect(output["@test/artifact"].summary).toHaveProperty("badge");
   });
 
   test("scans local path without requiring init", async () => {
@@ -69,8 +70,9 @@ describe("grekt scan", () => {
     expect(result.exitCode).toBe(0);
 
     const output = JSON.parse(result.stdout);
-    expect(output).toHaveProperty("score");
-    expect(output).toHaveProperty("badge");
+    expect(output).toHaveProperty("summary");
+    expect(output.summary).toHaveProperty("score");
+    expect(output.summary).toHaveProperty("badge");
   });
 
   test("scans remote artifact without requiring init", async () => {
@@ -84,7 +86,8 @@ describe("grekt scan", () => {
     expect(result.exitCode).toBe(0);
 
     const output = JSON.parse(result.stdout);
-    expect(output).toHaveProperty("score");
-    expect(output).toHaveProperty("badge");
+    expect(output).toHaveProperty("summary");
+    expect(output.summary).toHaveProperty("score");
+    expect(output.summary).toHaveProperty("badge");
   });
 });

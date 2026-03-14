@@ -49,7 +49,7 @@ describe("Lead onboards HMAC trust for the first time", () => {
 
     // Step 4: CI runs `grekt scan --fail-on suspicious` with the same key
     const trusted = isArtifactTrusted(artifactId, config, trustKey);
-    const results = [{ artifactId, report: makeReport("suspicious"), trusted }];
+    const results = [{ artifactId, summary: makeReport("suspicious"), trusted }];
     const failOn = evaluateFailOn(results, "suspicious");
 
     // Result: signed artifact passes, CI is green
@@ -69,12 +69,12 @@ describe("Lead onboards HMAC trust for the first time", () => {
     const results = [
       {
         artifactId: "@vendor/reviewed",
-        report: makeReport("suspicious"),
+        summary: makeReport("suspicious"),
         trusted: isArtifactTrusted("@vendor/reviewed", config, trustKey),
       },
       {
         artifactId: "@vendor/new-and-unreviewed",
-        report: makeReport("suspicious"),
+        summary: makeReport("suspicious"),
         trusted: isArtifactTrusted("@vendor/new-and-unreviewed", config, trustKey),
       },
     ];
@@ -102,7 +102,7 @@ describe("CI runs scan without GREKT_TRUST_KEY configured", () => {
 
     // CI does NOT have GREKT_TRUST_KEY set
     const trusted = isArtifactTrusted("@vendor/tool", config, undefined);
-    const results = [{ artifactId: "@vendor/tool", report: makeReport("suspicious"), trusted }];
+    const results = [{ artifactId: "@vendor/tool", summary: makeReport("suspicious"), trusted }];
     const failOn = evaluateFailOn(results, "suspicious");
 
     expect(trusted).toBe(false);
@@ -132,7 +132,7 @@ describe("Attacker submits a PR with forged trust", () => {
     });
 
     const trusted = isArtifactTrusted("@attacker/payload", config, ciKey);
-    const results = [{ artifactId: "@attacker/payload", report: makeReport("rejected"), trusted }];
+    const results = [{ artifactId: "@attacker/payload", summary: makeReport("rejected"), trusted }];
     const failOn = evaluateFailOn(results, "suspicious");
 
     expect(trusted).toBe(false);
@@ -231,7 +231,7 @@ describe("Lead revokes and re-signs trust after artifact update", () => {
 
     // CI now blocks it
     const results = [
-      { artifactId, report: makeReport("suspicious"), trusted: false },
+      { artifactId, summary: makeReport("suspicious"), trusted: false },
     ];
     expect(evaluateFailOn(results, "suspicious").failed).toBe(true);
 
@@ -273,7 +273,7 @@ describe("CI pipeline scans project with mixed artifact states", () => {
 
     const results = artifacts.map(({ id, badge }) => ({
       artifactId: id,
-      report: makeReport(badge),
+      summary: makeReport(badge),
       trusted: isArtifactTrusted(id, config, trustKey),
     }));
 
