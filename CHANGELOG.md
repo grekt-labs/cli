@@ -1,3 +1,10 @@
+## [6.48.1-beta.1](https://github.com/grekt-labs/cli/compare/v6.48.0...v6.48.1-beta.1) (2026-03-14)
+
+
+### Bug Fixes
+
+* use local artifact when already installed instead of re-downloading ([9e4ae38](https://github.com/grekt-labs/cli/commit/9e4ae38da087c3dd08605e519f30bc90254852a2)), closes [#224](https://github.com/grekt-labs/cli/issues/224)
+
 # [6.48.0](https://github.com/grekt-labs/cli/compare/v6.47.0...v6.48.0) (2026-03-14)
 
 
