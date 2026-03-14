@@ -1,3 +1,16 @@
+# [6.48.0](https://github.com/grekt-labs/cli/compare/v6.47.0...v6.48.0) (2026-03-14)
+
+
+### Bug Fixes
+
+* add aguara auto-managed binary and fix sync test for multi-scanner format ([5bfb39b](https://github.com/grekt-labs/cli/commit/5bfb39b1e9a37ed67f1956446ac7ff49570d473d))
+* update integration and e2e tests for multi-scanner format ([14c4935](https://github.com/grekt-labs/cli/commit/14c4935eab4c874c98f20fa67acaaa163d2beeee))
+
+
+### Features
+
+* plugin-based security scanner architecture with aguara integration ([e723c8e](https://github.com/grekt-labs/cli/commit/e723c8eeb9166185d564e02e1d0251cf4a8e30ac))
+
 # [6.47.0](https://github.com/grekt-labs/cli/compare/v6.46.0...v6.47.0) (2026-03-13)
 
 
