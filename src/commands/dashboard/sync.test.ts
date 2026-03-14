@@ -166,11 +166,11 @@ describe("dashboard sync command", () => {
 
     test("consumes scan report when available", async () => {
       setupFullSyncMocks()
+      const scannerResults = [{ artifactId: "@scope/a", report: {}, trusted: false }]
       const scanReport = {
         projectName: "test-project",
         triggeredBy: "cli" as const,
-        scanner: "agentverus",
-        results: [{ artifactId: "@scope/a", report: {}, trusted: false }],
+        scanners: [{ scanner: "agentverus", results: scannerResults }],
       }
       mockReadAndConsumeScanReport.mockReturnValue(scanReport)
 
@@ -190,7 +190,7 @@ describe("dashboard sync command", () => {
 
       expect(mockReporter.reportScan).toHaveBeenCalledWith(
         "test-project",
-        scanReport.results,
+        scannerResults,
         "cli",
         "agentverus",
       )
