@@ -1,3 +1,10 @@
+## [6.48.1](https://github.com/grekt-labs/cli/compare/v6.48.0...v6.48.1) (2026-03-22)
+
+
+### Bug Fixes
+
+* apply component selection in Phase 2 (toKeep) during install ([ce47527](https://github.com/grekt-labs/cli/commit/ce47527a88143ba5af41639670a145d7c4f672d4))
+
 # [6.48.0](https://github.com/grekt-labs/cli/compare/v6.47.0...v6.48.0) (2026-03-14)
 
 
