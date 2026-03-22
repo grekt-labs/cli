@@ -257,6 +257,20 @@ export const installCommand = new Command("install")
         options.force ?? false
       );
 
+      // Apply component selection from config — must happen here too, not only in Phase 3.
+      // A "skipped" result means files were already on disk (integrity valid), but the
+      // selection from grekt.yaml was never applied. An "installed" result means files
+      // were freshly downloaded from the lockfile URL, same issue.
+      if (result !== "failed") {
+        const selection = getConfigSelection(configEntry!);
+        if (selection) {
+          const artifactInfo = scanArtifact(targetDir);
+          if (artifactInfo) {
+            removeUnselectedFiles(targetDir, artifactInfo, selection);
+          }
+        }
+      }
+
       if (result === "installed") installed++;
       else if (result === "skipped") skipped++;
       else failed++;
